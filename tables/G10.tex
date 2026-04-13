@@ -1,0 +1,22 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=,scale=0.5]
+
+\node[state, initial] (0) at (-2.5, 0) {0};
+\node[state] (1) at (2.5cm, 0) {1};
+\node[state] (2) at (2.5cm, 2.5) {2};
+\node[state] (3) at (2.5cm, -5cm) {3};
+\node[state] (4) at (0, -2.5cm) {4};
+\node[state] (5) at (-2.5cm, -5cm) {5};
+
+\path
+(0) edge node [above] {$a$} (1)
+(1) edge node [right] {$b$} (2)
+(1) edge node [right] {$c$} (3)
+(4) edge node  [right]{$b$} (5)
+(4) edge node  [right]{$a$} (0)
+(4) edge[loop below] node {$d$} (4)
+(5) edge node  [below]{$f$} (3)
+(5) edge node  [left]{$a$} (0)
+(1) edge node [right] {$f$} (4)
+(3) edge node [right] {$d$} (4);
+
+\end{tikzpicture}

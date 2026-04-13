@@ -1,0 +1,18 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=,scale=0.5]
+
+\node[state, initial] (0) at (0, 0) {0};
+\node[state] (1) at (0, -2.5cm) {1};
+\node[state] (2) at (6, -7.5cm) {2};
+\node[state] (3) at (0, -7.5cm) {3};
+\node[state] (5) at (6, -2.5cm) {5};
+
+\path
+(0) edge[left] node {$a$} (1)
+(1) edge[below, bend right=20] node {$b$} (5)
+(2) edge[above] node {$c$} (3)
+(1) edge[above, bend left=20] node {$d$} (5)
+(5) edge[above, bend right=20] node {$e$} (0)
+(5) edge[right] node {$f$} (2)
+(1) edge[right] node {$g$} (3);
+
+\end{tikzpicture}

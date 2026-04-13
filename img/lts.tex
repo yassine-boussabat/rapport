@@ -1,0 +1,19 @@
+\begin{tikzpicture}[shorten >=1pt, node distance=2.5cm, on grid, auto]
+    
+    % States
+    \node[state, initial] (s0)   {$S_0$}; 
+    \node[state] (s1) [above right=of s0] {$S_1$}; 
+    \node[state] (s2) [below right=of s0] {$S_2$}; 
+    \node[state, accepting, double] (s3) [above right=of s2] {$S_3$}; 
+    
+    % Arcs (Transitions)
+    \path[->] 
+    (s0) edge [loop above] node {$t_1$} (s0)
+         edge node [above left] {\textcolor{red}{$\alpha$}} (s1)
+         edge node [below left] {$t_2$} (s2)
+    (s1) edge [bend left] node {$t_5$} (s3)
+    (s2) edge [loop below] node {$t_3$} (s2)
+         edge [bend right] node [below right] {\textcolor{red}{$\beta$}} (s3)
+    (s3) edge [bend left] node [below] {$t_4$} (s1);
+         
+\end{tikzpicture}

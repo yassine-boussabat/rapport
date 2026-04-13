@@ -1,0 +1,36 @@
+
+\begin{tikzpicture}[shorten >=1pt, node distance=2cm, on grid, auto]
+    
+    % Draw the rectangles (abstractions a0 and a1)
+    \draw[rounded corners] (-1, 2.5) rectangle (2.5, -2.5);
+    \draw[rounded corners] (4, 2.5) rectangle (7.5, -2.5);
+
+    % Labels below the boxes
+    \node at (0.75, -3) {$a_0$};
+    \node at (5.75, -3) {$a_1$};
+    
+    % Nodes in abstraction a0
+    \node[state] (s0) at (0.75, 1.5) {$S_0$}; 
+    \node[state] (s2) at (0.75, -1.5) {$S_2$};
+    
+    % Nodes in abstraction a1
+    \node[state] (s1) at (5.75, 1.5) {$S_1$}; 
+    \node[state, accepting, double] (s3) at (5.75, -1.5) {$S_3$}; 
+    
+    % Arcs (Transitions) within a0
+    \path[->] 
+    (s0) edge [loop left] node {$t_1$} (s0)
+         edge node [right] {$t_2$} (s2)
+    (s2) edge [loop left] node {$t_3$} (s2);
+    
+    % Arcs (Transitions) within a1
+    \path[->] 
+    (s1) edge [bend right] node {$t_4$} (s3)
+    (s3) edge [bend right] node {$t_5$} (s1);
+    
+    % Arcs (Transitions) between a0 and a1
+    \path[->, draw=red] 
+    (s0) edge node [above] {\textcolor{red}{$\alpha$}} (s1)
+    (s2) edge node [below] {\textcolor{red}{$\beta$}} (s3);
+
+\end{tikzpicture}

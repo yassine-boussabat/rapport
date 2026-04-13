@@ -1,0 +1,15 @@
+\begin{tikzpicture}[>=stealth', auto, node distance=3cm]
+  \node [transition] (t1) [label=above:$t$] {} ;
+  \node [place, tokens=1, right of = t1] (p1) [label=above:$p$] {} ;
+  \node [cross=5pt, red] at (p1) {} ;
+  \node [transition, right of = p1] (t2) [label=above:$t'$] {} ;
+  \node [place, tokens=1, below = 5mm of t2, xshift=-10mm,dashed] (p2) [label=left:$p'$] {} ;
+  \path (t1) edge [post] node {} (p1)
+        (p1) edge [post] node {} (t2);
+        
+  \path (t1.east) edge [post,dashed] node {} +(1.2, -1)
+        (p1) edge [post, dashed] node {} +(1.2, 1)
+        ([yshift=1cm, xshift=3mm]t1.east) edge [post,dashed] node[xshift=-2.5mm, yshift=-1mm, cross=5pt, red, solid] {} (p1);
+        
+  \path (p2) edge [post,dashed] node {} (t2);
+\end{tikzpicture}

@@ -1,0 +1,153 @@
+\chapter{Optimal LTS-based testing}
+
+\section*{Inroduction}
+
+This chapter presents a method for generating an optimal set of test paths in Labelled Transition Systems (LTS), focusing on minimizing the number and length of these paths. By combining recursive graph exploration, regular expression generation, and Integer Linear Programming (ILP), this approach ensures comprehensive coverage of all transitions with maximum efficiency. In this chapter, we will first present the generation of regular expressions, followed by the extraction of paths, and finally, the application of ILP for path optimization.
+
+\section{Description of the approach}
+
+This approach starts by taking the initial node of the graph and the set of transitions to be covered as input. The graph is explored recursively, similar to Depth-First Search (DFS), to generate a regular expression that encapsulates all possible paths and transitions. This regular expression is then used to deduce unique paths, ensuring comprehensive coverage of all potential sequences within the graph. These deduced paths are then passed to a linear programming module, which optimizes the selection by minimizing both the number and length of the paths while still covering all transitions. The result is an efficient and effective set of test inputs that thoroughly represents the system's behavior \cite{bouachir2022}.
+\begin{figure}[!htb]
+\centering
+\resizebox{\textwidth}{!}{\input{img/optimal-approach}}
+\caption{Optimal LTS-based testing approach \cite{bouachir2022} \label{optimal-lts}}
+\end{figure}
+
+\section{Generation of regular expression from the graph}
+
+To generate the regular expression, the approach begins with the initial node of the graph and explores it while simultaneously creating test paths. It employs a novel algorithm, detailed in Algorithm 3. This algorithm uses a recursive, in-depth analysis to produce a regular expression that generates the language accepted by the graph's automaton.
+
+By building the regular expression dynamically as the graph is explored, the approach ensures that the expression accurately reflects the graph’s structure and transitions in real-time. This on-the-fly generation is a distinctive feature of the approach, enhancing its efficiency and effectiveness in capturing the system's behavior.
+
+\begin{algorithm}[!h]
+\SetAlgoLined
+\caption{Languages Generation} \label{alg:languages_gen}
+\KwData{state $e$}
+\KwResult{List of languages (a pair: a sequence of transitions and a pointer to a node of the graph)}
+\SetKwComment{Comment}{/*}{*/}
+
+\textbf{Function }
+\Fn{$\texttt{ComputeLanguage}(s)$}{
+    \If{$s.languages = \emptyset$}{
+        \KwRet{(\emptyset, \emptyset)}
+    }
+    \ForEach{$\texttt{language} \in s.languages$}{
+        \ForEach{$\texttt{language.state} \neq \emptyset \wedge \texttt{language.state} \notin \texttt{currentPath}$}{
+            $s.languages \leftarrow s.languages \cup \{\texttt{language.sequence} + \texttt{getLanguage(language.state)}\}$\;
+            \texttt{remove(language)}\;
+        }
+    }
+    $\texttt{stringstar} \leftarrow ""$\;
+    $\texttt{integercountCircuit} \leftarrow 0$\;
+    \ForEach{$\texttt{lang} \in s.languages$}{
+        \If{$\texttt{lang.state} = \texttt{s}$}{
+            $\texttt{star} \leftarrow \texttt{star.concat}(\texttt{'('} + \texttt{lang.sequence} + \texttt{')*'})$\;
+            $\texttt{countCircuit} \leftarrow \texttt{countCircuit} + 1$\;
+            \texttt{remove(lang)}\;
+        }
+    }
+    \If{$\texttt{countCircuit} > 1$}{
+        $\texttt{star} \leftarrow \texttt{'('} + \texttt{star} + \texttt{')*'}$\;
+    }
+    \ForEach{$\texttt{lang} \in s.languages$}{
+        $\texttt{lang.sequence} \leftarrow \texttt{star} + \texttt{lang.sequence}$\;
+    }
+    \KwRet{$s.languages$}
+}
+\end{algorithm}
+
+Algorithm~\ref{alg:languages_gen} enables the generation of the regular expression on the fly, dynamically creating it as the graph is explored. This capability is a key feature of the approach, contributing to its originality and effectiveness.
+
+\textbf{Example of regular expression generation :\\}
+We take the example of Figure \ref{graph-exp} to generate its regex based on Algorithm~\ref{alg:languages_gen} .
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.5\textwidth}{!}{\input{img/graph-exemple}}
+\caption{Example of an LTS \label{graph-exp}}
+\end{figure}
+
+After applying the algorithm to generate the regular expression, the result obtained is \( t_1 t_5 \left( (t_1 t_2 t_4 t_5)* \cdot (t_4 t_2 t_5 t_5)* \right)* t_3 \).
+
+\section{Paths generation}
+
+After generating the regular expression, the next step is to deduce all possible paths by systematically replacing each star (*) operator in the expression with either zero or one, signifying that a given circuit may be included in a path or omitted. This process is divided into three key algorithms.
+
+The first algorithm divides the regular expression string into a vector of elements categorized by type. Each element in the vector includes three attributes: the expression itself, the type of the expression (which may indicate the presence of cycles, denoted by the star operator), and a result vector to store the possible paths derived from that expression. The algorithm iterates through these elements, recursively filling their result vectors by calling a function designed to extract paths, which are returned from the path construction function described in the subsequent algorithm.
+
+The second algorithm focuses on constructing all possible paths from the vector of typed elements by combining existing paths with new ones derived from simplified expressions. Finally, the third algorithm organizes the regular expression into a vector format, simplifying and categorizing the elements to ensure that all potential paths are accurately identified and constructed.
+
+\textbf{Example of deduction of paths from regular expression :\\}
+After applying the algorithm to generate paths from the regular expression derived from the LTS in Figure \ref{graph-exp}, the final set of paths obtained is:
+
+\begin{itemize}
+    \item \(p_0 : t_1 t_5 t_3 \)
+    \item \(p_1 : t_1 t_5 t_1 t_2 t_4 t_5 t_3 \)
+    \item \(p_2 : t_1 t_5 t_4 t_2 t_5 t_5 t_3 \)
+    \item \(p_3 : t_1 t_5 t_1 t_2 t_4 t_5 t_4 t_2 t_5 t_5 t_3 \)
+\end{itemize}
+
+These algorithms successfully generate all possible paths that traverse each circuit in the graph zero or one time. The next step involves passing these paths to the linear programming module to select the optimal set that covers all transitions in the graph. This process will be detailed in the following section.
+
+\section{Application of linear programming}
+In this project, the problem is modeled using binary programming, a specific case of integer programming where the variables \(x_i\) can only take values of 0 or 1, referred to as binary or 0-1 variables (as discussed in Chapter 2: Preliminaries). Each constraint in this model represents a transition in the graph, making the number of constraints equal to the number of transitions. The constraints are set to be greater than or equal to 1, ensuring that each transition is covered by at least one path. The variables \(x_i\) represent individual paths, while the coefficients \(a_{ij}\) indicate whether a transition \(t_i\) is covered by a path \(p_j\) (\(a_{ij} = 1\) if \(t_i\) is covered by \(p_j\); otherwise, \(a_{ij} = 0\)). The profit coefficients \(c_j\) represent the lengths of the paths, and the objective function aims to minimize the total cost of coverage by reducing the sum of the lengths of the selected paths.
+
+\begin{mdframed}[roundcorner=5pt]
+\begin{equation*}
+\begin{array}{lr@{}c@{}r@{}l@{}r}
+\text{\textbf{Minimize}}   & c_1 x_1   & {}+{\dots}+{} & c_n x_n   &        &   \\
+\text{\textbf{Subject to} } & a_{11}x_1 & {}+{\dots}+{} & a_{1n}x_n & {}\geq 1   & \\
+                   &           &     \vdots    &               & \hspace{1.5cm} x_{j} \in \{0,1\}, j=1 ,..., n   \\
+                   & a_{m1}x_1 & {}+{\dots}+{} & a_{mn}x_n & {}\geq 1 & 
+\end{array}
+\end{equation*}
+\end{mdframed}
+
+
+
+After this modeling, the generated paths from the path deduction module (as shown in Figure \ref{optimal-lts}) are passed to the linear programming module. The coverage matrix \(A\) and the profit vector \(C\) are populated using these paths. Finally, the OR-tools solver \cite{googleoptimization} is used to solve the linear problem, extracting an optimal set of paths that cover all transitions in the graph.
+
+\textbf{Example : \\}
+Applying the ILP model to the previous example results in the following set of equations:
+
+\[
+\left\{
+\begin{aligned}
+t_1: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+t_2: & \quad x_1 + x_2 + x_3 \geq 1 \\
+t_3: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+t_4: & \quad x_1 + x_2 + x_3 \geq 1 \\
+t_5: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+& \quad 3x_1 + 6x_2 + 6x_3 + 9x_4 = z \, \text{(min)}
+\end{aligned}
+\right.
+\]
+
+
+After generating all possible paths, these paths are loaded into the coverage matrix and the profit vector.
+
+
+\[
+\begin{pmatrix}
+1 & 1 & 1 & 1 \\
+0 & 1 & 1 & 1 \\
+1 & 1 & 1 & 1 \\
+0 & 1 & 1 & 1 \\
+1 & 1 & 1 & 1 \\
+\end{pmatrix}
+\]
+
+Each row of the coverage matrix corresponds to a specific transition, while each column represents a path from the set of generated paths. For instance, if the element \( A_{20} \) is equal to zero, this indicates that the first generated path \( p_0 \) does not cover the second transition \( t_2 \). Conversely, if \( A_{12} \) equals 1, this means that the first transition \( t_1 \) is covered by the generated path \( p_2 \).
+
+To construct the profit vector, we iterate through the generated paths and assign the length of each path to the corresponding position in the profit vector. For this example, the profit vector is given by:
+
+\[
+C = \{3, 6, 6, 9\}
+\]
+
+Finally, the problem is solved using the OR-tools solver, yielding an optimal solution. In this case, the optimal solution could be either \( p_1 \) or \( p_2 \) since both cover all transitions and have the same cost. Thus, the final set of optimal paths is either the singleton \( \text{opt} = \{t_1t_5t_1t_2t_4t_5t_3\} \) or \( \text{opt} = \{t_1t_5t_4t_2t_5t_5t_3\} \).
+
+
+\section*{Conclusion}
+
+In this chapter, we presented an approach for optimal LTS-based testing, where the goal is to generate an optimal set of paths that ensures comprehensive coverage of all transitions in a graph. The process began with the generation of a regular expression from the graph, followed by the deduction of all possible paths. These paths were then optimized through linear programming to obtain the optimal set, which refers to the minimum number of paths that also represent the shortest paths. Examples were used throughout the chapter to clarify the concepts and demonstrate the effectiveness of the approach.

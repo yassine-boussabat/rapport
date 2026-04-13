@@ -1,0 +1,33 @@
+
+\begin{tikzpicture}[>=stealth', auto, node distance=1.5cm]
+  \node [place, tokens=1]           (p1) [label=above:$p_{1}$] {} ;
+  \node [transition, below of=p1]   (t1) [label=right:$t_{1}$] {} ;
+  \node [place, below of=t1]        (p2) [label=right:$p_{2}$] {} ;
+  \node [transition, below of=p2]   (t2) [label=right:\textcolor{magenta}{$t_{2}$},magenta] {} ;
+
+  \node [place, right of=p2, xshift=1.5cm]       (p3) [label=left:$p_{3}$] {} ;
+
+  \node [place, right of=p1, xshift=3cm, tokens=1]       (p4) [label=above:$p_{4}$] {} ;
+  \node [place, right of=p2, xshift=3cm]       (p5) [label=right:$p_{5}$] {} ;
+
+  \node [transition, below of=p4]   (t3) [label=right:$t_{3}$] {} ;
+  \node [transition, below of=p5]   (t4) [label=below:\textcolor{blue}{$t_{4}$},blue] {} ;
+
+  
+  \path 
+    (p1) edge [post] node {} (t1)
+    (t1) edge [post] node {} (p2)
+    (p2) edge [post] node {} (t2)
+
+    (p4) edge [post] node {} (t3)
+    (t3) edge [post] node {} (p5)
+    (p5) edge [post] node {} (t4)
+
+    (t2) edge [post, bend right=50] node {} (p3)
+    (t2) edge [post, bend left=100] node {} (p1)
+
+    (p3) edge [post, bend left=50] node {} (t3)
+    (t4) edge [post, bend right=100] node {} (p4)
+
+        
+\end{tikzpicture}

@@ -1,0 +1,518 @@
+\chapter{Integration of approaches and extension for Machine Learning}
+
+\section*{Introduction}
+This chapter focuses on the integration of two complementary approaches: SOG-based testing and LTS-based testing. The integration process involves analysis, correction, and evaluation to ensure a robust verification framework. Additionally, the extension incorporates machine learning techniques, with a particular focus on dataset generation, aimed at enhancing the framework’s ability to handle large-scale systems and improve test generation efficiency.
+
+\section{Methodology workflow and tasks}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{img/tab-ch4-end.png}
+    \caption{Kanban Board Overview for Chapter 4}
+    \label{fig:trello-4}
+\end{figure}
+
+As shown in Figure \ref{fig:trello-4}, which illustrates the Kanban board overview by the end of chapter 4, we completed the verification and evaluation of the LTS-based approach, including the verification of the algorithm implementation, generation of regular expressions, path extraction, and the implementation of the linear programming model. The correction and improvement section of this chapter focuses on updating and refining the code for the optimal LTS-based approach. The final task of the first part of this chapter involved integrating the SOG-based approach into the optimal LTS-based solution.
+
+Following this, we began extending the existing approach by addressing the dataset generation phase. The Kanban board highlights that the integration of the dataset generation module into the existing solution is still under testing.
+
+\section{Integration}
+
+The integration of the SOG-based testing approach and the optimal LTS-based testing approach necessitates a thorough analysis and verification process. This includes understanding the underlying methodologies, analyzing the code, performing necessary corrections, conducting comprehensive testing, and evaluating the effectiveness of the integrated approach.
+
+For the SOG-based testing approach, we will not undertake a new round of analysis and verification, as this methodology has already been subjected to rigorous evaluation and validation. As detailed in \cite{sogbased}, the approach has been thoroughly tested by our team and validated in a conference setting. The performance of the approach was compared against two state-of-the-art tools, MISTA\footnote{\url{https://github.com/dianxiangxu/MISTA}} and NModel\footnote{\url{https://github.com/juhan/NModel}}, demonstrating its efficacy. Our approach has been implemented in the open-source tool \texttt{sogMBT}\footnote{https://github.com/sogMBT}, which is written in C++ and integrated into the user-friendly web platform \texttt{CosyVerif}\footnote{https://cosyverif.imag.fr/}. 
+
+For the optimal LTS-based testing approach, additional steps are required to verify the effectiveness of the method. These steps, which will be presented in more detail in this section, are essential to ensure that the integration achieves the desired outcomes.
+
+\subsection{Analysis and Verification}
+
+For the optimal LTS-based testing approach, the analysis and verification involve the following key steps:
+
+\subsubsection{Generation of the Regular Expression}
+This step involves creating a regular expression that accurately represents the set of all possible paths in the labeled transition system (LTS). The generated regular expression serves as a comprehensive model of the system's behavior, enabling us to identify and analyze various path combinations.
+
+We conducted several tests on the algorithm for generating regular expressions and found that it is generally efficient, producing correct regular expressions from the graph in most cases. However, there is a specific scenario where the algorithm fails to handle the case correctly. Through manual testing, we identified that the algorithm does not address this particular situation.
+
+\begin{figure}
+    \centering
+    \input{img/example_regex}
+    \caption{Running Example for Regular expression generation}
+    \label{fig:ExampleRegex}
+\end{figure}
+
+
+In fact, the issue arises when the algorithm encounters a node that has already been processed earlier in the traversal. Specifically, when the algorithm revisits a node that was previously treated, it does not correctly generate the paths that should include this revisited node. For instance, in the provided graph (as shown in Figure \ref{fig:ExampleRegex}), the path from \(S0 \rightarrow S3 \rightarrow S7 \rightarrow S5\) should include the sub-path that revisits \(S5\). However, the current algorithm does not account for this, leading to an incomplete regular expression generation. The generated regular expression for this example is:
+\[
+((abc)^{*}(bcc)^{*})^{*}d(fae)^{*} + ((abc)^{*}(bcc)^{*})^{*}bdf_
+\]
+
+From this regular expression, we cannot deduce the path corresponding to the sequence "
+bdee",  which should be included in the regular expression.
+
+The underlying issue in the algorithm stems from its handling of previously visited nodes. When the algorithm detects that a node is already in the stack or has been processed (i.e., is present in the \texttt{tas} set), it prematurely terminates further exploration for that node, returning an incomplete language that doesn't account for the revisited paths.
+
+This problem can be seen in the provided algorithm for regular expression generation. The algorithm correctly identifies and processes loops within the same node (using the \texttt{countCircuits} variable), but it fails to correctly handle cases where a node is revisited later in the traversal. Specifically, when a node like \(S7\) in the example graph points back to a previously processed node \(S5\), the algorithm should continue processing this connection to correctly integrate the revisited path into the final regular expression. Unfortunately, the current implementation stops further exploration for such revisited nodes, leading to the omission of paths like "bdee" in the final regular expression.
+
+Addressing this issue requires modifying the algorithm to properly handle the revisited nodes by ensuring that paths including these nodes are fully explored and integrated into the resulting regular expression. This modification would allow the generation of all valid paths, including those that revisit nodes previously encountered in the traversal.
+
+
+
+\subsubsection{Extraction of Paths}
+In this phase, we extract all feasible paths from the regular expression. This extraction process is crucial for understanding the paths that the system can potentially take and for evaluating the completeness and efficiency of the generated paths.
+
+While testing this functionality, we discovered that the algorithm initially generates the correct paths from the regular expression. However, we identified an additional operation that introduces redundancy. Specifically, the algorithm appends subpaths from the already generated paths, which leads to unnecessary paths being included and negatively impacts performance.  Specifically, the algorithm appends subpaths from the already generated paths during the phase where the function \textbf{extractPaths()} is used to process the paths extracted from the regular expression.
+
+The relevant part of the code involves the extraction of paths, where the function dealing with paths generation is called within a loop to process all paths from the regular expression. After extracting the paths, they are stored in \textbf{`generatedPaths`}, which is then further processed to eliminate null paths. However, during this process, the code inadvertently adds subpaths that are not necessary for the problem at hand.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.3\textwidth}{!}{\input{img/example-extractPaths}}
+\caption{Running Example for Paths Extraction \label{fig:ExamplePaths}}
+\end{figure}
+
+This additional functionality also generates a \textbf{`minPathsCoverage`} array, which was intended to store minimal paths for coverage purposes. However, these subpaths are redundant and do not contribute to the linear programming (LP) problem later in the process. Consequently, they only serve to slow down the performance without providing any benefits.
+
+
+We take the example of Figure \ref{fig:ExamplePaths}, where the generated regular expression for this graph is:
+
+\[((abe)^{*}(ade)^{*} )^{*} abfc + ((abe)^{*}(ade)^{*} )^{*} adfc + ((abe)^{*}(ade)^{*} )^{*} ag
+\]
+
+When applying the algorithm, we obtain the following 12 paths:
+
+\begin{itemize}
+    \item 0: ag
+    \item 1: abeag
+    \item 2: adeag
+    \item 3: abeadeag
+    \item 4: adfc
+    \item 5: abeadfc
+    \item 6: adeadfc
+    \item 7: abeadeadfc
+    \item 8: abfc
+    \item 9: abeabfc
+    \item 10: adeabfc
+    \item 11: abeadeabfc
+\end{itemize}
+
+However, additional unnecessary paths were generated as follows:
+
+\begin{itemize}
+    \item 12: a
+    \item 13: ab
+    \item 14: \(\emptyset\)
+    \item 15: ad
+    \item 16: abe
+    \item 17: adf
+    \item 18: \(\emptyset\)
+\end{itemize}
+
+These extra paths introduce redundancy and negatively impact performance by unnecessarily increasing the number of paths to be considered during the optimization process.
+
+\subsubsection{Application of Linear Programming}
+The final step involves applying linear programming techniques to optimize the selection of
+paths. Linear programming helps determine the optimal set of paths that cover all transitions
+in the LTS while minimizing the number of paths and their lengths. This optimization ensures
+efficient and comprehensive testing of the system.
+
+\textbf{Problem 1: Constraints matrix dimensions}\\ We observed that the number of columns in the constraints matrix is equal to the sum of the number of paths and the number of transitions, which is not expected. In the code, this is represented by the following line:\\
+\texttt{ \[constraints [g->transitions.size()][generatedPathsnnull.size() + g->transitions.size()]; \]} 
+
+However, this is incorrect because, the dimensions of the constraints matrix should be \textit{nb transitions} by \textit{nb paths}. This discrepancy in matrix dimensions introduces unnecessary complexity and could potentially lead to incorrect results during the linear programming optimization process. The inclusion of additional columns, which correspond to the number of transitions, is redundant and does not align with the intended purpose of the constraints matrix.
+
+The correct matrix should only have as many columns as there are paths, with each row corresponding to a transition. Each element in the matrix should indicate whether a particular path covers a given transition. The extra columns added due to the erroneous code might create an incorrect formulation of the linear programming problem, which in turn could affect the performance and accuracy of the path selection process.
+
+This issue needs to be corrected to ensure that the matrix accurately reflects the relationship between paths and transitions, thereby enabling the linear programming solver to find the optimal set of paths without unnecessary overhead.
+
+\textbf{Problem 2: Wrong ILP Model Implementation}\\
+The implementation of the linear programming (LP) model contains several errors that affect its correctness and efficiency. 
+
+Firstly, the number of variables created for the LP model is incorrect. The implementation mistakenly considers the number of variables as the sum of the number of feasible paths and the number of transitions. However, the correct approach should only account for the number of feasible paths. This leads to an unnecessary increase in the number of variables, which complicates the optimization process.
+
+Moreover, there is an issue with how the coefficients for the objective function are calculated. The goal of the LP model is to minimize the total length of the paths. In the correct modeling of the ILP, as mentioned in Chapter 4, the profit coefficients should represent the lengths of the paths. Upon executing the solution, we discovered that the coefficients were not correctly calculated. Instead of calculating the length of the paths by summing the number of transitions, the algorithm mistakenly used the length of the string representing the path. This miscalculation leads to incorrect objective function values, which negatively affects the optimization process. As a result, the LP model does not accurately represent the intended problem, undermining the effectiveness of the path selection process.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.3\textwidth}{!}{\input{img/exemple_g3.tex}}
+\caption{Running Example for ILP \label{fig:ExampleG3}}
+\end{figure}
+
+Consider the graph in Figure \ref{fig:ExampleG3}. The regular expression generated for this graph is
+\[
+((b)^{*}(abc)^{*})^{*}
+\]
+
+And the paths extracted according to the incorrect implementation of the path extraction algorithm are:
+\begin{itemize}
+\item[0:] \(\emptyset\)
+\item[1:] \texttt{b}
+\item[2:] \texttt{abc}
+\item[3:] \texttt{babc}
+\item[4:] \texttt{b}
+\item[5:] \texttt{a}
+\item[6:] \(\emptyset\)
+\end{itemize}
+
+The linear programming problem, as generated by the current implementation of the approach, is as follows:
+
+\begin{align*}
+\text{Minimize: } & 2 x_0 + 6 x_1 + 8 x_2 + 140726227487360 x_3 + 2 x_4 + 2 x_5 \\
+\text{Subject to: } & x_0 + x_1 + x_2 + x_3 + x_4 + x_5 \geq 1 \\
+                   & x_0 + x_1 + x_2 + x_3 + x_4 + x_5 \geq 1 \\
+                   & x_0 + x_1 + x_2 + x_3 + x_4 + x_5 \geq 1
+\end{align*}
+
+This result is incorrect because it reflects a flawed implementation of the linear programming model, where the coefficients of the objective function do not accurately represent the path lengths, calculated as the number of transitions. For instance, the coefficient 140726227487360 is an illogical value that clearly does not correspond to the length of path \(x_3\) (which should be 4). The current implementation is incorrect, leading to these erroneous values.
+
+
+
+\subsection{Correction and Improvement}
+\subsubsection{Generation of the Regular Expression}
+In this section, we present the correct algorithm for generating the regular expression that represents the language of the system. We begin by introducing some notations and the data structures used before describing the proposed algorithm. \\
+
+\textbf{Notations and data structures}\\
+Given a state $s$, a set of alphabets $\Sigma$, $Reg(\Sigma)$ denotes the set of regular expressions built on the elements of $\Sigma$. \\Also,
+\begin{itemize}
+    \item $Lg(s) = \{<seq,s'> \mid seq \in Reg(\Sigma)$, and s' is the id of a state or$ \, \emptyset\}$
+    \item  Given a sequence $\sigma \in \Sigma^{*}$, $\sigma.Lg(s)=\{<\sigma.seq,s'>\mid <seq,s'> \in Lg(s)\}$ %\textcolor{red}{a voir}
+    \item $Cy(Lg(s))$ denotes the set of elements $e\in Lg(s)$ s.t. $e.state=s$. %\textcolor{red}{a voir} 
+    \item $\overline{Cy(s)}=Lg(s)\setminus Cy(s)$. 
+\end{itemize}
+
+Algorithm~\ref{alg:regexgen} is based on a depth-first, recursive traversal of the graph associated with the system under test. The algorithm takes as input a stack, initially containing only the initial state. Each state encountered during the traversal is either fully processed and stored in a map or partially processed and retained in the stack for further treatment.
+
+If a successor is not in the current language but has been visited, the function \texttt{UpdateLanguage()} is called (developed in Algorithm ~\ref{alg:update}) to update or compute the language of this successor before updating the language of the current state. This is an important case, as illustrated in Figure \ref{fig:ExampleNewExec}. We encounter this situation in two instances:  
+(a) At state \(s_3\), label \(c\) leads to state \(s_6\), which has already been fully processed and removed from the stack.  
+(b) At state \(s_7\), label \(e\) leads to state \(s_5\), which has also been fully processed and is no longer on the stack.
+
+
+\begin{algorithm}[htb!]
+\KwIn{$stack st$ \Comment{a stack containing the initial state $s_0$}}    
+\KwOut{$Lg(s_0)$}
+\If{$s \neq \emptyset$}{
+$cur=st.Top()$ \\
+\If{$succ(cur)=\emptyset$}
+{
+   $Lg(cur)=\{<\emptyset,\emptyset>\}$\\
+}
+\Else
+    {
+           \ForEach{$ next \in  succ(cur)$}
+                {
+                    \If{$next \in st$}{
+                    $L(cur)=L(cur) \cup \{<label(cur,next), next>\}$\\
+                }
+                    \Else
+                    {
+                        \If{next is visited}{
+                        \textbf{UpdateLg(next)}\\
+                        \Else
+                        {
+                           st.push(next)\\
+                           RegularExpressionGeneration(st)\\
+                        }
+                    }
+                    $Lg(cur)=Lg(cur)\cup\{label(cur,next).Lg(next)\}$\\
+                }
+              }
+              \If{$Cy(cur) \neq \emptyset$}{
+              \If{$\overline{Cy(cur)}\neq \emptyset$}{
+               $Lg(cur)=\bigcup_{e\in \overline{Cy(cur)}} \{<(\Pi_{e'\in Cy(cur)}(e'.seq)^{*})^{*}.e.seq, e.state>\}$
+               }
+               \Else
+               {
+               $Lg(cur)=\{<(\Pi_{e\in Cy(cur)}(e.seq)^{*})^{*}, \emptyset>\}$\\
+                }   
+              }
+              }
+              $cur=st.Pop()$ \\
+add cur to the map \\
+              \textbf{Return Lg(cur)}\\
+              
+}
+\caption{RegularExpressionGeneration}
+\label{alg:regexgen}
+\end{algorithm}
+
+
+
+\begin{algorithm}[H]
+\KwIn{state s}    
+\KwOut{update $Lg(s)$\Comment*[r]{as well as Lg(s') s.t. Lg(s) depends on Lg(s')}}
+
+\If{$s$ is in the map}{
+
+                \ForEach{$ e \in  Lg(s)$}
+                {
+                     \If{$e.state \neq \emptyset$ and $e.state \neq s_0$}{
+                    UpdateLanguage (e.state)\\
+                    Lg(s).replace(e, e.seq.Lg(e.state))
+                }
+            }
+}
+\caption{UpdateLanguage function}
+\label{alg:update}
+\end{algorithm}
+
+To elucidate the algorithm's process, we examine the graph depicted in Figure~\ref{fig:ExampleRegex}, which showcases scenarios where each type of state treatment occurs. Figure~\ref{fig:ExampleNewExec}
+} demonstrates how the algorithm operates on this graph. The traversal begins by exploring paths on the left side of the graph first. For instance, the algorithm initially follows the path $s_0 \rightarrow s_1 \rightarrow s_4 \rightarrow s_5$, stopping at $s_5$ because its next state, $s_1$, is already part of the current path. Similarly, the second path, $s_0 \rightarrow s_2 \rightarrow s_6$, is halted at $s_6$ because its only successor, $s_0$, is also in the current path. In Figure~\ref{fig:ExampleNewExec}, solid arrows indicate the recursive calls made during the traversal, while dashed arrows represent the return points of each call.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{1\textwidth}{!}{\input{img/exampleNewExec}}
+\caption{Algorithm execution \label{fig:ExampleNewExec}}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|}
+\hline
+
+\textbf{State} & \textbf{ Language} \\ \hline
+ $s_0$                  & $\{<((abc)^{*}(bcc)^{*})^{*}d(fae)^{*},\emptyset>,<((abc)^{*}(bcc)^{*})^{*}bdf,\emptyset>\}$,\\
+  & $<((abc)^{*}(bcc)^{*})^{*}bdee(fae)^{*},\emptyset>\}$ \\
+\hline
+$s_1$                 & $\{<(fae)^{*},\emptyset>\}$                  \\ \hline
+$s_2$                & $\{<bc,s_0>\}$                   \\ \hline
+$s_3$                  & $\{<cc,s_0>; <df,\emptyset>;<dee(fae)^{*},\emptyset>\}$                 \\ \hline
+$s_4$                & $\{<ae,s_1>\}$                   \\ \hline
+$s_5$                  & $\{<e(fae)^{*},\emptyset>\}$                \\ \hline
+
+$s_6$                 & $\{<c,s_0>\}$                   \\ \hline
+ 
+$s_7$                  & $\{<f,\emptyset>,<ee(fae)^{*},\emptyset>\}$       
+\\
+\hline 
+$s_8$                & $\{<\emptyset,\emptyset>\}$                   \\ \hline
+
+
+\hline
+\end{tabular}
+\captionsetup{justification=centering} % Centre le titre du tableau
+\caption{Algorithm results}
+\label{tab:changement_valeurs}
+\end{table}
+
+Table~\ref{tab:changement_valeurs} presents the language \( Lg(s_i) \) for each state \( s_i \) in the graph of Figure~\ref{fig:ExampleRegex}. Some states, such as \( s_2 \), \( s_3 \), \( s_4 \), and \( s_6 \), have incomplete languages dependent on others. 
+
+The primary goal is to compute the language of the initial state \( s_0 \). The language of each state is either finalized or expressed as a function of \( Lg(s_0) \) when revisited, such as \( s_5 \), initially \( \{<e,s_1>\} \) and later updated to \( \{e(fae)^{*}, \emptyset>\} \) after revisiting from \( s_7 \).
+
+The final regular expression generated for the graph in Figure~\ref{fig:ExampleRegex} by the algorithm is:
+\[
+((abc)^{*}(bcc)^{*})^{*}d(fae)^{*} + ((abc)^{*}(bcc)^{*})^{*}bdee(fae)^{*} + ((abc)^{*}(bcc)^{*})^{*}bdf
+\]
+
+
+
+
+\subsubsection{Application of Linear Programming}
+We proposed a refined formalization of the Integer Linear Programming (ILP) model, ensuring that the code implementation faithfully adheres to the theoretical framework. The key components are defined as follows:
+
+\begin{itemize}
+    \item \textbf{Variables:} Each variable \( x_j \) represents a path in a given Labeled Transition System (LTS).
+    
+    \item \textbf{Coefficients:} The coefficient \( a_{ij} \) indicates the number of occurrences of the transition label \( t_i \) in the path \( x_j \). Unlike the previous approach, where \( a_{ij} \) simply denoted the presence or absence of a transition in a path, the new formulation captures the exact count of occurrences. If \( a_{ij} > 1 \), it indicates that the path \( x_j \) contains multiple occurrences of the label \( t_i \); otherwise, the label is absent in the path.
+    
+    \item \textbf{Constraints:} Each constraint corresponds to a transition label in the LTS. The number of constraints is equal to the number of LTS labels, and all constraint expressions must satisfy \( \geq 1 \), ensuring that each label is covered by at least one path.
+    
+    \item \textbf{Objective Function:} Every objective coefficient \( c_i \) represents the length of a path, calculated as the sum of the constraint coefficients for that path, i.e., \( c_i = \sum_{j=1}^{m} a_{ji} \). The objective function aims to minimize the total coverage cost by selecting the shortest paths that cover all transitions in the LTS.
+\end{itemize}
+
+\begin{mdframed}[leftmargin=15pt, rightmargin=15pt]
+\begin{equation*}
+\begin{array}{lr@{}c@{}r@{}l@{}r}
+\text{\textbf{Minimize}}   & c_1 x_1   & {}+{\dots}+{} & c_n x_n   &        &   \\
+\text{\textbf{Subject to} } & a_{11}x_1 & {}+{\dots}+{} & a_{1n}x_n & {}\geq 1   & \\
+                   &           &     \vdots    &               & \hspace{1.5cm} x_{j} \in \{0,1\}, j=1 ,..., n   \\
+                   & a_{m1}x_1 & {}+{\dots}+{} & a_{mn}x_n & {}\geq 1 & 
+\end{array}
+\end{equation*}
+\end{mdframed}
+\textbf{Example : \\}
+This example is related to the Labelled Transition System (LTS) illustrated in Figure \ref{fig:ExampleG3}. The regular expression generated by the algorithm to cover all transitions in this LTS is:
+
+\[
+ ((b)^{*}(abc)^{*})^{*}
+\]
+
+which generates the following paths:
+
+\begin{itemize}
+    \item Path 0: \( b \)
+    \item Path 1: \( abc \)
+    \item Path 2: \( babc \)
+\end{itemize}
+
+
+We define the following binary variables:
+
+\begin{itemize}
+    \item \( x_0 \) for Path 0
+    \item \( x_1 \) for Path 1
+    \item \( x_2 \) for Path 2
+\end{itemize}
+
+The constraints for covering transitions are:
+\[
+\begin{cases}
+    x_1 + x_2 \geq 1 & \text{for transition } a \\
+    x_0 + x_1 + 2 \cdot x_2 \geq 1 & \text{for transition } b \\
+    x_1 + x_2 \geq 1 & \text{for transition } c
+\end{cases}
+\]
+The objective function to minimize is:
+
+\[
+ 1 \cdot x_0 + 3 \cdot x_1 + 4 \cdot x_2 = Z (min)
+\]
+
+Solving this optimization problem, the optimal objective value is 3, which corresponds to selecting Path 1 (\( x_1 = 1 \)).
+
+\subsection{Evaluation and testing}
+We have analyzed the errors in the approach and proposed corrections, as detailed in previous sections. Following these improvements, we implemented the refined approach and now plan to test it on small examples, specifically small graphs. We will compare the results from our implementation to those obtained through manual execution to ensure accuracy and consistency.
+
+A detailed example, using the graph from Figure \ref{fig:ExamplePaths}, will be discussed and explained further below:
+
+The regular expression defining the language of the system is:
+\[
+((a b e) \cdot (a d e)^{*})^{*} \cdot a b f c + ((a b e) \cdot (a d e)^{*})^{*} \cdot a d f c + ((a b e) \cdot (a d e)^{*})^{*} \cdot a g
+\]
+
+The generated paths and their lengths are:
+
+\begin{itemize}
+    \item Path 0: \( a g \) of length 2
+    \item Path 1: \( a b e a g \) of length 5
+    \item Path 2: \( a d e a g \) of length 5
+    \item Path 3: \( a b e a d e a g \) of length 8
+    \item Path 4: \( a d f c \) of length 4
+    \item Path 5: \( a b e a d f c \) of length 7
+    \item Path 6: \( a d e a d f c \) of length 7
+    \item Path 7: \( a b e a d e a d f c \) of length 10
+    \item Path 8: \( a b f c \) of length 4
+    \item Path 9: \( a b e a b f c \) of length 7
+    \item Path 10: \( a d e a b f c \) of length 7
+    \item Path 11: \( a b e a d e a b f c \) of length 10
+\end{itemize}
+
+The constraints for the transitions can be expressed as:
+
+\[
+\begin{cases}
+    a: & x_0 + x_1 + x_2 + x_3 + x_4 + x_5 + x_6 + x_7 + x_8 + x_9 + x_{10} + x_{11} \geq 1 \\
+    b: & x_1 + x_3 + x_5 + x_7 + x_8 + x_9 + x_{10} + x_{11} \geq 1 \\
+    c: & x_4 + x_5 + x_6 + x_7 + x_8 + x_9 + x_{10} + x_{11} \geq 1 \\
+    d: & x_2 + x_3 + x_4 + x_5 + x_6 + x_7 + x_{10} + x_{11} \geq 1 \\
+    e: & x_1 + x_2 + x_3 + x_5 + x_6 + x_7 + x_9 + x_{10} + x_{11} \geq 1 \\
+    f: & x_4 + x_5 + x_6 + x_7 + x_8 + x_9 + x_{10} + x_{11} \geq 1 \\
+    g: & x_0 + x_1 + x_2 + x_3 \geq 1
+\end{cases}
+\]
+
+The objective function to minimize is:
+\[
+ 2 x_0 + 5 x_1 + 5 x_2 + 8 x_3 + 4 x_4 + 7 x_5 + 7 x_6 + 10 x_7 + 4 x_8 + 7 x_9 + 7 x_{10} + 10 x_{11}
+\]
+
+After creating the constraints and defining the objective function, the optimal solution was found with an objective value of 9.
+
+
+The result of the optimization is the following set of optimal paths :
+
+\begin{itemize}
+    \item Optimal Path 1: \( a d e a g \) of length 5
+    \item Optimal Path 2: \( a b f c \) of length 4
+\end{itemize}
+
+These paths represent the optimal solutions that minimize the objective function.
+\section{Extension}
+The goal of this extension is to address the challenges of scaling in large Labelled Transition Systems (LTS), where traditional linear programming methods become insufficient as the size of the Symbolic Observation Graph (SOG) increases, particularly in terms of the number of states to be explored. Consequently, we aim to leverage deep learning techniques to guide the exploration of state spaces in large systems with an excessively large number of accessible states.
+
+Initially, when the size of the graph remains manageable, an exact solution is employed to explore and construct the SOG, ensuring precise results. During this exploration, a crucial step is the generation of a dataset, which captures key features and patterns. This dataset will later be used to train a machine learning (ML) model.
+
+As the SOG grows and surpasses a certain threshold, relying solely on exact methods becomes impractical. In these scenarios, the ML model takes over, guiding the exploration process by analyzing the prefix of the current nodes and the possible future transitions, and recommending the best paths to follow. This strategy aims to optimize state space exploration, reduce computational complexity, and improve efficiency in large-scale LTS environments.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{img/diagramme.pdf}
+    \caption{Extended solution}
+    \label{fig:diagramme}
+\end{figure}
+
+
+In this section, we will focus on the crucial step of dataset generation and present the steps we followed to achieve our goal. By meticulously generating and curating this dataset during the initial exploration phase, we ensure that the machine learning model is well-equipped to guide the exploration process effectively, even as the system grows in complexity.
+
+To effectively generate the dataset, it is essential to first derive the set of optimal paths obtained through the linear programming solution, as these paths will guide the data collection process. 
+
+The process begins with a detailed traversal of the graph, starting from the initial node. During this traversal, we systematically generate all possible prefixes of the graph. These prefixes form the foundational elements of the dataset, encapsulating the initial sequences of transitions that the system may undergo.
+
+Once the prefixes are established, we proceed with a breadth-first search (BFS) across the graph to expand the dataset. This BFS approach allows us to explore the graph systematically, ensuring that all relevant state transitions are considered. For each prefix encountered, we carefully identify the possible successors—these represent the various choices or transitions available at each stage of the exploration. By projecting these potential successors onto the previously derived set of optimal paths, we can determine the most favorable or optimal choice for each specific scenario. This method not only enriches the dataset with valuable decision points but also ensures that the dataset is aligned with the optimal exploration strategy, thereby enabling the machine learning model to make precise and efficient decisions when navigating large and complex state spaces.
+
+To further illustrate the concept of projection onto the optimal solution, let's consider an example from Figure \ref{fig:ExamplePaths}. In the previous section, we extracted the set of optimal paths: \(adeag\) and \(abfc\). Now, let's take a specific prefix from the graph, such as \(adea\). At this point in the graph, as shown in Figure \ref{fig:exampleProjection1}, the possible transitions from \(adea\) are \(b\), \(d\), and \(g\).
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.7\textwidth}{!}{\input{img/example_projection1}}
+\caption{Example 1 of the best choice from a prefix \label{fig:exampleProjection1}}
+\end{figure}
+
+
+The goal of the projection onto the optimal solution is to determine the best choice among these transitions. This determination is made by comparing the available transitions to the set of optimal paths we previously identified. In this example, when we project the prefix \(adea\) onto the optimal paths \(adeag\) and \(abfc\), we see that the transition \(g\) aligns with the optimal path \(adeag\). Therefore, the best choice at this point is to follow the transition \(g\).
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.7\textwidth}{!}{\input{img/example_projection2}}
+\caption{Example 2 of the best choice from a prefix \label{fig:exampleProjection2}}
+\end{figure}
+
+Now, let's consider another prefix as an example, such as \(abea\), as shown in Figure \ref{fig:exampleProjection2}.
+
+At this stage, the possible transitions are \(d\), \(b\), and \(g\). However, when we project this prefix onto the set of optimal paths, we find that none of the transitions continue the sequence in a way that aligns with either \(adeag\) or \(abfc\). In this case, the projection indicates that none of the available transitions represent an optimal continuation. This means that, for the prefix \(abea\), there is no best choice according to the optimal paths, as the sequence of the prefix does not appear in any of the optimal paths.
+
+This example demonstrates how projection onto the optimal solution helps in decision-making during the exploration of state spaces. By analyzing the relationship between the current prefix and the optimal paths, we can determine the most effective transitions to follow, or recognize when no optimal transition is available. This approach ensures that the exploration remains aligned with the optimal paths, enhancing the efficiency and accuracy of the testing process.
+
+Therefore, the structure of the dataset will consist of three columns:
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|p{12cm}|}
+\hline
+\textbf{Column} & \textbf{Description} \\ \hline
+\texttt{Prefix} & A sequence of transitions representing a sub-path of the graph. This is of type \texttt{string}. \\ \hline
+\texttt{Possible choices} & A set of transitions representing the possible future transitions from the current prefix. This is of type \texttt{set<string>}. \\ \hline
+\texttt{Best choice} & The best choice or choices to take, which could be multiple, a single option, or none at all. This is also of type \texttt{set<string>}. \\ \hline
+\end{tabular}
+\captionsetup{justification=centering} % Centre le titre du tableau
+\caption{Dataset Structure}
+\label{tab:dataset_structure}
+\end{table}
+
+To provide a clearer understanding of the dataset generation process, we present an example derived from the LTS shown in Figure \ref{fig:ExamplePaths}. The following table illustrates the dataset structure, showcasing prefixes, possible choices, and the best choices based on the optimal paths.
+
+The table \ref{tab:dataset_example} represents the dataset generated from the LTS shown in Figure \ref{fig:ExamplePaths}. Each row corresponds to a specific prefix of transitions, along with the possible choices of transitions at that point. The `Best Choice` column indicates the most optimal transition(s) to follow based on the projection onto the optimal paths extracted earlier. Some entries have multiple possible choices, and the best choice is identified where applicable, guiding the exploration of the state space for efficient testing.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Prefix} & \textbf{Possible Choices} & \textbf{Best Choice} \\ \hline
+ & \texttt{a} & \texttt{a} \\ \hline
+\texttt{a} & \texttt{b | d | g} & \texttt{b | d} \\ \hline
+\texttt{ab} & \texttt{e | f} & \texttt{f} \\ \hline
+\texttt{abe} & \texttt{a} & \\ \hline
+\texttt{abea} & \texttt{b | d | g} & \\ \hline
+\texttt{abf} & \texttt{c} & \texttt{c} \\ \hline
+\texttt{abfc} & & \\ \hline
+\texttt{ad} & \texttt{e | f} & \texttt{e} \\ \hline
+\texttt{ade} & \texttt{a} & \texttt{a} \\ \hline
+\texttt{adea} & \texttt{b | d | g} & \texttt{g} \\ \hline
+\texttt{adf} & \texttt{c} & \\ \hline
+\texttt{adfc} & & \\ \hline
+\texttt{ag} & & \\ \hline
+\end{tabular}
+\captionsetup{justification=centering} % Centre le titre du tableau
+\caption{Example of the Dataset Generated from the LTS in Figure \ref{fig:ExamplePaths}}
+\label{tab:dataset_example}
+\end{table}
+
+
+\section*{Conclusion}
+This chapter has examined the integration of SOG-based and optimal LTS-based testing approaches, along with their extension to incorporate machine learning techniques. We successfully analyzed, verified, and improved the integrated approach, followed by its evaluation and testing. Additionally, we extended the approach by leveraging machine learning to enhance the scalability and efficiency of testing large systems. 

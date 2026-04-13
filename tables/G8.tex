@@ -1,0 +1,30 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=, scale=0.5]
+
+\node[state, initial] (1) at (0, 0) {1};
+\node[state] (2) at (0, -2.5cm) {2};
+\node[state] (3) at (0, -5cm) {3};
+\node[state] (4) at (0, -7.5cm) {4};
+\node[state] (5) at (0, -10cm) {5};
+\node[state] (6) at (0, -12.5cm) {6};
+\node[state] (7) at (-2, -12.5cm) {7};
+\node[state] (8) at (-1.5, -15cm) {8};
+\node[state] (9) at (1.5, -15cm) {9};
+
+\path
+(1) edge[right] node {$t_3$} (2)
+(2) edge[right] node {$t_5$} (3)
+(3) edge[right] node {$t_9$} (4)
+(4) edge[right] node {$t_{11}$} (5)
+(5) edge[right] node {$t_7$} (6)
+(5) edge[left] node {$t_4$} (7)
+(7) edge[right] node {$t_{10}$} (8)
+(8) edge[left, bend left=40] node {$t_{12}$} (2)
+(6) edge[right] node {$t_{12}$} (9)
+(6) edge[right] node {$t_4$} (8)
+(9) edge[right, bend right=20] node {$t_4$} (2)
+(9) edge[right, bend right=20] node {$t_6$} (5);
+(9) edge[right] node (2)
+(8) edge[right] node(7)
+(7) edge[right]node (6);
+
+\end{tikzpicture}

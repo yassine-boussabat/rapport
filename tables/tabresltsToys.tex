@@ -1,0 +1,40 @@
+\begin{table}[h]
+    \centering
+    \scalebox{0.85}{
+    \begin{tabular}{|c|c|c|c|c|p{8.2cm}|}
+    \hline
+    Graphs & ILP Size $(r,c)$ & RegExp $(ms)$ & Paths $(ms)$ & ILP $(ms)$ & Optimal paths \\
+    \hline
+    $G_1$ & (3,1) & 0.020 & 3.515 & 5.32 & a\_b\_c\_ \\
+    \hline
+    $G_2$ & (5,161) & 0.04 & 4.27 & 10.22 & a\_c\_d\_b\_f\_b\_ \\
+    \hline
+    $G_3$ & (3,3) & 0.027 & 3.883 & 5.963 & a\_b\_c\_ \\
+    \hline
+    $G_4$ & (4,24) & 0.042 & 4.024 & 6.365 & t$_{8}$\_t$_{10}$\_t$_{7}$\_t$_{11}$\_ \\
+    \hline
+    \multirow{2}{*}{$G_5$} & \multirow{2}{*}{(8,4)} & \multirow{2}{*}{0.031} & \multirow{2}{*}{3.614} & \multirow{2}{*}{7.64} & t$_{5}$\_t$_{14}$\_t$_{24}$\_t$_{22}$\_ \\
+    & & & & & t$_{17}$\_t$_{2}$\_t$_{12}$\_t$_{10}$\_ \\
+    \hline
+    $G_6$ & (6,20) & 0.068 & 3.814 & 6.999 & a\_b\_c\_d\_f\_a\_e\_ \\
+    \hline
+    $G_7$ & (5,18) & 0.044 & 3.698 & 6.825 & t$_{1}$\_t$_{3}$\_t$_{2}$\_t$_{5}$\_t$_{1}$\_t$_{3}$\_t$_{2}$\_t$_{3}$\_t$_{4}$\_t$_{1}$\_t$_{3}$\_t$_{2}$\_t$_{3}$\_t$_{2}$ \\
+    \hline
+    $G_8$ & (9,16) & 0.058 & 3.674 & 6.219 & t$_{3}$\_t$_{5}$\_t$_{9}$\_t$_{11}$\_t$_{7}$\_t$_{12}$\_t$_{6}$\_t$_{4}$\_t$_{10}$\_t$_{12}$\_ \\
+    \hline
+    \multirow{2}{*}{$G_9$} &  \multirow{2}{*}{(6,12)} & \multirow{2}{*}{0.06} & \multirow{2}{*}{3.755} & \multirow{2}{*}{8.724} & t$_{1}$\_t$_{13}$\_t$_{15}$\_t$_{1}$\_t$_{23}$\_ \\
+    & & & & & t$_{1}$\_t$_{5}$\_t$_{21}$\_t$_{7}$\_ \\
+    \hline
+    $G_{10}$ & (5,74529) & 0.074 & 101.511 & 927.126 & a\_c\_d\_b\_f\_d\_a\_a\_b\_ \\
+    \hline
+    $G_{11}$ & (9,115248) & 0.086 & 92.731 & 2259.67 & d\_h\_a\_i\_g\_b\_f\_a\_e\_c\_f\_a\_b\_ \\
+    \hline
+    \multirow{2}{*}{$G_{12}$} & \multirow{2}{*}{(6,14)} & \multirow{2}{*}{0.065} & \multirow{2}{*}{3.81} & \multirow{2}{*}{6.253} & b\_c\_ \\
+    & & & & & b\_f\_h\_b\_a\_b\_g\_ \\
+    \hline
+    \end{tabular}
+    }
+    \captionsetup{justification=centering} % Centre le titre du tableau
+    \caption{Preliminary results for toy examples}
+    \label{tab:Toysgraphs_summary}
+\end{table}

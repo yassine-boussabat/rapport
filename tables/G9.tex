@@ -1,0 +1,18 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=,scale=0.5]
+
+\node[state, initial] (0) at (0, 0) {0};
+\node[state] (1) at (0, -2.5cm) {1};
+\node[state] (2) at (3, -5cm) {2};
+\node[state] (3) at (0, -7.5cm) {3};
+\node[state] (5) at (3, -2.5cm) {5};
+
+\path
+(0) edge[left] node {$t_1$} (1)
+(1) edge[below, bend right=20] node {$t_5$} (5)
+(2) edge[right] node {$t_7$} (3)
+(1) edge[above, bend left=20] node {$t_{13}$} (5)
+(5) edge[right] node {$t_{15}$} (0)
+(5) edge[right] node {$t_{21}$} (2)
+(1) edge[right] node {$t_{23}$} (3);
+
+\end{tikzpicture}

@@ -1,0 +1,29 @@
+\chapter*{General Introduction}
+\addcontentsline{toc}{chapter}{General Introduction}
+\markboth{General Introduction}{}
+
+\lettrine[]{\textit{I}}{n the modern digital era}, smart contracts are emerging as a foundational component of decentralized systems. These self-executing programs, hosted on blockchain platforms, automate transactions and enforce rules without the need for intermediaries. Their correctness is critical, especially in domains like finance, insurance, and governance, where any vulnerability or misbehavior can lead to significant financial or societal consequences.
+
+Traditional smart contract platforms like Ethereum rely on custom virtual machines and domain-specific languages such as Solidity. However, the ecosystem is now shifting toward more portable, secure, and verifiable execution models, with WebAssembly (WASM) gaining traction as a modern compilation target. WASM offers a stack-based, low-level instruction set that is both fast and platform-agnostic, making it an ideal candidate for next-generation smart contract engines in blockchain networks like Polkadot, Internet Computer, and the future version of XRPL.
+
+Despite its advantages, verifying the correctness of WASM smart contracts remains a challenge. Formal methods offer a promising solution by enabling mathematical guarantees about program behavior. However, applying them requires bridging the semantic gap between low-level WASM code and high-level verification tools. One such tool is Boogie, an intermediate verification language used in the formal verification of Solidity contracts via VeriSol. Unfortunately, there is no direct, formally defined path from WASM to Boogie.
+
+This project aims to address this gap by building a prototype translator from WebAssembly Text Format (WAT) to Boogie. The translator preserves the stack semantics of WASM while generating verifiable Boogie code, enabling the application of modular verification techniques to smart contracts compiled to WASM.
+
+To manage the development process effectively, we adopted an agile approach using the **Kanban method**. This method was well-suited to the research-driven nature of the project, allowing flexible task prioritization, iterative implementation, and rapid integration of feedback.
+
+This report is structured as follows:
+\begin{itemize}
+    \item \textbf{Chapter 1} introduces the context of smart contracts, the importance of formal verification, and the objectives of the project.
+    \item \textbf{Chapter 2} presents the technical background on WebAssembly, Boogie, and existing work in verification and compilation.
+    \item \textbf{Chapter 3} defines the problem space, challenges, and our translation objectives.
+    \item \textbf{Chapter 4} outlines the development methodology, including the Kanban workflow and toolchain.
+    \item \textbf{Chapter 5} describes the architecture of the translator and how the system is designed.
+    \item \textbf{Chapter 6} formalizes the translation rules from WAT to Boogie using an inference-based specification.
+    \item \textbf{Chapter 7} explains the implementation, including parser construction, AST processing, and code generation.
+    \item \textbf{Chapter 8} presents the evaluation, tested cases, and the results obtained.
+    \item \textbf{Chapter 9} discusses the strengths, current limitations, and future work.
+    \item \textbf{Chapter 10} concludes the report by summarizing the key contributions and takeaways.
+\end{itemize}
+
+Through this work, we aim to contribute a foundational step toward the formal verification of WASM-based smart contracts and to demonstrate that a structured, formally grounded translation pipeline is both feasible and valuable.

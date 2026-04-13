@@ -1,0 +1,249 @@
+\chapter{Preliminaries}
+\section*{Introduction}
+\paragraph{}This chapter defines the fundamental concepts and notations used throughout the project. The chapter is structured to cover key topics systematically, starting with Petri Nets and progressing through Labelled Transition Systems, Symbolic Observation Graphs, Test Coverage Criteria, Linear Programming, and Regular Expressions.
+
+\section{Methodology workflow and tasks}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{img/tab-ch2-end.png}
+    \caption{Kanban Board Overview for Chapter 2}
+    \label{fig:trello-2}
+\end{figure}
+From a project management perspective, this chapter addresses the tasks related to the bibliography, which include reading scientific papers, familiarizing with new concepts, studying relevant coursework, and working through examples of constructing SOG and marking graphs from Petri nets. These tasks are essential for building the necessary understanding and skills for the subsequent phases of the project. 
+
+Figure \ref{fig:trello-2} presents the final state of my Kanban board upon completing the tasks associated with this chapter.
+
+\section{Petri Net}
+\paragraph{}
+Model-Based Testing is a testing approach used for automated test generation, execution, and evaluation. It is based on a formal behavioral model of the tested system(SUT) \cite{model1,model2,model3}.
+While several models could possibly be used, Petri nets
+have some advantages. Petri nets provide a graphical notation, which can help visualize a process and so can be easy to understand. Finite State Machines are considered to be subclasses of Petri nets \cite{pnet}.
+\paragraph{}
+Petri nets are a graphical and mathematical modeling tool, invented by Carl Adam Petri during his thesis "Kommunikation mit Automaten" \cite{pnet1}. 
+ It is a well established tool for describing and studying different types of information systems that are characterized as being concurrent, asynchronous, distributed, parallel, nondeterministic and/or timed.
+
+\subsection{Syntax }
+This section shows a static representation of system with Petri nets.
+\begin{definition}\textbf{ Petri Net graph}
+\newline A Petri Net graph is a tuple PNg=(P, T, F, W), where :
+\begin{itemize}
+    \item P=\{p$_{1}$, p$_{2}$,..., p$_{n}$ \} is a finite set of places describing states of a system. It can represent a condition, an input, an output or a resource and conventionally, it is depicted with circles.
+    \item T=\{t$_{1}$, t$_{2}$,..., t$_{n}$\} is a finite set of transitions describing the system behaviour. It can correspond to a treatment or actions that cause state changes. Each element of this set is represented with long narrow rectangles.
+    \item F : (P X T) $\cup$ (T X P) is a set of arcs (as one-way arrows) connecting places to transitions (input place) and transitions to places (output place).
+   
+    \item W: F$\rightarrow \mathbb{Z}$  represents arcs weights assigning to each arc a positive integer.
+    \end{itemize}
+    
+\end{definition}
+
+For the sake of simplicity and without loss of generality, we assume, that the weight of the edges are all equal to $1$. 
+
+A marking of a Petri net $\mathcal{N}$ is a function $m: P \rightarrow \mathbb{Z}$ assigning a number of tokens to each place. A Petri net model is generally associated with an initial marking, denoted by $m_0$, that represents the initial state of the underlying system. \Cref{pnm} illustrates a Petri net example where the places are represented by circles and transitions by rectangles. The initial marking is such that place $p_1$ contains one token and all the other places are empty. 
+
+ Figure ~\ref{pn-prodcons} shows a marked Petri net of the producer/consumer model, in which the places p$_{1}$ and p$_{2}$ are initially marked.\\ 
+  P=\{p$_{1}$, p$_{2}$, p$_{3}$, p$_{4}$, p$_{5}$\}, \newline T=\{t$_{1}$, t$_{2}$, t$_{3}$, t$_{4}$\},\newline F=\{(p$_{1}$, t$_{1}$), (t$_{1}$, p$_{2}$), (p$_{2}$, t$_{2}$), (t$_{2}$, p$_{1}$), (t$_{2}$, p$_{3}$), (p$_{3}$, t$_{3}$), (t$_{3}$, p$_{5}$), (p$_{5}$, t$_{4}$), (t$_{4}$, p$_{4}$), (p$_{4}$, t$_{3}$)\}.
+     
+ Thus, the initial marking of this Petri net is defined by : $M_0$=\{ 1, 1, 0, 0, 0\}. \\
+
+\subsection{Reachability Graph}
+
+\begin{definition}\textbf{Reachability Graph}
+
+
+\newline The reachability graph of a Petri net is a directed graph, G = (V, E), where each node, v $\in$ V, represents a reachable marking and each edge, e $\in$ E, represents a transition between two reachable markings v and v' where $v\stackrel{e}{\longrightarrow}v'$.
+
+\begin{figure}[h!]
+\centering
+\begin{minipage}[b]{0.48\linewidth}
+\centering
+    \includegraphics[width=0.5\textwidth]{img/expn.png}
+    \caption{Exemple of a Petri net \cite{chouikha}}
+    \label{reach1}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.48\linewidth}
+\centering
+    \includegraphics[width=1\textwidth]{img/gmark.png}
+    \caption{Its reachability graph \cite{chouikha}}
+    \label{reach2}
+\end{minipage}
+\end{figure}
+
+\end{definition}
+
+\newline To build the reachability graph in an exhaustive way, we start with the initial marking and build the different arcs and nodes progressively. For each new marking we define the set of firable transitions and for each transition we add an arc to the new marking. If a marking is already present  in the graph, we simply add the arc \cite{markgraph}.
+ Once the reachability graph is constructed, a number of behavioral properties can be evaluated.
+
+
+\paragraph{}The figure~\ref{reach2} shows the reachability graph corresponding to the petri net of the figure~\ref{reach1}. 
+
+
+\section{Labelled Transition Systems LTS}
+\begin{definition}\textbf{LTS}
+\newline An LTS consists of a set of states and a set of transitions between those states. These transitions are labelled by actions and one state is designated as the initial state.
+\newline Formally, a \emph{labelled transition system} ($\LTS$ for short) $\mathcal{T}$ is a 4-tuple $(S,\Act,\rightarrow,s_0)$
+where:
+\begin{itemize}
+    \item S is a (finite) set of states;
+    \item $\Act$  is a (finite) set of actions;
+    \item $\rightarrow$ $\in $ S $\times$ Act $\times$ S is a transition relation.
+    \item $s_0$  is the initial state.
+\end{itemize}
+It is called finite when S and T (and hence also $\rightarrow$) are
+finite sets.
+\end{definition}
+
+\begin{figure}[h!]
+    \centering
+    \include{img/lts}
+    \caption{Exemple of an LTS}
+    \label{lts}
+\end{figure}
+\paragraph{}Figure ~\ref{lts} \cite{chouikha} is a labeled transition system composed of four states {S$_{0}$, S$_{1}$, S$_{2}$, S$_{3}$} with S$_{0}$ is the initial state and S$_{3}$ is the final state represented with two circumscribed circles. It is composed of seven transitions: from t$_{1}$ to t$_{5}$, $\alpha$ and $\beta$.
+
+
+\paragraph{Petri net and LTS }
+ All notions defined for labelled transition systems, such as the complete traces of sequences, or the set of reachable marking, apply verbatim to
+Petri nets through their reachability graphs.
+ Thus, we can say that in the case of a petri net design the corresponding LTS is its reachability graph.
+
+
+\section{Symbolic Observation Graph SOG}
+
+\paragraph{}The symbolic observation graph (SOG)\cite{Haddad04,KlaiPe08} is an abstraction of an  LTS/KS\footnotemark[1]
+ that preserves the LTL$\backslash$X properties (linear temporal logic except the operator X) of the system.
+ \newline In the beginning, the SOG has been proposed to cope with the state explosion problem of model checking  in order to get a manageable state space. 
+ \newline The building of such an abstraction is
+guided by the property (the LTL formula) to be checked and is equivalent to the original
+state space graph of the system.
+The set of atomic propositions  appearing in this LTL formula are called Observed(obs) while the rest of the prepositions is called UnObserved(UnObs).
+  \newline In SOG, nodes, called aggregates, are
+sets of states connected by unobserved transitions  and represented by Binary Decision Digram (BDD)\cite{bdd}.
+  
+ \footnotetext[1]{Linear temporal logic/Kripke structure.}
+ \footnotetext[2]{Function to compute the closure of an aggregate under the action of the unobserved events (UnObs).}
+ 
+\begin{definition}\textbf{aggregate}
+\newline Let T = (S,Act,$\rightarrow$,I), where Act=Obs $\cup$ UnObs( observed and unobserved actions), be an LTS  over an atomic proposition set AP. An aggregate \textbf{a} is a non empty subset s of S satisfying:
+\begin{itemize}
+    \item  $\forall$x $\in$ s, $\exists$ i$\in$ I and $\exists$ $\sigma \in$  $Act^{*}$ s.t. $i\stackrel{\sigma}{\longrightarrow}x$.
+    \item  $\forall$x $\in$ s, $\forall$ x'$\in$ S, $\forall$ $\delta \in$  $UnObs^{*}$, $x'\stackrel{\delta}{\longrightarrow}x$ $\Rightarrow$ x'$\in$ s.
+     \item $\forall$x $\in$ s: \textbf{Saturate(x)}  \footnotemark[2] =a.
+\end{itemize}
+
+\end{definition}
+\begin{definition}\textbf{Symbolic Observation Graph}
+\newline A symbolic observation graph associated with a LTS (S,Obs$\cup$UnObs,$\rightarrow$,I) is a 4-tuple G=(S',Act',$\rightarrow$',I'), such that:
+\begin{itemize}
+   
+    \item S' is a finite set of agregates.
+       \item Act' = Obs.
+    \item $\rightarrow$' $\subseteq $ S'$\times$ Act $\times$ S' is a transition relation: if s',s''$\in$ S' $\Rightarrow  \exists \beta \in$ $Act'^{*}$ : $s'\stackrel{\beta}{\longrightarrow}s''$.
+    \item I’ = {$a_{0}$ } avec $a_{0}$= \textbf{Saturate(I)} . 
+    
+\end{itemize}
+
+\end{definition}
+
+ The SOG construction algorithm is presented and detailed in \cite{10}. We start with the
+creation of the initial aggregate $a_{0}$.  Then, we create its successors using the conditions presented
+above. The rest of the graph is built iteratively.
+\paragraph{}Figure ~\ref{sog} \cite{chouikha} shows the SOG related to the LTS example ~\ref{lts}. In this example, the set of observed transitions is \{$\alpha$, $\beta$\} while from $t_{1}$ to $t_{5}$ represent the rest of unobserved actions. The SOG presented contains two aggregates $a_{0}$, $a_{1}$ and two edges $\alpha$ and $\beta$.
+\begin{figure}[h!]
+    \centering
+    \include{img/sog}
+    \caption{The SOG corresponding to the LTS of Figure \ref{lts} under the observation of \{$\alpha$, $\beta$\}  }
+    \label{sog}
+\end{figure}
+
+\section{Test Coverage Criteria}
+\paragraph{}To test software effectively, we must generate test cases, which are typically evaluated based on coverage criteria. Coverage criteria are the rules or requirements that a test suite must satisfy to be deemed adequate. These criteria aim to measure and describe how well the test suite or individual test cases address the system's functionality. The primary purpose of coverage criteria is to assess the quality of the generated tests. They define specific test objectives or requirements that test inputs (derived from the test cases) need to meet. When test inputs fulfill these objectives, the confidence a tester has in the system corresponds to the level of thoroughness mandated by the coverage criterion.
+
+Several coverage criteria for Petri nets are outlined in~\cite{Offutt2019}, including Structural and Behavioural Analysis Coverage (SBAC) and Concurrent Session Behaviour Coverage Criteria (CSBCC). In addition, \cite{testing-pn} classifies high-level Petri net testing methods into four distinct categories: 
+\begin{itemize}
+    \item Transition-oriented testing
+    \item State-oriented testing
+    \item Data flow-oriented testing
+    \item Specification-oriented testing
+\end{itemize}
+
+
+In this project, we focus on the transition coverage criteria of Petri nets, which is a transition-oriented testing. It ensures that every transition in the Petri net is executed at least once during the testing process. This criterion is essential for verifying that all possible state changes within the system are tested, ensuring thorough exploration of the Petri net's behavior. By covering all transitions, we can detect potential errors or missed behaviors that may not surface if certain transitions remain untested. The specific details and formal definition of this criterion will be discussed next.
+
+
+\begin{definition}[Transition Coverage]
+Let $\mathcal{N}=(P, T, F, W)$ be a Petri net, and $\mathcal{T}_s=\{\sigma_1, \sigma_2, \dots, \sigma_n\}$ be a test suite. $\mathcal{T}_s$ satisfies \emph{transition coverage} criterion \textit{iff} $\forall t \in T$,  $\exists \sigma \in \mathcal{T}_s$, $t \in \bar{\sigma }$.
+
+\end{definition}
+
+\section{Linear Programming}
+\subsection{Definition}
+Linear programming is a field within applied mathematics focused on solving optimization problems that take a specific form. These problems involve a linear objective function—composed of multiple variables—that needs to be either minimized or maximized, subject to a set of constraints. These constraints are represented by linear inequalities involving the same variables in the objective function. While linear programming is closely linked to linear algebra, it is distinct in its frequent use of inequalities rather than equalities in the problem formulation \cite{schulze2000}.
+
+\subsection{Terminology}
+A linear programming problem is said to be in \textit{standard form} when it is written as:
+
+\begin{equation*}
+\begin{array}{lr@{}c@{}r@{}l@{}r}
+\text{\textbf{Maximize}}   & \sum_{j=1}^{n} c_j x_j   &        &   \\
+\text{\textbf{Subject to}} & \sum_{j=1}^{n} a_{ij} x_j & \leq b_i & i = 1, \dots, m \\
+                           & \hspace{1.5cm} x_j \geq 0 &&\hspace{1.5cm} j = 1, \dots, n
+\end{array}
+\end{equation*}
+
+The problem has \(m\) constraints and \(n\) variables. It may also be written using vector notation as:
+
+\begin{equation*}
+\begin{array}{lr@{}c@{}r@{}l@{}r}
+\text{\textbf{Maximize}}   & \mathbf{c}^T \mathbf{x} &            &        & & \\
+\text{\textbf{Subject to}} & \mathbf{A} \mathbf{x}   & \leq{}   & \mathbf{b} & & \\
+                           & \mathbf{x}   & \geq{} & 0 & & 
+\end{array}
+\end{equation*}
+
+Note that a problem where we want to minimize the cost function instead of maximizing it may be rewritten in standard form by negating the cost coefficients \(c_j\) (i.e., \(\mathbf{c}^T\)).
+
+Any vector \(\mathbf{x}\) satisfying the constraints of the linear programming problem is called a \textit{feasible solution} to the problem. Every linear programming problem falls into one of three categories:
+
+\begin{itemize}
+    \item \textbf{Infeasible : } A linear programming problem is infeasible if a feasible solution to the problem does not exist; that is, there is no vector \(\mathbf{x}\) for which all the constraints of the problem are satisfied.
+    \item \textbf{Unbounded : } A linear programming problem is unbounded if the constraints do not sufficiently restrain the cost function so that for any given feasible solution, another feasible solution can be found that makes a further improvement to the cost function.
+    \item \textbf{Has an optimal solution : } Linear programming problems that are not infeasible or unbounded have an optimal solution; that is, the cost function has a unique minimum (or maximum) value. This does not necessarily mean that the values of the variables that yield that optimal solution are unique.
+\end{itemize}
+
+The basic algorithm most often used to solve linear programming problems is called the \textit{simplex method}. Over the past 50 years, it has been developed to the point that good computer programs using the simplex method and its relatives (the revised simplex method and the network simplex method) can solve virtually any bounded, feasible linear programming problem of reasonable size in a reasonable amount of time. Only in the past ten years have other methods of solving linear programming problems (so-called \textit{interior point methods}) developed to the point where they can be used to solve practical problems.
+
+\subsection{Integer Programming}
+
+Integer programming (IP) involves solving linear models where some or all of the variables are restricted to integer values. Specialized algorithms are designed for IP problems, which typically find the optimal solution by solving a sequence of linear programming (LP) problems. Depending on the nature of the variables, IP models can be categorized into three types:
+
+\begin{itemize}
+    \item \textbf{Mixed Integer Programming (MIP):} Only some of the variables are restricted to integer values.
+    \item \textbf{Pure Integer Programming (PIP):} All the variables are integers.
+    \item \textbf{Binary Integer Programming (0-1 Integer Programming):} All the variables are binary, meaning they are restricted to the values 0 or 1.
+\end{itemize}
+
+In our work, we focus exclusively on the binary case.
+
+\section{Regular expressions}
+
+\begin{definition}
+A regular expression over $\Sigma^{*}$ is a well-formed formula built inductively from the constants 0 and 1 and the letters $a$ in $\Sigma$ as atomic formulas, using two binary operators $+$ and $\cdot$ and one unary operator $^{*}$. 
+\end{definition}
+If $E$ and $F$ are regular expressions, so are $(\mathrm{E}+\mathrm{F}), (\mathrm{E} \cdot \mathrm{F})$, and $\left(\mathrm{E}^{*}\right)$. $RatE \text{ } \Sigma^{*}$ denotes the set of regular expressions over $\Sigma^{*}$~\cite{Sakarovitch15}. With every expression $\mathrm{E}$ in $RatE \text{ } \Sigma^{*}$ is associated a language of $\Sigma^{*}$, called the language of $\mathrm{E}$ and denoted by $|\mathrm{E}|$. The language $|\mathrm{E}|$ is inductively defined by $|0|=\emptyset,|1|=\left\{1_{\Sigma^{*}}\right\},|a|=\{a\}$ for every $a$ in $\Sigma$, $|(\mathrm{E}+\mathrm{F})|=|\mathrm{E}| \cup|\mathrm{F}|,|(\mathrm{E} \cdot \mathrm{F})|=|\mathrm{E}||\mathrm{F}|$, and $\left|\left(\mathrm{E}^{*}\right)\right|=\{|\mathrm{E}|\}^{*}$. Two expressions are equivalent if they denote the same language.
+
+Like any formula, an expression $\mathrm{E}$ is canonically represented by a tree, which is called the \textit{syntactic tree} of $\mathrm{E}$. $\mathit{l}(E)$ is the literal length of the expression $\mathrm{E}$ (that is, the number of all occurences of letters from $\Sigma$ in $ \mathrm{E}$) and by $\mathit{d}(\mathrm{E}$) the depth of $\mathrm{E}$ which is defined as the depth of the syntactic tree of the expression.
+
+\begin{definition}
+The constant term of an expression $\mathrm{E}$ over $\Sigma^*$, written $c(\mathrm{E})$, is the Boolean value, inductively defined and computed using the following equations:
+\end{definition}
+\begin{center}
+$c(0)=0$, $c(1)=1$, $\forall a \in \Sigma \text{  } c(a) = 0$, \\
+$c(F+G) = c(F) + c(G)$, $c(F \cdot G) = c(F).c(G)$, $c(F^*) = 1$
+\end{center}
+The constant term of a language $\mathrm{L}$ of $\Sigma^*$ is the Boolean value c($\mathrm{L}$) that is equal to 1 if and only if $1_{\Sigma^*}$ belongs to $\mathrm{L}$. By induction on $\mathit{d}(\mathrm{E})$, $c(\mathrm{E}) = c (|\mathrm{E}|)$ holds.
+
+\section*{Conclusion}
+
+In this chapter, we have laid the groundwork for our subsequent discussions by introducing essential concepts and methodologies. We began with Petri Nets and LTS, providing a foundation for understanding system behaviors and state transitions. We then explored SOG and Test Coverage Criteria, emphasizing their roles in evaluating and verifying system models. Finally, we reviewed Linear Programming, which serves as a tool for optimizing various aspects of these models, and Regular Expressions, which facilitate the formal representation and generation of test paths by capturing patterns of system behavior.
+

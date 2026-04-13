@@ -1,0 +1,153 @@
+\chapter{Solution implementation and
+experimental results}
+
+\section*{Introduction}
+In this final chapter, we will detail the implementation phase of our approach. We will begin with an overview of the tools employed to implement the algorithms discussed in the previous chapter. Following this, we will present and analyze the experimental results of tests on randomly generated graphs and toy examples. Finally, we will validate our approach with a paper submission, which underscores the significance and effectiveness of our work.
+
+\section{Methodology workflow and tasks}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{img/tab-ch5-end.png}
+    \caption{Kanban Board Overview for Chapter 5}
+    \label{fig:trello-5}
+\end{figure}
+Figure \ref{fig:trello-5} shows the current Kanban board by the end of this chapter. We ensured that the testing and evaluation process was completed by conducting tests on both randomly generated graphs and manually created graphs, ensuring a comprehensive validation of our approach. Throughout the project, all tasks outlined in the initial backlog of Table \ref{tab:backlog} were systematically moved to the completed card, reflecting a well-organized workflow. This illustrates the disciplined, step-by-step approach we took to address each task, from development to testing and evaluation. The only remaining task by the end of this chapter is the completion of the report writing, signifying that the implementation and experimental phases have been thoroughly executed. This structured progression has allowed us to confidently finalize our approach and move towards project closure.
+
+
+\section{Development Context}
+\subsection{Tools}
+\subsubsection{C++}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.2\textwidth]{img/c++.png}
+    \caption{C++ Logo \cite{zamir1999}}
+    \label{fig:gcc}
+\end{figure}
+
+The C++ programming language offers a memory and computation model that closely aligns with the architecture of most modern computers. It provides robust and flexible abstraction mechanisms, allowing programmers to define and utilize new types of objects that align with the application's conceptual needs. C++ supports various programming styles, from low-level programming that involves direct manipulation of hardware resources to achieve high efficiency, to higher-level programming that utilizes user-defined types to model data and computation in a way that more closely reflects human understanding of the task. These higher-level programming styles include data abstraction and object-oriented programming \cite{zamir1999}.
+
+For the implementation of the algorithms discussed in the previous chapters, we used C++. This object-oriented programming language not only provides a clear and organized structure for code but also facilitates code reuse, which helps reduce development costs. Additionally, C++ is a cross-platform language capable of creating high-performance applications, leveraging its object-oriented features to deliver efficient and maintainable software solutions.
+
+\subsubsection{GCC}
+
+The GNU Compiler Collection (GCC), is an integrated compiler developed by the GNU Project. It supports a range of programming languages, including C, C++, Objective-C, and Fortran. GCC functions by taking source code written in these languages and generating binary executable programs in machine language. As an optimizing compiler, GCC supports various programming languages, hardware architectures, and operating systems. The compiler-driver \texttt{g++} is specifically used for C++ and is considered the de facto compiler for C/C++ on the Linux platform, including being the only compiler capable of compiling the Linux kernel. Additionally, we used \texttt{make}, a Unix tool that simplifies the process of building executable programs and libraries from source code. \texttt{make} reads files called Makefiles, which outline how to derive the target program, streamlining the build process \cite{gcc}.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.2\textwidth]{img/gcc.png}
+    \caption{GCC Logo \cite{gcc}}
+    \label{fig:gcc}
+\end{figure}
+
+\subsubsection{Cmake}
+CMake is a widely adopted, open-source build manager that simplifies the process of building C++ code. With over 2 million downloads per month, it has become the de-facto standard for managing software builds. CMake allows developers to define build parameters in a straightforward, portable text file format. This file is then used to generate project files compatible with various native build tools, including Integrated Development Environments (IDEs) like Microsoft Visual Studio and Apple’s Xcode, as well as UNIX, Linux, NMake, and Borland style Makefiles. It handles complex aspects of software building, such as cross-platform builds, system introspection, and user-customized configurations, making it easier for developers to tailor their builds for intricate hardware and software systems. For those looking to leverage CMake effectively, a range of resources is available to help navigate and utilize its comprehensive features \cite{cmake}.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.25\textwidth]{img/cmake.png}
+    \caption{Cmake Logo \cite{cmake}}
+    \label{fig:cmake}
+\end{figure}
+
+\subsubsection{Drawio}
+Draw.io, now known as diagrams.net, is an online, open-source modeling tool designed to create a wide range of diagrams, including flowcharts, process diagrams, Unified Modeling Language (UML) diagrams, Entity-Relationship (ER) diagrams, and network diagrams. This versatile tool is distinguished by its smart shapes, intuitive connectors, and a variety of advanced features that significantly aid in diagram creation. Draw.io's user-friendly interface and robust functionality streamline the process of visualizing complex systems, making it an invaluable asset for developing and illustrating figures in our project \cite{drawio}. 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.25\textwidth]{img/drawio.jpg}
+    \caption{Drawio Logo \cite{drawio}}
+    \label{fig:gcc}
+\end{figure}
+
+\subsection{Hardware environment}
+We conducted all the experiments using a Dell Precision 7560 laptop, which is equipped with a high-performance Intel(R) Core(TM) i7-11850H processor. This 8-core processor operates at a base clock speed of 2.5 GHz, providing substantial computational power to handle the intensive calculations and algorithms involved in our study. The laptop is also equipped with 32 GiB of memory, which ensures that we can efficiently manage and process large datasets and complex models. The operating system used for these experiments is Ubuntu 20.04, a robust and widely-used Linux distribution that offers a stable environment for running our software and executing our algorithms.
+
+\section{Evaluation and experimental results}
+To evaluate our approach, we conducted an analysis using a selection of representative graphs, which serve as illustrative examples for our study. These toy examples, detailed in Table \ref{tab:graphs}, were carefully chosen to cover a variety of structural characteristics and complexities. 
+\input{tables/Graphs}
+
+Table~\ref{tab:Toysgraphs_summary} presents preliminary results focusing on pathfinding metrics where the first column contains the identifier of each LTS of the twelve toy examples. Column 2 indicates the size of linear programming algorithm, represented by the couple (r,c), where $r$ is the number of rows and $c$ is the number of columns. The former indicates the number of labels to be covered, while the latter denotes the number of generated paths. The time in milliseconds needed to generate the regular expression, extract the paths, and solve the ILP problem is represented by column 3, column 4, and column 5, respectively. The obtained optimal sequence are presented in the last column.
+ 
+\input{tables/tabresltsToys}
+
+\newpage
+The ILP resolution process has the most significant impact on the processing time for generating optimal paths as it has a polynomial complexity. 
+For small LTS, for example, $G_1$ ILP resolution takes $60\%$ of the whole process against $96\%$ for large LTS like $G_{11}$.
+The ILP resolution time consumes between $60\%$ and $90\%$ of the total processing time, with $60\%$ for small graphs, and it increases as the complexity of the graph grows.
+
+
+To check the correctness of our algorithm by executing the approach on small test cases, we have manually analyzed these toy examples. The identified optimal paths of all graphs are equal to those generated by the implementation of our approach, except for $G_7$, $G_8$, $G_{10}$, and $G_{11}$. We noticed that manually crafted optimal path (for example, $acdbfd$ in $G_{10}$) is a prefix of the automatically generated one (i. e. $acdbfdaab$). This weakness is related to the path generation process from regular expression. 
+
+\begin{table}[htb!]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Prefix} & \textbf{Possible Choices} & \textbf{Best Choice} \\ \hline
+ & a, b, d & a \\ \hline
+a & a, b, d & a \\ \hline
+ab & a, b, d & b \\ \hline
+abc & a, b, d & d \\ \hline
+abe & a, b, d & d \\ \hline
+abcd & a, b, d & d \\ \hline
+abcde & a, b, d & d \\ \hline
+abfc & f & f \\ \hline
+abf & e, f & f \\ \hline
+abfca & b & b \\ \hline
+abfc & e, f & f \\ \hline
+abfcf & a & a \\ \hline
+b & c, d & b \\ \hline
+bc & c, d & c \\ \hline
+bca & b & b \\ \hline
+bcac & b & b \\ \hline
+bcdc & c, d & c \\ \hline
+bdf & e, f & e \\ \hline
+bde & e & e \\ \hline
+bdef & a & a \\ \hline
+bdfca & c & c \\ \hline
+d & f & f \\ \hline
+df & a & a \\ \hline
+dfa & e, f & e \\ \hline
+dfae & a & a \\ \hline
+dfcf & f & f \\ \hline
+\end{tabular}
+\captionsetup{justification=centering} % Centre le titre du tableau
+\caption{Dataset for Graph6}
+\label{tab:dataset_graph6}
+\end{table}
+
+
+To illustrate the dataset generation process and test it, we use Graph 6 as an example. We start by applying our approach to generate prefixes from Graph9, systematically traversing the graph to extract all possible prefixes of transitions. Once these prefixes are identified, we proceed to compile the complete dataset for the graph. This dataset includes each prefix, the set of possible choices for each prefix, and the best choice based on the optimal paths.
+
+The results of this dataset generation process are summarized in table \ref{tab:dataset_graph6}. This table presents a detailed view of the prefixes, their corresponding possible choices, and the best choice for each prefix, showcasing how the approach is applied to a real-world graph and demonstrating its effectiveness in guiding state space exploration.
+
+Each row of the table illustrates a distinct prefix— a sequence of transitions representing a sub-path of the graph. The prefixes are organized from the simplest, such as `a`, to more complex sequences like `abfca` and `dfcf`. For each prefix, the dataset enumerates:
+
+\begin{itemize}
+    \item \textbf{Possible Choices}: This column lists all the potential transitions that can follow from the given prefix. These choices are derived based on the structure of the graph and the paths available. For example, after the prefix `ab`, the possible choices are `a`, `b`, or `d`, indicating the different transitions that can be taken next.
+    
+    \item \textbf{Best Choice}: This column identifies the optimal transition based on the set of optimal paths previously computed. It reflects the transition that best aligns with the goal of optimizing coverage or achieving specific objectives. For instance, after the prefix `ab`, the best choice is `b`, as it represents the optimal transition from the choices available.
+\end{itemize}
+
+
+In summary, the dataset captures the essence of path exploration and optimization within Graph6. It helps in understanding the transition behavior at various stages of the graph and aids in guiding further exploration or decision-making processes in the context of the LTS.
+
+We conducted a second analysis presented in table~\ref{tab:Randgraph_results}, using randomly generated deterministic LTS. For each experiment, we varied the number of nodes (column 1) from 1000 to 5000, and adjusted the number of arcs (column 2) accordingly. We also performed random selections from a fixed set of 1000 labels. Additionally, we specify the following features: total execution time in column 3, ILP size in column 4, average size of generated paths in column 5, number of optimal paths in column 6, and average size of optimal paths in the last column.
+
+The column 4 indicates the size of linear programming algorithm, represented by the couple (r,c), where, $r$ is the number of rows and the $c$ is the number of columns. Notice that they represent respectively the number of labels aimed to be covered, and the number of generated paths. These metrics indicate the complexity of the linear programming problem generated.
+
+\input{tables/tabRandSmall}
+
+These results highlight the variability in computational complexity and path structures across different random graphs as the number of nodes and edges grows. Our proof of concept shows a memory overflow (i.e. MO) indicating that the memory limit was exceeded during the execution process, leading to an abrupt termination of the process. This interruption occurs after path generation, which highlights the limit of using ILP for very large LTS.
+
+Our approach scales well with larger graphs up to a certain point. However, beyond this threshold, processing becomes impractical within a reasonable time frame (specifically, 1 hour), as indicated by occurrences of 'TO' (Time Out). The value 'MO' (Memory Overflow) indicates that the memory limit was exceeded during the execution process, leading to an abrupt termination of the process.
+
+Therefore, with a very large number of initially generated paths, the percentage of optimal paths is significantly low, which is noteworthy.
+These results offer important insights about our algorithm's performances and its limitations when handling large-scale graphs under parameterized random conditions.
+
+\section{Scientific contribution and paper submission}
+Our project was resumed in a scientific paper written by the team entitled \textit{\textbf{Optimizing Label Coverage using Regular Expression-based Linear Programming}}, authored by Kais Klai, Mohamed Taha Bennani, Jaime Arias, Hanen Ochi, and Hadhami Elouni. The submission was accepted by the VECoS 2024 17th International Conference on Verification and Evaluation of Computer and Communication Systems. 
+
+
+The VECoS conference series focuses on the analysis of computer and communication systems, where functional and extra-functional properties are inter-related. VECoS encourages the cross-fertilization between the various formal verification and evaluation approaches, methods, and techniques, especially those developed for concurrent and distributed hardware/software systems \cite{vecos2024}.
+
+\section*{Conclusion}
+In conclusion, this chapter has provided a comprehensive overview of the solution implementation and experimental results. We detailed the development context, including the tools and hardware environment used, which laid the foundation for our experimentation. The evaluation, encompassing both toy examples and randomly generated graphs, demonstrated the effectiveness and versatility of our approach. Finally, we discussed the validation of our results through the submission and acceptance of a paper to the VECoS 2024 conference.

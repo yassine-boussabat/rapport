@@ -1,0 +1,324 @@
+\chapter{SOG- and Optimal LTS-based testing}
+\section*{Introduction}
+This chapter integrates Symbolic Observation Graph (SOG)-based testing \cite{sogbased} and Optimal LTS-based testing \cite{bouachir2022}, both addressing state space explosion in system verification. First, we discuss the SOG-based approach for Petri nets, focusing on structure-based coverage, on-the-fly generation of observable traces, and abstract trace extraction. Finally, we present the Optimal LTS-based approach, covering regular expression generation, path extraction, and optimization through linear programming. 
+
+\section{Methodology workflow and tasks}
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=1\textwidth]{img/tab-ch3-end.png}
+    \caption{Kanban Board Overview for Chapter 3}
+    \label{fig:trello-3}
+\end{figure}
+In Chapter 3, we will focus on tasks related to understanding the two existing approaches: SOG-based testing and optimal LTS-based testing. 
+
+Figure \ref{fig:trello-3} shows the state of the Kanban board at the end of this chapter. The tasks completed include reading relevant articles, reviewing existing code and documentation, and working through manually executed examples to deepen our understanding of both approaches. The analysis and understanding of the SOG-based approach are marked as completed, reflecting a successful exploration of its key concepts and methodology. For the LTS-based approach, the subtasks involve analysis, verification, and evaluation. However, by the end of this chapter, only the understanding and analysis of the optimal LTS-based approach were fully accomplished, while verification and evaluation remain ongoing.
+
+\section{Symbolic Observation Graph based Testing}
+In this section, we will address three key elements: structure analysis, SOG generation, and the generation of abstract paths.
+\subsection{Structure-Based Coverage Relation for Petri Nets}
+In this subsection, we present how covering a reduced set of transitions can ensure coverage of all the system’s transitions. To achieve this, we introduce an original approach that identifies specific structural patterns within a Petri net model. We will present a pattern that we search for in the Petri net, which allows us to establish a coverage relation between the transitions. These patterns help deduce behavioral information related to the firing of the model's transitions, ensuring comprehensive coverage.
+
+\begin{definition}
+The coverage relation, denoted by $\triangleright$, is the transitive relation defined as follows: $\triangleright : T \rightarrow T$ such that $\forall t' \in T,\; t' \triangleright t$ implies that any firing sequence containing $t'$ necessarily contains $t$.
+\end{definition}
+
+In the following, we define \emph{unobservable} transitions.
+
+\begin{definition}
+\label{def:unobs}
+A transition $t$ in a marked Petri net $(\mathcal{N}, m_0)$ is said to be \textbf{unobservable} $\iff$ $\exists$ place $p \in \postset{t}$, $\preset{p} = \{t\} \wedge \postset{p} \neq \emptyset \wedge m_{0}(p) = 0$. For a given transition $t$, the set of such places is denoted by $t^{\sim}$.
+\end{definition}
+
+\begin{figure}[H]
+\centering
+\input{img/pattern}
+\caption{Unobservable transition $t$\label{Tux} \cite{sogbased}}
+\end{figure}
+
+Informally (see Figure~\ref{Tux}), an unobservable transition $t$ is a transition having, at least, one unmarked output place $p$ such that no other transition can produce tokens in $p$ ($\preset{p}=\{t\}$). Thus, with $p$ being initially unmarked, the firing of any output transition of $p$ is impossible before firing $t$. For this reason, any firing sequence containing any transition $t' \in \postset{p}$ necessarily contains $t$ (i.e., $t' \triangleright t$).
+
+As a deduction, covering the structurally identified observable transitions ensures that the entire set of system transitions is adequately covered. By focusing on these observable transitions, we can effectively reduce the complexity of the testing process without sacrificing coverage. Thus, it is sufficient to generate a collection of firing sequences that incorporate all observable transitions to ensure that every transition in the system is accounted for. Therefore, we need to generate traces of the system that pass through these observable transitions, ensuring comprehensive coverage of the system’s behavior while optimizing the testing process.
+
+\begin{figure}[!htb]
+\centering
+\begin{minipage}[b]{0.48\linewidth}
+\resizebox{\textwidth}{!}{\input{img/example-lts}}
+    \caption{Example of an LTS \cite{sogbased}}
+    \label{exp-lts}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{.48\linewidth}
+\resizebox{\textwidth}{!}{\input{img/example-pn.tex}}
+    \caption{Example of a Petri Net \cite{sogbased}}
+    \label{exp-pn}
+\end{minipage}
+\end{figure}
+
+\textbf{Example: \\}
+Consider the Petri net depicted in Figure \ref{exp-pn}, which represents a system. The corresponding marking graph, shown in Figure \ref{exp-lts}, illustrates the behavior of this Petri net. Each path in this graph represents a possible execution of the underlying system. 
+
+ After performing the structural analysis, we identified the set of unobservable transitions is :  \(
+ $\{t_1, t_2, t_3, t_4, t_5, t_6, t_9\}$ \). However, transitions $t_7$, $t_8$, $t_{10}$, and $t_{11}$ are not unobservable. Specifically, each of the transitions $t_7$, $t_8$, and $t_{10}$ has a single output place that is also the input for another transition. Transition $t_{11}$ is observable because place $p_1$ is initially marked. These transitions are highlighted in color to indicate they are observable.
+
+Now that we have presented the Petri net, we will introduce the corresponding Symbolic Observation Graph (SOG), which serves as a state space reduction technique. The concept of observability motivates the use of the SOG, where a distinction is made between observable and unobservable transitions. The SOG allows us to abstract the state space, resulting in a more compact graph.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{\textwidth}{!}{\input{img/example-sog}}
+\caption{SOG related to the LTS of Figure~\ref{exp-lts} under the observation of $\{t_7, t_8, t_{10}, t_{11}\}$ \cite{sogbased} \label{exp-sog}}
+\end{figure}
+
+In essence, all states that are accessible through unobservable actions are grouped into a single node called an aggregate, which is efficiently encoded in memory using a binary decision diagram (BDD) \cite{Akers78}.
+
+The SOG construction algorithm is detailed in \cite{Haddad04}. Figure~\ref{exp-sog} illustrates the SOG corresponding to the LTS example in Figure~\ref{exp-lts}, based on the observation of transitions $t_7$, $t_8$, $t_{10}$, and $t_{11}$. 
+
+For clarity, the figure shows both the internal sub-graphs of the aggregates and the connections between explicit states across different aggregates. The internal set of states is represented by a BDD, while only a single solid edge connects two aggregates for observable transition labels.
+
+We can clearly deduce a significant reduction in the state space, where an initial LTS with 15 states has been reduced to a SOG with only 3 states. This reduction is highly advantageous in terms of memory usage, as it allows for more efficient storage and processing of the state space, making the approach particularly valuable for systems with large or complex state spaces. By reducing the number of states so drastically, the SOG not only simplifies the verification process but also enhances the overall performance of model-based testing, enabling faster and more scalable analysis.
+
+
+
+\subsection{ On-The-Fly SOG-Based Generation of Observable Traces}
+
+In this section, we introduce an approach based on the Symbolic Observation Graph (SOG) to generate system traces that specifically pass by observable transitions. This work revisits the construction process of the SOG to allow for the on-the-fly generation of these observable traces—meaning that the construction is halted once all observable transitions have been covered.
+
+Algorithm~\ref{alg:obspath}, detailed below, is designed to extract these observable traces during the SOG construction. Given a system model and a set of observable transitions, the algorithm aims to assemble a test suite $\mathcal{T}_s=\{\sigma_1, \sigma_2, \dots, \sigma_n\}$ such that, for any observable transition $o$, there exists an observable trace $\sigma_i$ containing an occurrence of $o$. 
+
+The algorithm employs a depth-first search (DFS) traversal strategy during the SOG construction to achieve this goal.
+
+\begin{algorithm}[!h]
+\SetAlgoLined
+\caption{Generation of observable traces} \label{alg:obspath}
+
+%\Function{Generation\underline{{ }{ }}of\underline{{ }{ }}observable\underline{{ }{ }}traces}{ }{: } 
+\KwData{$\mathcal{N}$, $m_0$, $\Obs$}
+\KwResult{$\mathcal{T}_s$}
+\SetKwComment{Comment}{/*}{*/}
+
+Stack$<$aggregate, set$<$transition$>$$>$ $st$; Set of traces $\mathcal{T}_s$; aggregate $a$, $a'$\;
+ Current observable trace  $curT$; Set of covered observable transitions $Cov$\;
+  
+%  Set $<$aggregate$>$ setAgr
+%  bool allcovered = true\;
+
+ \Begin{
+%  $\backslash \backslash$Initialisation
+$Cov \leftarrow\emptyset$\;
+$a \leftarrow$ \texttt{InitialAggregate}($(\mathcal{N}, m_0)$) \;
+%  setAgr=setAgr $\cup$ (Ag)
+st.push($a$, \texttt{EnableObs}($a$))\;
+%  $\backslash \backslash$Exploration
+\While {$(st\neq \emptyset \wedge Cov\subset \Obs)$}
+  {st.pop($a$,$f$)\;
+     \eIf {$(f\neq \emptyset)$ }
+    { $o \leftarrow$ \texttt{chooseTransition}($f$, $Cov$)\;
+ %      \If{t$\not\in$Cov}
+  %        allcovered = false
+           $Cov =Cov \cup \{o\}$\;
+   %   \EndIf
+        
+%      f ← f-$\{$t$\}$
+      $curT \leftarrow curT.o$\;
+     
+     %\Comment{add t to sw}
+     \If {$(Cov == \Obs)$}
+           %  \If{!allcovered}
+                {$\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$ % \Comment*[r]{only if curT contains a newly covered transition}
+                }
+            
+      st.push($a$,$f$)\;
+      $a'\leftarrow Succ(a,o)$\;
+        \eIf { ($a'$ already exist)}
+        % \If{!allcovered}
+        {  $\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$ %\Comment*[r]{only if curT contains a newly covered transition}
+       
+          $curT$ $\leftarrow$ $curT-curT.last$\;}
+         {%  setAgr=setAgr $\cup$ (a')
+          st.push($a'$, \texttt{EnableObs}($a'$))\;}
+}  {   % \If{!allcovered}
+               $\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$  %\Comment*[r]{only if curT contains a newly covered transition}
+             %  allcovered=true\;
+         %\EndIf
+         
+          $curT$ $\leftarrow$ $curT-curT.last$\;
+   }    
+    %           \Return $\mathcal{T}$ 
+
+    
+}
+%  \Return $\mathcal{T}$
+ } 
+\end{algorithm}
+
+\textbf{Example : }
+When Algorithm~\ref{alg:obspath} is applied to the Petri net in Figure \ref{exp-pn} with an initial marking $m_{0}$ (where only $p_1$ contains a token) and the set of observed transitions $\{t_7, t_8, t_{10}, t_{11}\}$, it begins by generating the initial aggregate $a_{0}$ of Figure \ref{exp-sog} in the initialization step. The algorithm identifies two outgoing transitions, $t_7$ and $t_8$, and creates a new aggregate $a_1$ when one of these transitions is selected. This aggregate $a_1$ has outgoing transitions $t_{10}$ and $t_{11}$, with $t_{10}$ leading to the creation of aggregate $a_2$. The last aggregate created connects back to $a_1$ through either $t_7$ or $t_8$. At this stage, a trace $\langle t_8, t_{10}, t_7 \rangle$ is added to the set of observed traces, $\mathcal{T}s$. Using backtracking, the algorithm returns to $a_1$ to explore $t_{11}$, which leads to $a_0$. This generates a new observed trace $\langle t_8, t_{11} \rangle$. At the end of the process, all transitions are covered, and the stack is empty.
+
+In conclusion, this example produces two observable traces: \textbf{<$t_8, t_{10}, t_7$>} and \textbf{$<t_8, t_{11}>$}. By covering these traces, we ensure that all relevant transitions within the system are comprehensively covered.
+
+\subsection{Extracting Abstract Traces}
+
+Observable traces are essential for triggering specific system executions. However, to achieve full coverage of all system transitions, we need to augment these traces. This involves inserting sequences of unobservable transitions between the observable ones produced by the previous algorithm, starting from the initial marking state. Various criteria can guide the selection of these unobservable sequences, including test feasibility, balanced combinations, and sequence length. In our approach, we prioritize minimizing the length of the sequence traversing an aggregate. 
+An algorithm is presented in \cite{sogbased} to generate complete abstract paths by extending the observable traces. 
+
+To apply this algorithm to our illustrative example, consider the two observable paths provided by the previous algorithm: \( \langle t_8, t_{10}, t_7 \rangle \) and \( \langle t_8, t_{11} \rangle \). Algorithm~2 processes these paths to generate a comprehensive abstract path that covers all necessary transitions in the system. Specifically, the algorithm returns the abstract path:
+
+\begin{equation}
+AP = \langle t_1, t_2, t_6, t_8, t_{10}, t_5, t_7 \rangle.
+\label{eq:ap_sequence}
+\end{equation}
+
+
+This abstract path as shown in Equation~\ref{eq:ap_sequence} is constructed by interleaving unobservable transitions with the observable ones, ensuring that the entire state space is traversed while maintaining the coverage of all transitions. 
+
+The result is a complete path that effectively navigates through both observed and unobserved transitions, thus providing a thorough representation of the system’s behavior.
+
+
+\section{Optimal LTS-based testing}
+
+\subsection{Description of the approach}
+
+This approach starts by taking the initial node of the graph and the set of transitions to be covered as input. The graph is explored recursively, similar to Depth-First Search (DFS), to generate a regular expression that encapsulates all possible paths and transitions. This regular expression is then used to deduce unique paths, ensuring comprehensive coverage of all potential sequences within the graph. These deduced paths are then passed to a linear programming module, which optimizes the selection by minimizing both the number and length of the paths while still covering all transitions. The result is an efficient and effective set of test inputs that thoroughly represents the system's behavior \cite{bouachir2022}.
+\begin{figure}[!htb]
+\centering
+\resizebox{\textwidth}{!}{\input{img/optimal-approach}}
+\caption{Optimal LTS-based testing approach \cite{bouachir2022} \label{optimal-lts}}
+\end{figure}
+
+\subsection{Generation of regular expression from the graph}
+
+To generate the regular expression, the approach begins with the initial node of the graph and explores it while simultaneously creating test paths. It employs a novel algorithm, detailed in Algorithm 3. This algorithm uses a recursive, in-depth analysis to produce a regular expression that generates the language accepted by the graph's automaton.
+
+By building the regular expression dynamically as the graph is explored, the approach ensures that the expression accurately reflects the graph’s structure and transitions in real-time. This on-the-fly generation is a distinctive feature of the approach, enhancing its efficiency and effectiveness in capturing the system's behavior.
+
+\begin{algorithm}[!h]
+\SetAlgoLined
+\caption{Languages Generation} \label{alg:languages_gen}
+\KwData{state $e$}
+\KwResult{List of languages (a pair: a sequence of transitions and a pointer to a node of the graph)}
+\SetKwComment{Comment}{/*}{*/}
+
+\textbf{Function }
+\Fn{$\texttt{ComputeLanguage}(s)$}{
+    \If{$s.languages = \emptyset$}{
+        \KwRet{(\emptyset, \emptyset)}
+    }
+    \ForEach{$\texttt{language} \in s.languages$}{
+        \ForEach{$\texttt{language.state} \neq \emptyset \wedge \texttt{language.state} \notin \texttt{currentPath}$}{
+            $s.languages \leftarrow s.languages \cup \{\texttt{language.sequence} + \texttt{getLanguage(language.state)}\}$\;
+            \texttt{remove(language)}\;
+        }
+    }
+    $\texttt{stringstar} \leftarrow ""$\;
+    $\texttt{integercountCircuit} \leftarrow 0$\;
+    \ForEach{$\texttt{lang} \in s.languages$}{
+        \If{$\texttt{lang.state} = \texttt{s}$}{
+            $\texttt{star} \leftarrow \texttt{star.concat}(\texttt{'('} + \texttt{lang.sequence} + \texttt{')^{*}'})$\;
+            $\texttt{countCircuit} \leftarrow \texttt{countCircuit} + 1$\;
+            \texttt{remove(lang)}\;
+        }
+    }
+    \If{$\texttt{countCircuit} > 1$}{
+        $\texttt{star} \leftarrow \texttt{'('} + \texttt{star} + \texttt{')^{*}'}$\;
+    }
+    \ForEach{$\texttt{lang} \in s.languages$}{
+        $\texttt{lang.sequence} \leftarrow \texttt{star} + \texttt{lang.sequence}$\;
+    }
+    \KwRet{$s.languages$}
+}
+\end{algorithm}
+
+Algorithm~\ref{alg:languages_gen} enables the generation of the regular expression on the fly, dynamically creating it as the graph is explored. This capability is a key feature of the approach, contributing to its originality and effectiveness.
+
+\textbf{Example of regular expression generation :\\}
+We take the example of Figure \ref{graph-exp} to generate its regex based on Algorithm~\ref{alg:languages_gen}.
+
+\begin{figure}[!htb]
+\centering
+\resizebox{0.5\textwidth}{!}{\input{img/graph-exemple}}
+\caption{Example of an LTS \label{graph-exp}}
+\end{figure}
+
+After applying the algorithm to generate the regular expression, the result obtained is \[ t_1 t_5 \left( (t_1 t_2 t_4 t_5)^{*} \cdot (t_4 t_2 t_5 t_5)^{*} \right)^{*} t_3 \].
+
+\subsection{Paths generation}
+
+After generating the regular expression, the next step is to deduce all possible paths by systematically replacing each star (*) operator in the expression with either zero or one, signifying that a given circuit may be included in a path or omitted. This process is divided into three key algorithms.
+
+The first algorithm divides the regular expression string into a vector of elements categorized by type. Each element in the vector includes three attributes: the expression itself, the type of the expression (which may indicate the presence of cycles, denoted by the star operator), and a result vector to store the possible paths derived from that expression. The algorithm iterates through these elements, recursively filling their result vectors by calling a function designed to extract paths, which are returned from the path construction function described in the subsequent algorithm.
+
+The second algorithm focuses on constructing all possible paths from the vector of typed elements by combining existing paths with new ones derived from simplified expressions. Finally, the third algorithm organizes the regular expression into a vector format, simplifying and categorizing the elements to ensure that all potential paths are accurately identified and constructed.
+
+\textbf{Example of deduction of paths from regular expression :\\}
+After applying the algorithm to generate paths from the regular expression derived from the LTS in Figure \ref{graph-exp}, the final set of paths obtained is:
+
+\begin{itemize}
+    \item \(p_0 : t_1 t_5 t_3 \)
+    \item \(p_1 : t_1 t_5 t_1 t_2 t_4 t_5 t_3 \)
+    \item \(p_2 : t_1 t_5 t_4 t_2 t_5 t_5 t_3 \)
+    \item \(p_3 : t_1 t_5 t_1 t_2 t_4 t_5 t_4 t_2 t_5 t_5 t_3 \)
+\end{itemize}
+
+These algorithms successfully generate all possible paths that traverse each circuit in the graph zero or one time. The next step involves passing these paths to the linear programming module to select the optimal set that covers all transitions in the graph. This process will be detailed in the following section.
+
+\subsection{Application of linear programming}
+In this project, the problem is modeled using binary programming, a specific case of integer programming where the variables \(x_i\) can only take values of 0 or 1, referred to as binary or 0-1 variables (as discussed in Chapter 2: Preliminaries). Each constraint in this model represents a transition in the graph, making the number of constraints equal to the number of transitions. The constraints are set to be greater than or equal to 1, ensuring that each transition is covered by at least one path. The variables \(x_i\) represent individual paths, while the coefficients \(a_{ij}\) indicate whether a transition \(t_i\) is covered by a path \(p_j\) (\(a_{ij} = 1\) if \(t_i\) is covered by \(p_j\); otherwise, \(a_{ij} = 0\)). The profit coefficients \(c_j\) represent the lengths of the paths, and the objective function aims to minimize the total cost of coverage by reducing the sum of the lengths of the selected paths.
+
+\begin{mdframed}[leftmargin=15pt, rightmargin=15pt]
+\begin{equation*}
+\begin{array}{lr@{}c@{}r@{}l@{}r}
+\text{\textbf{Minimize}}   & c_1 x_1   & {}+{\dots}+{} & c_n x_n   &        &   \\
+\text{\textbf{Subject to} } & a_{11}x_1 & {}+{\dots}+{} & a_{1n}x_n & {}\geq 1   & \\
+                   &           &     \vdots    &               & \hspace{1.5cm} x_{j} \in \{0,1\}, j=1 ,..., n   \\
+                   & a_{m1}x_1 & {}+{\dots}+{} & a_{mn}x_n & {}\geq 1 & 
+\end{array}
+\end{equation*}
+\end{mdframed}
+
+
+
+After this modeling, the generated paths from the path deduction module (as shown in Figure \ref{optimal-lts}) are passed to the linear programming module. The coverage matrix \(A\) and the profit vector \(C\) are populated using these paths. Finally, the OR-tools solver \cite{googleoptimization} is used to solve the linear problem, extracting an optimal set of paths that cover all transitions in the graph.
+
+\textbf{Example : \\}
+Applying the ILP model to the previous example results in the following set of equations:
+
+\[
+\left\{
+\begin{aligned}
+t_1: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+t_2: & \quad x_1 + x_2 + x_3 \geq 1 \\
+t_3: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+t_4: & \quad x_1 + x_2 + x_3 \geq 1 \\
+t_5: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
+& \quad 3x_0 + 6x_1 + 6x_2 + 9x_3 = z \, \text{(min)}
+\end{aligned}
+\right.
+\]
+
+
+After generating all possible paths, these paths are loaded into the coverage matrix and the profit vector.
+
+
+\[
+\begin{pmatrix}
+1 & 1 & 1 & 1 \\
+0 & 1 & 1 & 1 \\
+1 & 1 & 1 & 1 \\
+0 & 1 & 1 & 1 \\
+1 & 1 & 1 & 1 \\
+\end{pmatrix}
+\]
+
+Each row of the coverage matrix corresponds to a specific transition, while each column represents a path from the set of generated paths. For instance, if the element \( A_{20} \) is equal to zero, this indicates that the first generated path \( p_0 \) does not cover the second transition \( t_2 \). Conversely, if \( A_{12} \) equals 1, this means that the first transition \( t_1 \) is covered by the generated path \( p_2 \).
+
+To construct the profit vector, we iterate through the generated paths and assign the length of each path to the corresponding position in the profit vector. For this example, the profit vector is given by:
+
+\[
+C = \{3, 6, 6, 9\}
+\]
+
+Finally, the problem is solved using the OR-tools solver, yielding an optimal solution. In this case, the optimal solution could be either \( p_1 \) or \( p_2 \) since both cover all transitions and have the same cost. Thus, the final set of optimal paths is either the singleton \( \text{opt} = \{t_1t_5t_1t_2t_4t_5t_3\} \) or \( \text{opt} = \{t_1t_5t_4t_2t_5t_5t_3\} \).
+
+
+\section*{Conclusion}
+
+In this chapter, we explored two approaches for system testing. We first presented the SOG-based testing method, which efficiently reduces the state space for Petri nets through observable trace generation. Finally, we introduced the Optimal LTS-based testing approach, optimizing test paths using regular expressions and linear programming. Both methods were illustrated with examples, demonstrating their effectiveness in managing state space explosion and enhancing test efficiency.

@@ -1,0 +1,101 @@
+
+%========= File containing the main LaTex document ========%
+%                                                          %
+% Copyright (C) ISI - All Rights Reserved                  %
+% Proprietary                                              %
+% Written by Med Hossam <med.hossam@gmail.com>, April 2016 %
+%                                                          %
+% @author: HEDHILI Med Houssemeddine                       %
+% @linkedin: http://tn.linkedin.com/in/medhossam           %
+%==========================================================%
+
+%\documentclass[pfe]{./tpl/isipfe}
+\documentclass[]{./tpl/isipfe}
+\graphicspath{{./img/}}
+
+\newtheorem{definition}{Definition}[section]
+
+%\usepackage{hyperref}
+
+\input{./tpl/new_commands}
+
+% the command `\makeindex` is mandatory to create the index file main.idx
+% https://tex.stackexchange.com/questions/9913/input-index-file-not-found
+\makeindex
+\input{notations.sty}
+\input{global_config}
+\usepackage{graphicx}
+\usepackage{ragged2e}
+\AtBeginDocument{\justifying}
+
+\begin{document}
+    \frontmatter
+    \justifying
+
+        \input{tpl/cover_page}
+        
+        \setcounter{page}{1}
+ \clearpage       
+\thispagestyle{empty}
+\vspace*{-2cm}
+\hspace*{-2.8cm}
+\noindent
+\includegraphics[width=\paperwidth,height=\paperheight]{quran-1.png}
+
+
+        \input{dedicaces}
+        \clearpage
+        \thispagestyle{frontmatter}
+        \input{remerciement}
+        \thispagestyle{frontmatter}
+        
+        \setcounter{secnumdepth}{3}
+        \setcounter{tocdepth}{2}
+        \dominitoc
+        \tableofcontents
+        \adjustmtc
+        \thispagestyle{frontmatter}
+        
+        \listoffigures
+        \thispagestyle{frontmatter}
+        \listoftables
+        \thispagestyle{frontmatter}
+        \listofalgorithms
+        \thispagestyle{frontmatter}
+        
+    \mainmatter
+    \justifying
+
+        \input{introduction}
+        \clearpage
+
+        \input{chap_01}
+        \clearpage
+        
+        \input{chap_02}
+        \clearpage
+        
+        \input{chap_03}
+        \clearpage
+        
+        %\input{chap_04}
+        %\clearpage
+        
+        \input{chap_05}
+        \clearpage
+
+        \input{chap_06}
+        \clearpage
+        
+        \input{conclusion}
+        \clearpage
+        
+        \printbibliography[heading=bibintoc]
+        
+
+    \backmatter
+        \input{./tpl/resume}
+        \clearpage
+
+
+\end{document}

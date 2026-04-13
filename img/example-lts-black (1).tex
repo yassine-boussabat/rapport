@@ -1,0 +1,64 @@
+\begin{tikzpicture}[>=stealth', auto, node distance=1.5cm]
+
+    % level 1
+    \node[state] (s1) {$s_1$};
+    
+    % level 2
+    \node[state,below of=s1] (s2) {$s_2$};
+
+    % level 3
+    \node[state,below of=s2] (s3) {$s_3$};
+
+    % level 4
+    \node[state, below of=s3] (s5) {$s_5$};
+    \node[state, left of=s5] (s4) {$s_4$};
+    \node[state, right of=s5] (s6) {$s_6$};
+
+    % level 5
+    \node[state, below of=s4] (s8) {$s_8$};
+    \node[state, left of=s8]  (s7) {$s_7$};
+    \node[state,below of=s5] (s9) {$s_9$};
+    \node[state, below of=s6] (s12) {$s_{12}$};
+
+    % level 6
+    \node[state, below of=s7] (s10) {$s_{10}$};
+    \node[state, below of=s8] (s11) {$s_{11}$};
+    \node[state, below of=s9] (s13) {$s_{13}$};
+
+    % level 7
+    \node[state, below of=s11] (s14) {$s_{14}$};
+    
+    % level 8
+    \node[state, below = 3.5cm of s12] (s15) {$s_{15}$};
+
+    % transition
+    \path (s1) edge[post] node [t_label,right] {$t_{1}$} (s2)
+          (s2) edge[post] node [t_label,right] {$t_{2}$} (s3)
+          (s3) edge[post] node [t_label,left] {$t_{3}$} (s4)
+          (s3) edge[post] node [t_label] {$t_{5}$} (s5)
+          (s3) edge[post] node [t_label] {$t_{6}$} (s6)
+          (s4) edge[post] node [t_label,left] {$t_{4}$} (s7)
+          (s4) edge[post] node [t_label,left] {$t_{5}$} (s8)
+          (s4) edge[post] node [t_label,right,pos=0.1] {$t_{6}$} (s9)
+          (s5) edge[post] node [t_label,left,pos=0.1] {$t_{3}$} (s8)
+          (s5) edge[post] node [t_label,right,pos=0.1,font=\bfseries] {$t_{7}$} (s12)
+          (s6) edge[post] node [t_label,left,pos=0.1] {$t_{3}$} (s9)
+          (s6) edge[post] node [t_label,font=\bfseries] {$t_{8}$} (s12)
+          (s7) edge[post] node [t_label,left] {$t_{5}$} (s10)
+          (s7) edge[post] node [t_label,right,pos=0.1] {$t_{6}$} (s11)
+          (s8) edge[post] node [t_label,left,pos=0.1] {$t_{4}$} (s10)
+          (s8) edge[post] node [t_label,right,pos=0.1,font=\bfseries] {$t_{7}$} (s13)
+          (s9) edge[post] node [t_label,left,pos=0.1] {$t_{4}$} (s11)
+          (s9) edge[post] node [t_label,right,font=\bfseries] {$t_{8}$} (s13)
+          (s12) edge[post] node [t_label] {$t_{3}$} (s13)
+          (s10) edge[post] node [t_label,left,font=\bfseries] {$t_{7}$} (s14)
+          (s11) edge[post] node [t_label,right,font=\bfseries] {$t_{8}$} (s14)
+          (s13) edge[post] node [t_label,right] {$t_{4}$} (s14);
+          
+          \draw[->] (s14) -- +(-2.2,0) |- node [t_label,left,pos=0.3,font=\bfseries] {$t_{10}$} (s7);
+          \draw[->] (s12) -- +(1,0) |- node [t_label,right, pos=0.3,font=\bfseries] {$t_{10}$} (s3);
+          \draw[->] (s14) |- node [t_label,left,pos=0.3] {$t_{9}$} (s15);
+          \draw[->] (s13) -- +(0,-3.2) -- ++(-4.5,-3.2) |- node [t_label,left,pos=0.3,font=\bfseries] {$t_{10}$} (s4);
+          \draw[->] (s15) -- +(2,0) |- node [t_label,right,pos=0.3] {$t_{11}$} (s1);
+ 
+\end{tikzpicture}

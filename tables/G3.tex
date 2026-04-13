@@ -1,0 +1,12 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=, scale=0.5]
+
+\node[state] (0) at (0, 0) {0};
+\node[state] (1) at (2.5cm, -2.5cm) {1};
+\node[state] (2) at (-2.5cm, -2.5cm) {2};
+
+\path
+(0) edge[loop above] node {$b$} (0)
+(0) edge[bend left=20, above] node {$a$} (1)
+(1) edge[bend left=20, above] node {$b$} (2)
+(2) edge[bend left=20, below] node {$c$} (0);
+\end{tikzpicture}

@@ -1,0 +1,21 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=,scale=0.5]
+
+\node[state, initial] (0) at (0, 0) {0};
+\node[state] (1) at (4cm,0) {1};
+\node[state] (5) at (8cm, 0) {5};
+\node[state] (0prim) at (12cm, 0) {0};
+\node[state] (1prim) at (16cm,0) {1};
+\node[state] (3) at (20cm, 4cm) {3};
+\node[state] (5prim) at (20cm,0cm) {5};
+\node[state] (5second) at (20cm,-4cm) {5};
+
+\path
+(0) edge[above] node {$a$} (1)
+(1) edge[above] node {$b$} (5)
+(5) edge[above] node {$e$} (0prim)
+(0prim) edge[above] node {$a$} (1prim)
+(1prim) edge[dashed, above] node {$b$} (5prim)
+(1prim) edge[dashed, above] node {$d$} (5second)
+(1prim) edge[dashed, above] node {$g$} (3);
+
+\end{tikzpicture}

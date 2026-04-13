@@ -1,0 +1,68 @@
+\begin{tikzpicture}[>=sblackth', auto, node distance=1cm]
+  \node [place, tokens=1]           (p1) [label=above:$p_{1}$] {} ;
+  \node [transition, below of=p1]   (t1) [label=right:$t_{1}$] {} ;
+  \node [place, below of=t1]        (p2) [label=right:$p_{2}$] {} ;
+  \node [transition, below of=p2]   (t2) [label=right:$t_{2}$] {} ;
+
+  % fork left
+  \node [place, below of=t2, xshift=-1.5cm]       (p3) [label=above:$p_{3}$] {} ;
+  \node [transition, below of=p3]               (t3) [label=left:$t_{3}$] {} ;
+  \node [place, below of=t3]                    (p5) [label=left:$p_{5}$] {} ;
+  \node [transition, left = 1cm of p5]        (t11) [label=left:\textcolor{black}{$t_{11}$},black] {} ;
+  \node [transition, below of=p5]               (t4) [label=left:$t_{4}$] {} ;
+  \node [place, below of=t4]                    (p7) [label=left:$p_{7}$] {} ;
+
+  % fork right
+  \node [place, below of=t2, xshift=1.5cm]        (p4) [label=above:$p_{4}$] {} ;
+
+  % fork left
+  \node [transition, below of=p4, xshift=-1cm]  (t5) [label=left:$t_{5}$] {} ;
+  \node [place, below of=t5]                    (p6) [label=left:$p_{6}$] {} ;
+  \node [transition, below of=p6]               (t7) [label=left:\textcolor{black}{$t_{7}$},black] {} ;
+
+  % fork right 
+  \node [transition, below of=p4, xshift=1cm]   (t6) [label=right:$t_{6}$] {} ;
+  \node [place, below of=t6]                    (p8) [label=right:$p_{8}$] {} ;
+  \node [transition, below of=p8]               (t8) [label=right:\textcolor{black}{$t_{8}$},black] {} ;
+  \node [transition, right = 1cm of p8]       (t10) [label=right:\textcolor{black}{$t_{10}$},black] {} ;
+
+  % join place
+  \node [place, below of=t8, xshift=-1cm]       (p9) [label=below:$p_{9}$] {} ;
+
+  % join transition 
+  \node [transition, below of=p7, xshift=1.5cm]   (t9) [label=left:$t_{9}$] {} ;
+  
+  \node [place, below of=t9]                    (p10) [label=right:$p_{10}$] {} ;
+  
+  \path (p1) edge [post] node {} (t1)
+        (t1) edge [post] node {} (p2)
+        (p2) edge [post] node {} (t2)
+        (t2) edge [post] node {} (p3)
+        (t2) edge [post] node {} (p4)
+        % left fork
+        (p3) edge [post] node {} (t3)
+        (t3) edge [post] node {} (p5)
+        (p5) edge [post] node {} (t4)
+        (t4) edge [post] node {} (p7)
+        (p7) edge [post] node {} (t9)
+        (t9) edge [post] node {} (p10)
+        % left fork 
+        (p4) edge [post] node {} (t5)
+        (t5) edge [post] node {} (p6)
+        (p6) edge [post] node {} (t7)
+        (t7) edge [post] node {} (p9)
+        (p9) edge [post] node {} (t9)
+        % right fork
+        (p4) edge [post] node {} (t6)
+        (t6) edge [post] node {} (p8)
+        (p8) edge [post] node {} (t8)
+        (t8) edge [post] node {} (p9);
+
+
+  \draw[->] (p10.west)  -| (t11.south);
+  \draw[->] (t11.north)  |- (p1.west);
+
+  \draw[->] (p9.east)  -| (t10.south);
+  \draw[->] (t10.north)  |- (p4.east);
+        
+\end{tikzpicture}

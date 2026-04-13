@@ -1,0 +1,28 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,initial text=,scale=0.5]
+
+\node[state, initial] (0) at (0, 0) {0};
+\node[state] (1) at (0, -2.5cm) {1};
+\node[state] (2) at (2.5, -10cm) {2};
+\node[state] (3) at (0, -12.5cm) {3};
+\node[state] (4) at (5, -12.5cm) {4};
+\node[state] (5) at (2.5cm, -2.5cm) {5};
+\node[state] (6) at (5cm, -5cm) {6};
+\node[state] (7) at (2.5cm, -5cm) {7};
+\node[state] (8) at (2.5cm, -7.5cm) {8};
+
+\path
+(0) edge node[right] {$b$} (1)
+(1) edge node[right] {$f$} (5)
+(1) edge node[left] {$c$} (3)
+(2) edge node[left] {$g$} (3)
+(2) edge [right, bend right=20] node{$a$} (4)
+(3) edge node[right] {$b$} (4)
+(4) edge [right, bend right=20] node{$b$} (2)
+(5) edge node[right] {$g$} (0)
+(5) edge[left, bend left=10] node {$h$} (4)
+(5) edge node[left ] {$b$} (6)
+(5) edge node[right] {$f$} (7)
+(7) edge node[right] {$g$} (8)
+(8) edge node[right] {$g$} (2);
+
+\end{tikzpicture}

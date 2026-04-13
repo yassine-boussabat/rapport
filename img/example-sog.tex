@@ -1,0 +1,127 @@
+\begin{tikzpicture}[>=stealth', auto, node distance=1.4cm]
+    \tikzstyle{label}=[draw, rectangle]
+
+
+    % Aggregate a0
+    \begin{scope}
+           \node[stateAggr]                (s1) {$s_1 (p_1)$};
+           \node[stateAggr, below of=s1]   (s2) {$s_2 (p_2)$};
+           \node[stateAggr, below of=s2]   (s3) {$s_3 (p_3,p_4)$};
+           \node[stateAggr, below of=s3]   (s5) {$s_5 (p_3,p_6)$};
+           \node[stateAggr, left = .7cm of s5]    (s4) {$s_4 (p_5,p_4)$};
+           \node[stateAggr, right = .7cm of s5]    (s6) {$s_6 (p_3,p_8)$};
+           \node[stateAggr, below of=s4]    (s8) {$s_8 (p_5,p_6)$};
+           \node[stateAggr, left = .7cm of s8]    (s7) {$s_7 (p_7,p_4)$};
+           \node[stateAggr, right = .7cm of s8]    (s9) {$s_9 (p_5,p_8)$};
+           \node[stateAggr, below of=s7]    (s10) {$s_{10} (p_7,p_6)$};
+           \node[stateAggr, right = .7cm of s10]    (s11) {$s_{11} (p_7,p_8)$};
+
+           \path 
+                (s1) edge[post] node [t_label,right] {$t_{1}$} (s2)
+                (s2) edge[post] node [t_label,right] {$t_{2}$} (s3)
+                (s3) edge[post] node [t_label,above] {$t_{3}$} (s4)
+                (s3) edge[post] node [t_label,right] {$t_{5}$} (s5)
+                (s3) edge[post] node [t_label,right] {$t_{6}$} (s6)
+                (s4) edge[post] node [t_label,above] {$t_{4}$} (s7)
+                (s4) edge[post] node [t_label,right] {$t_{5}$} (s8)
+                (s4) edge[post] node [t_label,right,pos=0.1] {$t_{6}$} (s9)
+                (s7) edge[post] node [t_label,left] {$t_{5}$} (s10)
+                (s7) edge[post] node [t_label,right,pos=0.1] {$t_{6}$} (s11)
+           ;
+
+          \path 
+                (s6) edge[post] node [t_label,left] {$t_{3}$} (s9)
+                (s5) edge[post] node [t_label,left,pos=0.1] {$t_{3}$} (s8)
+                (s8) edge[post] node [t_label,left,pos=0.1] {$t_{4}$} (s10)
+                (s9) edge[post] node [t_label,left] {$t_{4}$} (s11)
+                ;
+           
+            \node[aggregate,fit=(s1) (s10) (s6)] (a0) {};
+           \node[below = 1mm of a0.south]      (l0) {$\mathsf{a_{0}}$};
+    \end{scope}
+
+    % Aggregate a1
+    \begin{scope}[xshift=7.0cm,yshift=-1cm]
+           \node[stateAggr]                (s12) {$s_{12} (p_3,p_9)$};
+           \node[stateAggr,below of=s12]   (s13) {$s_{13} (p_5,p_9)$};
+           \node[stateAggr,below of=s13]   (s14) {$s_{14} (p_7,p_9)$};
+           \node[stateAggr,below of=s14]   (s15) {$s_{15} (p_{10})$};
+
+           \path 
+                (s12) edge[post] node [t_label,right] {$t_{3}$} (s13)
+                (s13) edge[post] node [t_label,right] {$t_{4}$} (s14)
+                (s14) edge[post] node [t_label,right] {$t_{9}$} (s15)
+            ;
+
+            \node[aggregate,fit=(s12) (s15)] (a1) {};
+           \node[below = 1mm of a1.south]    (l1) {$\mathsf{a_{1}}$};
+   \end{scope}
+
+    % Aggregate a2
+    \begin{scope}[xshift=3cm,yshift=-9.5cm]
+           \node[stateAggr]                (s16) {$s_{16} (p_3,p_4)$};
+           \node[stateAggr, below of=s16]                (s18) {$s_{18} (p_3,p_6)$};
+           \node[stateAggr, left = .7cm of s18]                (s17) {$s_{17} (p_5,p_4)$};
+           \node[stateAggr, right = .7cm of s18]                (s19) {$s_{19} (p_3,p_8)$};
+           \node[stateAggr, below of=s17]                (s21) {$s_{21} (p_5,p_6)$};
+           \node[stateAggr, left = .7cm of s21]                (s20) {$s_{20} (p_7,p_4)$};
+           \node[stateAggr, right = .7cm of s21]                (s22) {$s_{22} (p_5,p_8)$};
+           
+           \node[stateAggr, below of=s20]                (s23) {$s_{23} (p_7,p_6)$};
+           \node[stateAggr, right = .7cm of s23]                (s24) {$s_{24} (p_7,p_8)$};
+
+
+           \path 
+                (s16) edge[post] node [t_label,above] {$t_{3}$} (s17)
+                (s16) edge[post] node [t_label,right] {$t_{5}$} (s18)
+                (s16) edge[post] node [t_label,right] {$t_{6}$} (s19)
+                (s17) edge[post] node [t_label,above] {$t_{4}$} (s20)
+                (s17) edge[post] node [t_label,right] {$t_{5}$} (s21)
+                (s17) edge[post] node [t_label,right, pos=0.1] {$t_{6}$} (s22)
+                (s20) edge[post] node [t_label,left] {$t_{5}$} (s23)
+                (s20) edge[post] node [t_label,right,pos=0.1] {$t_{6}$} (s24)
+                ;
+
+          \path 
+                (s18) edge[post] node [t_label,left, pos=0.1] {$t_{3}$} (s21)
+                (s19) edge[post] node [t_label,left] {$t_{3}$} (s22)
+                (s21) edge[post] node [t_label,left, pos=0.1] {$t_{4}$} (s23)
+                (s22) edge[post] node [t_label,left] {$t_{4}$} (s24)
+                ;
+
+
+            \node[aggregate,fit=(s16) (s23) (s19)] (a2) {};
+           \node[below = 1mm of a2.south]    (l2) {$\mathsf{a_{2}}$};
+   \end{scope}
+
+   \pgfmathsetmacro{\offsetX}{.45}
+    
+   % orange actions 
+   \draw[->,orange] (s15.west) -- +(-.9,0) -- +(-.8,6.5) -| node[above,pos=0.2] {$t_{11}$} ($(s1.north) + (0,.38)$);
+    
+   % blue actions left
+   \draw[->,blue]        (s6)  -- node[above,t_label,blue] {$t_{8}$} +(1.5,0) |- ($(s12.west) - (\offsetX,-.1)$);
+   \draw[->,blue,dashed] (s9)  -- node[above,t_label,blue] {$t_{8}$} +(4.3,0) |- ($(s13.west) - (\offsetX,-.1)$); 
+   \draw[->,blue,dashed] (s11) -- node[above,t_label,blue] {$t_{8}$} +(7.,0) |- ($(s14.west) - (\offsetX,-.1)$);
+
+   % blue actions right
+   \draw[->,blue]        (s19) -- node[above,t_label,blue] {$t_{8}$} +(3.2,0) |- ($(s12.east) + (\offsetX,0)$);
+   \draw[->,blue,dashed] (s22) -- node[above,t_label,blue,pos=.8] {$t_{8}$} +(6.1,0) |- ($(s13.east) + (\offsetX,0)$);
+   \draw[->,blue,dashed] (s24) -- node[above,t_label,blue] {$t_{8}$} +(9,0)   |- ($(s14.east) + (\offsetX,0)$);
+
+   % red actions left
+   \draw[->,red]        (s5)  -- +(1,-.5) -- node[below,t_label,red] {$t_{7}$} +(3.9,-.5) |- ($(s12.west) - (\offsetX,.1)$);
+   \draw[->,red,dashed] (s8)  -- +(1,-.5) -- node[above,t_label,red] {$t_{7}$} +(6.8,-.5) |- ($(s13.west) - (\offsetX,.1)$); 
+   \draw[->,red,dashed] (s10) -- +(1,-.5) -- node[above,t_label,red] {$t_{7}$} +(9.6,-.5) |- ($(s14.west) - (\offsetX,.1)$); 
+
+    % read actions right
+   \draw[->,red]        (s18) -- +(1,-.5) -- node[above,t_label,red,pos=.8] {$t_{7}$} +(5.7,-.5) |- ($(s12.east) + (\offsetX,.1)$);
+   \draw[->,red,dashed] (s21) -- +(1,-.5) -- node[above,t_label,red] {$t_{7}$} +(8.6,-.5) |- ($(s13.east) + (\offsetX,.1)$);
+   \draw[->,red,dashed] (s23) -- +(1,-.5) -- node[above,t_label,red] {$t_{7}$} +(11.5,-.5) |- ($(s14.east) + (\offsetX,.1)$);
+
+   % green actions
+   \draw[->,teal]        (s12.west) -- +(-2.4,0) |- node[above,t_label,teal,pos=0.9]  {$t_{10}$} ($(s16.north) + (0,.9)$)  -- (s16.north);
+   \draw[->,teal,dashed] (s13.west) -- +(-1.7,0) |- node[above,t_label,teal,pos=0.9]  {$t_{10}$} ($(s17.north) + (0,2.1)$) --  (s17.north);
+   \draw[->,teal,dashed] (s14.west) -- +(-1.1,0) |-  node[above,t_label,teal,pos=0.9] {$t_{10}$} ($(s20.north) + (0,3.3)$) -- (s20.north);
+
+\end{tikzpicture}

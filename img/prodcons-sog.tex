@@ -1,0 +1,16 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,allow upside down, scale=0.5]
+
+\node[state,initial] (0) at (0, 0) {$a_0$};
+\node[state] (1) at (0cm, -2.5cm) {$a_1$};
+\node[state] (2) at (0cm, -5cm) {$a_2$};
+
+\path
+(1) edge[loop left] node {$t_2$} (1)
+(2) edge[loop left] node {$t_2$} (2)
+
+(0) edge[bend right=20, left] node {$t_2$} (1)
+(1) edge[bend right=20, right] node {$t_4$} (0)
+(1) edge[bend right=20, left] node {$t_2$} (2)
+(2) edge[bend right=20, right] node {$t_4$} (1);
+
+\end{tikzpicture}

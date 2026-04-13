@@ -1,0 +1,36 @@
+
+\begin{table}[htb!]
+    \centering
+    \scalebox{0.85}{
+    \begin{tabular}{|c|c|c|c|c|c|c|}
+    \hline
+    Nb nodes & Nb arcs &Time (s)& ILP Size (r,c) &Avg size& Nb of opt pth& Opt Avg size \\
+    \hline
+   \multirow{3}{*}{1000} 
+                              & 1000 & 0.04005  & (315 , 490)  & 7 &119 & 21 \\
+                              & 1200 & 0.088201 & (481 , 1903) & 12  & 166 & 21 \\
+                              & 1250 & 0.086095   & (328 , 2172) & 11 & 108 &19 \\
+
+    \hline
+        \multirow{3}{*}{2000}   & 2000  & 0.537548  & (355 , 1004)  & 7  & 104  & 22 \\
+                                & 2400  & 14.9252   & (349 , 3651)  & 13 & 82   & 23 \\
+                                & 2600  & MO        & (386 , 566285) & 78 & --   & -- \\
+        \hline
+        \multirow{3}{*}{3000}   & 3000  & 0.087241  & (572 , 1482)   & 7  & 188  & 21 \\
+                                & 3400  & 7.61547   & (586 , 6660)   & 18 & 174  & 24 \\
+                                & 3700  & 154.404   & (598 , 24875)  & 24 & 148  & 27 \\
+
+        \hline
+        \multirow{3}{*}{4000}   & 4000  & 3.18056   & (586 , 2054)   & 8  & 192  & 22 \\
+                                & 4400  & 4.60993   & (597 , 3662)   & 13 & 166  & 27 \\
+                                & 4600  & 1110.66   & (584 , 638452) & 25 & 150  & 25 \\
+
+        \hline
+      
+    \end{tabular}
+    }
+    \captionsetup{justification=centering} % Centre le titre du tableau
+    \caption{Preliminary results for random Graphs}
+    \label{tab:Randgraph_results}
+\end{table}
+

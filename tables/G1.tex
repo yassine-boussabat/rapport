@@ -1,0 +1,13 @@
+\begin{tikzpicture}[->,>=stealth,shorten >=1pt,auto,semithick,allow upside down, scale=0.5]
+
+\begin{scope}
+\node[state] (0) at (0, 0) {0};
+\node[state] (1) at (2.5cm, 2.5cm) {1};
+\node[state] (2) at (5cm, 0) {2};
+
+\path
+(0) edge[ left, above] node {$a$} (1)
+(1) edge[ left, above] node {$b$} (2)
+(2) edge[ left, above] node {$c$} (0);
+\end{scope}
+\end{tikzpicture}

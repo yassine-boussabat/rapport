@@ -1,0 +1,21 @@
+
+\begin{tikzpicture}[->, >=stealth, shorten >=1pt, auto, semithick, scale=0.7]
+
+    % Define nodes
+    \node[state, initial] (M0) at (0, 0) {$M_0$};
+    \node[state] (M1) at (3cm, 3cm) {$M_1$};
+    \node[state] (M2) at (6cm, 3cm) {$M_2$};
+    \node[state] (M3) at (9cm, 0cm) {$M_3$};
+    \node[state] (M4) at (6cm, -3cm) {$M_4$};
+    \node[state] (M5) at (3cm, -3cm) {$M_5$};
+
+    % Define transitions
+    \path
+    (M0) edge[left] node {$t_1$} (M1)
+    (M1) edge[above] node {$t_2$} (M2)
+    (M2) edge[above] node {$t_3$} (M3)
+    (M3) edge[left] node {$t_4$} (M4)
+    (M4) edge[above] node {$t_5$} (M5)
+    (M5) edge[above] node {$t_6$} (M0);
+
+\end{tikzpicture}

@@ -1,0 +1,75 @@
+\begin{table}[h!]
+\centering
+\begin{tabular}{|p{5cm}|p{1.5cm}|p{8cm}|p{1cm}|}
+\hline
+\textbf{Task} & \textbf{Priority} & \textbf{Subtasks} & \textbf{WIP} \\
+\hline
+Understanding the problem and project context & High & None & 1 \\
+\hline
+Literature review and research (Bibliography) & Medium & None & 1 \\
+\hline
+Understanding Symbolic Observation Graphs (SOGs) and Petri nets & High & 
+\begin{tabular}{@{}l@{}}
+- Constructing SOGs from Petri nets \\
+- Constructing reachability graphs
+\end{tabular}
+& 2 \\
+\hline
+Analysis and understanding of the SOG-based approach & Medium &
+\begin{tabular}{@{}l@{}}
+- Performing structural analysis to extract \\observable and unobservable transitions \\
+- Extracting observable and abstract paths
+\end{tabular}
+ & 2 \\
+\hline
+Analysis, verification and evaluation of the LTS-based approach & High & 
+\begin{tabular}{@{}l@{}}
+- Verification of the algorithm implementation \\
+- Verification of regular expression generation \\
+- Verification of path extraction \\
+- Verification of the linear programming \\implementation
+\end{tabular} & 1 \\
+\hline
+Updating and refining the code for the optimal LTS-based approach & High & 
+\begin{tabular}{@{}l@{}}
+- Generation of the Regular Expression \\
+- Extraction of Paths \\
+- Application of Linear Programming \\
+\end{tabular}
+& 2 \\
+\hline
+Researching neural network models applied to graphs & Medium & None & 1 \\
+\hline
+Integrating SOG into the optimal LTS-based solution & High & None & 2 \\
+\hline
+Extending the existing approach (dataset generation) & High & 
+\begin{tabular}{@{}l@{}}
+- Generate prefixes \\
+- Implement external module for optimal \\transition selection (Best Choice) \\
+- Populate the dataset
+\end{tabular} & 2 \\
+\hline
+Integrating the dataset generation module into the existing solution & Medium & None & 1 \\
+\hline
+Testing & Medium & 
+\begin{tabular}{@{}l@{}}
+- Generate graphs to serve as test inputs \\
+- Develop a module to create random graphs \\
+- Perform tests using toy example graphs \\ 
+- Conduct tests on random graphs \\
+- Document the results, and draw conclusions\\
+\end{tabular} 
+& 2 \\
+\hline
+Reporting & Medium & 
+\begin{tabular}{@{}l@{}}
+- Develop the report structure \\
+- Write and assemble the report
+\end{tabular}
+& 1 \\
+\hline
+\end{tabular}
+\captionsetup{justification=centering} % Center the caption
+\caption{Project tasks organized using the Kanban method.}
+\label{tab:backlog}
+\end{table}

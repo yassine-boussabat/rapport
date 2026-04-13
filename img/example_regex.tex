@@ -1,0 +1,40 @@
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,semithick,allow upside down]
+
+\begin{scope}
+\node[state] (0) at (1cm,2.5cm) {S0};
+\node[state] (2) at (1cm,1cm) {S2};
+\node[state] (3) at (3.5cm,1cm) {S3};
+\node[state] (1) at (-1.5cm,1cm) {S1};
+\node[state] (6) at (1cm,-0.5cm) {S6};
+\node[state] (7) at (3.5cm,-0.5cm) {S7};
+\node[state] (4) at (-1.5cm,-0.5cm) {S4};
+
+\node[state] (5) at (-1.5cm,-2cm) {S5};
+\node[state] (8) at (3.5cm,-2cm) {S8};
+
+\path
+(0) edge[bend angle=-30,bend left] node[above] {$d$} (1);
+\path
+(1) edge[bend angle=0,bend left] node[left] {$f$} (4);
+\path
+(4) edge[bend angle=0,bend left] node[left] {$a$} (5);
+\path
+(5) edge[bend angle=90,bend left] node[left] {$e$} (1);
+\path
+(0) edge[bend angle=0,bend left] node[left] {$a$} (2);
+\path
+(2) edge[bend angle=0,bend left] node[right] {$b$} (6);
+\path
+(6) edge[bend angle=-60,bend left] node[left] {$c$} (0);
+\path
+(0) edge[bend angle=30,bend left] node[above] {$b$} (3);
+\path
+(3) edge[bend angle=0,bend left] node[right] {$d$} (7);
+\path
+(3) edge[bend angle=0,bend left] node[below] {$c$} (6);
+\path
+(7) edge[bend angle=0,bend left] node[right] {$f$} (8);
+\path
+(7) edge[bend angle=0,bend left] node[below] {$e$} (5);
+\end{scope}
+\end{tikzpicture}
