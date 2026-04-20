@@ -17,3 +17,7 @@
 *.mtc*
 *.maf
 *.loa
+FIXES_SUMMARY.txt
+LATEX_FIXES_README.md
+compile.bat
+main.pdf
