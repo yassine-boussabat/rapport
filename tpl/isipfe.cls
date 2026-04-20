@@ -17,10 +17,8 @@
 \usepackage{amsmath}
 \usepackage{enumitem}
 \usepackage{semantic}
-\usepackage{amssymb}
 
 \usepackage{subcaption}
-\usepackage{subfigure}
 
 % ifthenelse for if loops
 \RequirePackage{ifthen}
@@ -318,6 +316,9 @@
   \renewcommand{\headrulewidth}{0pt}%
   \fancyfoot[r]{\footnotesize \thepage}%
 }
+
+%=============== Clever References ===============%
+\usepackage{cleveref}
 
 \fancypagestyle{lscape}{
   \fancyhf{}
