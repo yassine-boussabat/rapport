@@ -1,249 +1,298 @@
-\chapter{Preliminaries}
+\chapter{Requirements Analysis and Global Design}
+
+% ─────────────────────────────────────────────
 \section*{Introduction}
-\paragraph{}This chapter defines the fundamental concepts and notations used throughout the project. The chapter is structured to cover key topics systematically, starting with Petri Nets and progressing through Labelled Transition Systems, Symbolic Observation Graphs, Test Coverage Criteria, Linear Programming, and Regular Expressions.
+\addcontentsline{toc}{section}{Introduction}
+% ─────────────────────────────────────────────
 
-\section{Methodology workflow and tasks}
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=1\textwidth]{img/tab-ch2-end.png}
-    \caption{Kanban Board Overview for Chapter 2}
-    \label{fig:trello-2}
-\end{figure}
-From a project management perspective, this chapter addresses the tasks related to the bibliography, which include reading scientific papers, familiarizing with new concepts, studying relevant coursework, and working through examples of constructing SOG and marking graphs from Petri nets. These tasks are essential for building the necessary understanding and skills for the subsequent phases of the project. 
+\paragraph{}With the project context and problem statement established in the previous chapter, this chapter moves into the analysis and design phase. We start by describing the development methodology chosen to structure the work across the internship period. We then look at existing tools that address similar problems, and explain why none of them were a suitable fit for this specific context. From there, we derive the functional and non-functional requirements the system must satisfy, translate them into a global architecture, and lay out the product backlog and sprint plan that guided the implementation. The chapter closes with a description of the technical environment used throughout the project.
 
-Figure \ref{fig:trello-2} presents the final state of my Kanban board upon completing the tasks associated with this chapter.
+% ─────────────────────────────────────────────
+\section{Development Methodology}
+% ─────────────────────────────────────────────
 
-\section{Petri Net}
-\paragraph{}
-Model-Based Testing is a testing approach used for automated test generation, execution, and evaluation. It is based on a formal behavioral model of the tested system(SUT) \cite{model1,model2,model3}.
-While several models could possibly be used, Petri nets
-have some advantages. Petri nets provide a graphical notation, which can help visualize a process and so can be easy to understand. Finite State Machines are considered to be subclasses of Petri nets \cite{pnet}.
-\paragraph{}
-Petri nets are a graphical and mathematical modeling tool, invented by Carl Adam Petri during his thesis "Kommunikation mit Automaten" \cite{pnet1}. 
- It is a well established tool for describing and studying different types of information systems that are characterized as being concurrent, asynchronous, distributed, parallel, nondeterministic and/or timed.
+\paragraph{}Given the exploratory and iterative nature of this project — building a domain-specific tool with requirements that sharpen as understanding of the target platform deepens — an agile approach was the natural choice. Among the available agile frameworks, Scrum was selected for its lightweight structure, its emphasis on short delivery cycles, and the way it accommodates changing requirements without derailing the overall plan.
 
-\subsection{Syntax }
-This section shows a static representation of system with Petri nets.
-\begin{definition}\textbf{ Petri Net graph}
-\newline A Petri Net graph is a tuple PNg=(P, T, F, W), where :
+% ─────────────────────────────────────────────
+\subsection{Scrum Framework Overview}
+% ─────────────────────────────────────────────
+
+\paragraph{}Scrum organizes work into fixed-length iterations called sprints, each ending with a potentially shippable increment of the product. Within this project, the Scrum roles were adapted to the internship context as follows:
+
 \begin{itemize}
-    \item P=\{p$_{1}$, p$_{2}$,..., p$_{n}$ \} is a finite set of places describing states of a system. It can represent a condition, an input, an output or a resource and conventionally, it is depicted with circles.
-    \item T=\{t$_{1}$, t$_{2}$,..., t$_{n}$\} is a finite set of transitions describing the system behaviour. It can correspond to a treatment or actions that cause state changes. Each element of this set is represented with long narrow rectangles.
-    \item F : (P X T) $\cup$ (T X P) is a set of arcs (as one-way arrows) connecting places to transitions (input place) and transitions to places (output place).
-   
-    \item W: F$\rightarrow \mathbb{Z}$  represents arcs weights assigning to each arc a positive integer.
-    \end{itemize}
-    
-\end{definition}
+    \item \textbf{Product Owner:} The internship supervisor at Linedata, responsible for defining priorities, validating deliverables, and ensuring the tool aligned with the team's actual testing needs.
+    \item \textbf{Scrum Master / Developer:} The intern, responsible for planning, executing, and delivering each sprint increment, as well as managing impediments and adjusting scope when needed.
+\end{itemize}
 
-For the sake of simplicity and without loss of generality, we assume, that the weight of the edges are all equal to $1$. 
+\paragraph{}The main Scrum artifacts used throughout the project were the \textbf{product backlog} — a prioritized list of all features and tasks — and the \textbf{sprint backlog} — the subset of items committed to for each sprint. Brief review sessions at the end of each sprint served as the delivery checkpoint, where the increment was demonstrated and feedback was collected before planning the next cycle.
 
-A marking of a Petri net $\mathcal{N}$ is a function $m: P \rightarrow \mathbb{Z}$ assigning a number of tokens to each place. A Petri net model is generally associated with an initial marking, denoted by $m_0$, that represents the initial state of the underlying system. \Cref{pnm} illustrates a Petri net example where the places are represented by circles and transitions by rectangles. The initial marking is such that place $p_1$ contains one token and all the other places are empty. 
+% ─────────────────────────────────────────────
+\subsection{Sprint Planning Overview}
+% ─────────────────────────────────────────────
 
- Figure ~\ref{pn-prodcons} shows a marked Petri net of the producer/consumer model, in which the places p$_{1}$ and p$_{2}$ are initially marked.\\ 
-  P=\{p$_{1}$, p$_{2}$, p$_{3}$, p$_{4}$, p$_{5}$\}, \newline T=\{t$_{1}$, t$_{2}$, t$_{3}$, t$_{4}$\},\newline F=\{(p$_{1}$, t$_{1}$), (t$_{1}$, p$_{2}$), (p$_{2}$, t$_{2}$), (t$_{2}$, p$_{1}$), (t$_{2}$, p$_{3}$), (p$_{3}$, t$_{3}$), (t$_{3}$, p$_{5}$), (p$_{5}$, t$_{4}$), (t$_{4}$, p$_{4}$), (p$_{4}$, t$_{3}$)\}.
-     
- Thus, the initial marking of this Petri net is defined by : $M_0$=\{ 1, 1, 0, 0, 0\}. \\
+\paragraph{}The internship was organized into five sprints, each targeting a distinct phase of the project. Table~\ref{tab:sprints} gives an overview of the sprint plan.
 
-\subsection{Reachability Graph}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|c|p{4cm}|p{7.5cm}|}
+\hline
+\textbf{Sprint} & \textbf{Focus} & \textbf{Main Objectives} \\
+\hline
+1 & Discovery \& Analysis & Study existing SQL scripts, understand Longview's data model, business rules, and pre-BCP buffer conventions \\
+\hline
+2 & Standalone Mode & Build the base SQL generation engine and templates; implement parameter-driven data generation; deliver initial UI \\
+\hline
+3 & Connected Mode & Add read-only SQL Server connection; implement generation based on existing accounts, securities, and models \\
+\hline
+4 & LLM Integration & Integrate Gemini API; generate realistic financial data through prompt engineering; validate and post-process LLM output \\
+\hline
+5 & Testing \& Finalization & Write unit and integration tests; validate generated scripts on SQL Server; finalize and polish the UI \\
+\hline
+\end{tabular}
+\caption{Sprint planning overview}
+\label{tab:sprints}
+\end{table}
 
-\begin{definition}\textbf{Reachability Graph}
+% ─────────────────────────────────────────────
+\section{Study of Existing Solutions}
+% ─────────────────────────────────────────────
 
+\paragraph{}Before designing anything, it made sense to look at what already exists in the space of test data generation. Several tools and approaches address this problem in general terms. Understanding where they fall short in this specific context helped justify the decision to build a custom solution.
 
-\newline The reachability graph of a Petri net is a directed graph, G = (V, E), where each node, v $\in$ V, represents a reachable marking and each edge, e $\in$ E, represents a transition between two reachable markings v and v' where $v\stackrel{e}{\longrightarrow}v'$.
+% ─────────────────────────────────────────────
+\subsection{Generic Test Data Generation Tools}
+% ─────────────────────────────────────────────
 
+\paragraph{}The most commonly used tools for generating synthetic test data fall into three categories:
+
+\begin{itemize}
+    \item \textbf{Mockaroo} \cite{mockaroo}: A web-based tool that generates random data across a wide range of field types and exports it in various formats including SQL, CSV, and JSON. It is quick to use for simple flat datasets but has no concept of relational integrity or cross-table dependencies. There is no way to encode the kind of rules that Longview requires — for instance, ensuring that every position references a security that has a corresponding price record, or that execution quantities never exceed the parent order.
+
+    \item \textbf{Faker (various language libraries)} \cite{faker}: A widely used library available in Python, JavaScript, and other languages that generates plausible fake data — names, addresses, numbers, dates. It is excellent for populating individual fields with realistic-looking values, but it operates at the field level, not the dataset level. Building coherent multi-table financial datasets on top of Faker requires writing all the coordination logic by hand, which is essentially the same problem the tool was meant to solve.
+
+    \item \textbf{SQL Server Data Tools / Redgate SQL Data Generator} \cite{redgate}: These tools are closer to the target use case — they generate SQL INSERT statements for relational schemas and can respect foreign key relationships. However, they operate on a generic schema inference basis. They have no knowledge of financial domain rules, no concept of Longview's pre-BCP buffer mechanism, and no way to produce the specific Unicode and type casting conventions the platform requires. The scripts they produce would need significant manual post-processing before they could be used with Longview.
+\end{itemize}
+
+% ─────────────────────────────────────────────
+\subsection{Why None of Them Fit}
+% ─────────────────────────────────────────────
+
+\paragraph{}The gap these tools all share comes down to the same thing: they are built for the general case, not for a specific financial platform with its own data model, its own loading conventions, and its own business rules. Longview's pre-BCP buffer architecture, the \texttt{N'...'} Unicode prefix requirement, the typed numeric identifiers, the cross-entity constraints between orders, executions, positions, and prices — none of this can be encoded in a generic tool without effectively rebuilding the domain logic from scratch. At that point, you are no longer configuring an existing tool; you are building a custom one anyway.
+
+\paragraph{}This analysis confirmed that a purpose-built solution was the right path, and that the core value of the tool would lie precisely in the domain knowledge encoded into its generation logic.
+
+% ─────────────────────────────────────────────
+\section{Requirements}
+% ─────────────────────────────────────────────
+
+% ─────────────────────────────────────────────
+\subsection{Functional Requirements}
+% ─────────────────────────────────────────────
+
+\paragraph{}The functional requirements were gathered through analysis of the existing SQL scripts, discussions with the Longview development team, and review of the project brief. They fall naturally into two groups, corresponding to the two operating modes of the system.
+
+\subsubsection{Mode 1 — Parameter-Driven Generation (Standalone)}
+
+\paragraph{}In this mode, the system generates a complete, self-contained test dataset from user-supplied parameters, with no database connection required. The specific requirements are:
+
+\begin{itemize}
+    \item The user must be able to specify the number of accounts, securities per asset class, orders, executions, and positions to generate.
+    \item The user must be able to configure date ranges, base currencies, instrument types, and scenario-level options through a web interface.
+    \item The system must generate all entities in dependency order — securities before accounts, accounts before orders, orders before executions and positions.
+    \item All generated data must respect Longview's pre-BCP buffer conventions: \texttt{N'...'} string literals, \texttt{CAST(N'...' AS DateTime)} date values, and \texttt{CAST(n AS Numeric(10,0))} identifiers.
+    \item The output must be a complete, executable SQL script that can be run on any clean Longview SQL Server instance without modification.
+    \item The system must support all major asset classes handled by Longview: equities, fixed income, futures, options, and FX forwards.
+\end{itemize}
+
+\subsubsection{Mode 2 — Existing Data Generation (Connected)}
+
+\paragraph{}In this mode, the system connects to a live Longview SQL Server instance in read-only mode, reads what is already there, and generates additional records that are coherent with the existing database state. The specific requirements are:
+
+\begin{itemize}
+    \item The user must be able to provide SQL Server connection credentials through the interface.
+    \item The system must retrieve existing accounts, securities, models, and prices from the connected instance.
+    \item Generated orders, executions, and positions must reference only entities that actually exist in the connected database.
+    \item The connection must be strictly read-only — the application must never write to, modify, or delete any data in the connected database.
+    \item The output is still a SQL script, not a direct database write — the user runs it manually after review.
+\end{itemize}
+
+\subsubsection{Global Use Case Diagram}
+
+% TODO: Replace with actual use case diagram image
 \begin{figure}[h!]
 \centering
-\begin{minipage}[b]{0.48\linewidth}
-\centering
-    \includegraphics[width=0.5\textwidth]{img/expn.png}
-    \caption{Exemple of a Petri net \cite{chouikha}}
-    \label{reach1}
-\end{minipage}
-\hfill
-\begin{minipage}[b]{0.48\linewidth}
-\centering
-    \includegraphics[width=1\textwidth]{img/gmark.png}
-    \caption{Its reachability graph \cite{chouikha}}
-    \label{reach2}
-\end{minipage}
+% \includegraphics[width=0.9\textwidth]{img/usecase-global.png}
+\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
+\textit{[Global use case diagram — to be inserted]}
+\vspace{2cm}}}
+\caption{Global use case diagram of the test data generator}
+\label{fig:usecase-global}
 \end{figure}
 
-\end{definition}
+% ─────────────────────────────────────────────
+\subsection{Non-Functional Requirements}
+% ─────────────────────────────────────────────
 
-\newline To build the reachability graph in an exhaustive way, we start with the initial marking and build the different arcs and nodes progressively. For each new marking we define the set of firable transitions and for each transition we add an arc to the new marking. If a marking is already present  in the graph, we simply add the arc \cite{markgraph}.
- Once the reachability graph is constructed, a number of behavioral properties can be evaluated.
+\paragraph{}Beyond what the system must do, several quality constraints shape how it should behave:
 
-
-\paragraph{}The figure~\ref{reach2} shows the reachability graph corresponding to the petri net of the figure~\ref{reach1}. 
-
-
-\section{Labelled Transition Systems LTS}
-\begin{definition}\textbf{LTS}
-\newline An LTS consists of a set of states and a set of transitions between those states. These transitions are labelled by actions and one state is designated as the initial state.
-\newline Formally, a \emph{labelled transition system} ($\LTS$ for short) $\mathcal{T}$ is a 4-tuple $(S,\Act,\rightarrow,s_0)$
-where:
 \begin{itemize}
-    \item S is a (finite) set of states;
-    \item $\Act$  is a (finite) set of actions;
-    \item $\rightarrow$ $\in $ S $\times$ Act $\times$ S is a transition relation.
-    \item $s_0$  is the initial state.
-\end{itemize}
-It is called finite when S and T (and hence also $\rightarrow$) are
-finite sets.
-\end{definition}
+    \item \textbf{Performance:} Generating a dataset of typical size — covering one account with a full set of securities, orders, executions, and positions — should complete within a few seconds. LLM-assisted generation is allowed to take longer given the network round-trip involved, but the result should still feel responsive from the user's perspective.
 
+    \item \textbf{Security:} The connected mode must operate in strict read-only mode. The application must have no capability to write, update, or delete data in any connected database. Connection credentials must not be stored or logged beyond the active session.
+
+    \item \textbf{Maintainability:} The generation logic for each entity type must be isolated in its own service module, so that adding support for a new instrument type or updating a business rule does not require changes across the entire codebase.
+
+    \item \textbf{Extensibility:} The system architecture must make it straightforward to add new entity types, new asset classes, or new output formats in the future without restructuring the core engine.
+
+    \item \textbf{Usability:} The web interface must be usable by QA engineers who are not necessarily developers. Error messages must be clear, form inputs must be validated before submission, and the generated SQL output must be easy to copy or download.
+\end{itemize}
+
+% ─────────────────────────────────────────────
+\section{Global Architecture}
+% ─────────────────────────────────────────────
+
+\paragraph{}The requirements above point toward a classic full-stack web application architecture, with a clear separation between the user interface, the generation logic, the LLM integration, and the database access layer.
+
+% ─────────────────────────────────────────────
+\subsection{Logical Architecture}
+% ─────────────────────────────────────────────
+
+\paragraph{}At the logical level, the system is organized into four layers that communicate in a well-defined sequence, as shown in Figure~\ref{fig:arch-logical}.
+
+% TODO: Replace with actual logical architecture diagram
 \begin{figure}[h!]
-    \centering
-    \include{img/lts}
-    \caption{Exemple of an LTS}
-    \label{lts}
+\centering
+% \includegraphics[width=0.88\textwidth]{img/arch-logical.png}
+\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
+\textit{[Logical architecture diagram: Frontend → Backend → Gemini API / SQL Server]}
+\vspace{2cm}}}
+\caption{Logical architecture of the test data generator}
+\label{fig:arch-logical}
 \end{figure}
-\paragraph{}Figure ~\ref{lts} \cite{chouikha} is a labeled transition system composed of four states {S$_{0}$, S$_{1}$, S$_{2}$, S$_{3}$} with S$_{0}$ is the initial state and S$_{3}$ is the final state represented with two circumscribed circles. It is composed of seven transitions: from t$_{1}$ to t$_{5}$, $\alpha$ and $\beta$.
 
-
-\paragraph{Petri net and LTS }
- All notions defined for labelled transition systems, such as the complete traces of sequences, or the set of reachable marking, apply verbatim to
-Petri nets through their reachability graphs.
- Thus, we can say that in the case of a petri net design the corresponding LTS is its reachability graph.
-
-
-\section{Symbolic Observation Graph SOG}
-
-\paragraph{}The symbolic observation graph (SOG)\cite{Haddad04,KlaiPe08} is an abstraction of an  LTS/KS\footnotemark[1]
- that preserves the LTL$\backslash$X properties (linear temporal logic except the operator X) of the system.
- \newline In the beginning, the SOG has been proposed to cope with the state explosion problem of model checking  in order to get a manageable state space. 
- \newline The building of such an abstraction is
-guided by the property (the LTL formula) to be checked and is equivalent to the original
-state space graph of the system.
-The set of atomic propositions  appearing in this LTL formula are called Observed(obs) while the rest of the prepositions is called UnObserved(UnObs).
-  \newline In SOG, nodes, called aggregates, are
-sets of states connected by unobserved transitions  and represented by Binary Decision Digram (BDD)\cite{bdd}.
-  
- \footnotetext[1]{Linear temporal logic/Kripke structure.}
- \footnotetext[2]{Function to compute the closure of an aggregate under the action of the unobserved events (UnObs).}
- 
-\begin{definition}\textbf{aggregate}
-\newline Let T = (S,Act,$\rightarrow$,I), where Act=Obs $\cup$ UnObs( observed and unobserved actions), be an LTS  over an atomic proposition set AP. An aggregate \textbf{a} is a non empty subset s of S satisfying:
 \begin{itemize}
-    \item  $\forall$x $\in$ s, $\exists$ i$\in$ I and $\exists$ $\sigma \in$  $Act^{*}$ s.t. $i\stackrel{\sigma}{\longrightarrow}x$.
-    \item  $\forall$x $\in$ s, $\forall$ x'$\in$ S, $\forall$ $\delta \in$  $UnObs^{*}$, $x'\stackrel{\delta}{\longrightarrow}x$ $\Rightarrow$ x'$\in$ s.
-     \item $\forall$x $\in$ s: \textbf{Saturate(x)}  \footnotemark[2] =a.
+    \item \textbf{Presentation layer (Frontend):} A React application that exposes the configuration forms, displays the generated SQL output, and handles user interaction. It communicates with the backend exclusively through a REST API.
+    \item \textbf{Business logic layer (Backend):} A NestJS application that hosts all generation services — one per entity type. It receives configuration parameters from the frontend, orchestrates the generation sequence, optionally calls the Gemini API for realistic field values, and assembles the final SQL script.
+    \item \textbf{LLM integration layer:} An optional component that sends structured prompts to the Google Gemini API and processes the responses. Its output feeds back into the generation services to enrich specific fields — security names, symbols, descriptions — with realistic financial content.
+    \item \textbf{Data access layer:} Active only in connected mode. A read-only SQL Server connection that retrieves existing reference data from a live Longview instance, which the generation services then use as anchors for the new records they produce.
 \end{itemize}
 
-\end{definition}
-\begin{definition}\textbf{Symbolic Observation Graph}
-\newline A symbolic observation graph associated with a LTS (S,Obs$\cup$UnObs,$\rightarrow$,I) is a 4-tuple G=(S',Act',$\rightarrow$',I'), such that:
-\begin{itemize}
-   
-    \item S' is a finite set of agregates.
-       \item Act' = Obs.
-    \item $\rightarrow$' $\subseteq $ S'$\times$ Act $\times$ S' is a transition relation: if s',s''$\in$ S' $\Rightarrow  \exists \beta \in$ $Act'^{*}$ : $s'\stackrel{\beta}{\longrightarrow}s''$.
-    \item I’ = {$a_{0}$ } avec $a_{0}$= \textbf{Saturate(I)} . 
-    
-\end{itemize}
+% ─────────────────────────────────────────────
+\subsection{Physical Architecture}
+% ─────────────────────────────────────────────
 
-\end{definition}
+\paragraph{}At the physical level, the system runs as two separate processes on the developer's machine during development, and can be containerized for deployment, as illustrated in Figure~\ref{fig:arch-physical}.
 
- The SOG construction algorithm is presented and detailed in \cite{10}. We start with the
-creation of the initial aggregate $a_{0}$.  Then, we create its successors using the conditions presented
-above. The rest of the graph is built iteratively.
-\paragraph{}Figure ~\ref{sog} \cite{chouikha} shows the SOG related to the LTS example ~\ref{lts}. In this example, the set of observed transitions is \{$\alpha$, $\beta$\} while from $t_{1}$ to $t_{5}$ represent the rest of unobserved actions. The SOG presented contains two aggregates $a_{0}$, $a_{1}$ and two edges $\alpha$ and $\beta$.
+% TODO: Replace with actual physical architecture diagram
 \begin{figure}[h!]
-    \centering
-    \include{img/sog}
-    \caption{The SOG corresponding to the LTS of Figure \ref{lts} under the observation of \{$\alpha$, $\beta$\}  }
-    \label{sog}
+\centering
+% \includegraphics[width=0.88\textwidth]{img/arch-physical.png}
+\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
+\textit{[Physical architecture diagram — to be inserted]}
+\vspace{2cm}}}
+\caption{Physical architecture of the test data generator}
+\label{fig:arch-physical}
 \end{figure}
 
-\section{Test Coverage Criteria}
-\paragraph{}To test software effectively, we must generate test cases, which are typically evaluated based on coverage criteria. Coverage criteria are the rules or requirements that a test suite must satisfy to be deemed adequate. These criteria aim to measure and describe how well the test suite or individual test cases address the system's functionality. The primary purpose of coverage criteria is to assess the quality of the generated tests. They define specific test objectives or requirements that test inputs (derived from the test cases) need to meet. When test inputs fulfill these objectives, the confidence a tester has in the system corresponds to the level of thoroughness mandated by the coverage criterion.
-
-Several coverage criteria for Petri nets are outlined in~\cite{Offutt2019}, including Structural and Behavioural Analysis Coverage (SBAC) and Concurrent Session Behaviour Coverage Criteria (CSBCC). In addition, \cite{testing-pn} classifies high-level Petri net testing methods into four distinct categories: 
 \begin{itemize}
-    \item Transition-oriented testing
-    \item State-oriented testing
-    \item Data flow-oriented testing
-    \item Specification-oriented testing
+    \item The \textbf{React frontend} runs as a Vite development server (or as a static build) and is accessed through a browser.
+    \item The \textbf{NestJS backend} runs as a Node.js process, exposing a REST API on a configurable port.
+    \item The \textbf{Gemini API} is an external service accessed over HTTPS — no local installation is required.
+    \item The \textbf{SQL Server instance} is an existing Linedata environment accessed in read-only mode in connected mode. In standalone mode, no database connection is needed at all.
 \end{itemize}
 
+% ─────────────────────────────────────────────
+\section{Product Backlog and Sprint Planning}
+% ─────────────────────────────────────────────
 
-In this project, we focus on the transition coverage criteria of Petri nets, which is a transition-oriented testing. It ensures that every transition in the Petri net is executed at least once during the testing process. This criterion is essential for verifying that all possible state changes within the system are tested, ensuring thorough exploration of the Petri net's behavior. By covering all transitions, we can detect potential errors or missed behaviors that may not surface if certain transitions remain untested. The specific details and formal definition of this criterion will be discussed next.
+\paragraph{}The product backlog captures all the features and tasks identified during the analysis phase, organized by priority. Table~\ref{tab:backlog} presents the main backlog items grouped by sprint.
 
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|c|p{4.5cm}|p{6.5cm}|c|}
+\hline
+\textbf{Sprint} & \textbf{User Story} & \textbf{Description} & \textbf{Priority} \\
+\hline
+1 & Study existing scripts & Analyze reference SQL files, identify conventions, constraints, and entity dependencies & High \\
+1 & Map Longview data model & Document pre-BCP buffer tables, stored procedures, and field-level type rules & High \\
+\hline
+2 & Generate securities & Produce valid equity, fixed income, futures, options, and FX forward records & High \\
+2 & Generate accounts & Produce accounts linked to currencies, models, and managers & High \\
+2 & Generate orders \& executions & Produce orders with correct quantities and linked executions & High \\
+2 & Generate positions & Produce position records consistent with executed orders & High \\
+2 & Build SQL template engine & Assemble TRUNCATE, IDENTITY\_INSERT, INSERT, and stored procedure call blocks & High \\
+2 & Build parameter form UI & Allow users to configure generation options through the web interface & Medium \\
+\hline
+3 & SQL Server connection & Implement read-only connection with credential input and connection testing & High \\
+3 & Retrieve existing entities & Fetch accounts, securities, models, and prices from a connected instance & High \\
+3 & Connected mode generation & Generate orders, executions, and positions anchored to existing database records & High \\
+\hline
+4 & Gemini API integration & Set up API client, manage prompts, handle responses and errors & High \\
+4 & LLM-enriched generation & Use Gemini to produce realistic security names, symbols, and descriptions & Medium \\
+4 & LLM output validation & Parse, validate, and sanitize Gemini responses before injecting into templates & High \\
+\hline
+5 & Unit tests & Test individual generation service methods for correctness and constraint compliance & Medium \\
+5 & Integration tests & Validate full generation pipeline output against SQL Server & High \\
+5 & UI finalization & Polish interface, improve error handling, add download and copy features & Medium \\
+\hline
+\end{tabular}
+\caption{Product backlog organized by sprint}
+\label{tab:backlog}
+\end{table}
 
-\begin{definition}[Transition Coverage]
-Let $\mathcal{N}=(P, T, F, W)$ be a Petri net, and $\mathcal{T}_s=\{\sigma_1, \sigma_2, \dots, \sigma_n\}$ be a test suite. $\mathcal{T}_s$ satisfies \emph{transition coverage} criterion \textit{iff} $\forall t \in T$,  $\exists \sigma \in \mathcal{T}_s$, $t \in \bar{\sigma }$.
+% ─────────────────────────────────────────────
+\section{Technical Environment}
+% ─────────────────────────────────────────────
 
-\end{definition}
+\paragraph{}The technology choices made for this project reflect both the requirements of the system and the constraints of the internship environment. The stack covers the full development chain from the user interface down to the database layer.
 
-\section{Linear Programming}
-\subsection{Definition}
-Linear programming is a field within applied mathematics focused on solving optimization problems that take a specific form. These problems involve a linear objective function—composed of multiple variables—that needs to be either minimized or maximized, subject to a set of constraints. These constraints are represented by linear inequalities involving the same variables in the objective function. While linear programming is closely linked to linear algebra, it is distinct in its frequent use of inequalities rather than equalities in the problem formulation \cite{schulze2000}.
+% ─────────────────────────────────────────────
+\subsection{Hardware}
+% ─────────────────────────────────────────────
 
-\subsection{Terminology}
-A linear programming problem is said to be in \textit{standard form} when it is written as:
+\paragraph{}Development was carried out on a standard workstation provided by Linedata Tunisia, running Windows 10. The same machine was used for running the frontend and backend processes locally, and for connecting to the SQL Server instances available in the team's development environment.
 
-\begin{equation*}
-\begin{array}{lr@{}c@{}r@{}l@{}r}
-\text{\textbf{Maximize}}   & \sum_{j=1}^{n} c_j x_j   &        &   \\
-\text{\textbf{Subject to}} & \sum_{j=1}^{n} a_{ij} x_j & \leq b_i & i = 1, \dots, m \\
-                           & \hspace{1.5cm} x_j \geq 0 &&\hspace{1.5cm} j = 1, \dots, n
-\end{array}
-\end{equation*}
+% ─────────────────────────────────────────────
+\subsection{Software and Technologies}
+% ─────────────────────────────────────────────
 
-The problem has \(m\) constraints and \(n\) variables. It may also be written using vector notation as:
+\paragraph{}Table~\ref{tab:techstack} summarizes the main tools and technologies used across the project.
 
-\begin{equation*}
-\begin{array}{lr@{}c@{}r@{}l@{}r}
-\text{\textbf{Maximize}}   & \mathbf{c}^T \mathbf{x} &            &        & & \\
-\text{\textbf{Subject to}} & \mathbf{A} \mathbf{x}   & \leq{}   & \mathbf{b} & & \\
-                           & \mathbf{x}   & \geq{} & 0 & & 
-\end{array}
-\end{equation*}
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.5cm}|p{3cm}|p{6.5cm}|}
+\hline
+\textbf{Category} & \textbf{Technology} & \textbf{Justification} \\
+\hline
+Frontend framework & React 18 + TypeScript & Component-based architecture, strong typing, large ecosystem, well-suited for form-heavy interfaces \\
+\hline
+UI styling & Tailwind CSS + shadcn/ui & Utility-first CSS for rapid, consistent UI development without custom stylesheets \\
+\hline
+Build tool & Vite & Fast development server and optimized production builds for React projects \\
+\hline
+Backend framework & NestJS + TypeScript & Modular, decorator-based architecture that maps naturally to the service-per-entity design; built on Node.js \\
+\hline
+Database driver & mssql (node-mssql) & Official Node.js driver for SQL Server, supports connection pooling and parameterized queries \\
+\hline
+LLM API & Google Gemini API & Accessible REST API with strong instruction-following capability for structured financial data generation \\
+\hline
+Version control & Git + GitHub & Standard version control for tracking progress, managing branches, and sharing code \\
+\hline
+Target database & SQL Server & The database platform underlying all Longview deployments \\
+\hline
+IDE & Visual Studio Code & Lightweight, extensible, with strong TypeScript and NestJS support through extensions \\
+\hline
+\end{tabular}
+\caption{Technical stack summary}
+\label{tab:techstack}
+\end{table}
 
-Note that a problem where we want to minimize the cost function instead of maximizing it may be rewritten in standard form by negating the cost coefficients \(c_j\) (i.e., \(\mathbf{c}^T\)).
-
-Any vector \(\mathbf{x}\) satisfying the constraints of the linear programming problem is called a \textit{feasible solution} to the problem. Every linear programming problem falls into one of three categories:
-
-\begin{itemize}
-    \item \textbf{Infeasible : } A linear programming problem is infeasible if a feasible solution to the problem does not exist; that is, there is no vector \(\mathbf{x}\) for which all the constraints of the problem are satisfied.
-    \item \textbf{Unbounded : } A linear programming problem is unbounded if the constraints do not sufficiently restrain the cost function so that for any given feasible solution, another feasible solution can be found that makes a further improvement to the cost function.
-    \item \textbf{Has an optimal solution : } Linear programming problems that are not infeasible or unbounded have an optimal solution; that is, the cost function has a unique minimum (or maximum) value. This does not necessarily mean that the values of the variables that yield that optimal solution are unique.
-\end{itemize}
-
-The basic algorithm most often used to solve linear programming problems is called the \textit{simplex method}. Over the past 50 years, it has been developed to the point that good computer programs using the simplex method and its relatives (the revised simplex method and the network simplex method) can solve virtually any bounded, feasible linear programming problem of reasonable size in a reasonable amount of time. Only in the past ten years have other methods of solving linear programming problems (so-called \textit{interior point methods}) developed to the point where they can be used to solve practical problems.
-
-\subsection{Integer Programming}
-
-Integer programming (IP) involves solving linear models where some or all of the variables are restricted to integer values. Specialized algorithms are designed for IP problems, which typically find the optimal solution by solving a sequence of linear programming (LP) problems. Depending on the nature of the variables, IP models can be categorized into three types:
-
-\begin{itemize}
-    \item \textbf{Mixed Integer Programming (MIP):} Only some of the variables are restricted to integer values.
-    \item \textbf{Pure Integer Programming (PIP):} All the variables are integers.
-    \item \textbf{Binary Integer Programming (0-1 Integer Programming):} All the variables are binary, meaning they are restricted to the values 0 or 1.
-\end{itemize}
-
-In our work, we focus exclusively on the binary case.
-
-\section{Regular expressions}
-
-\begin{definition}
-A regular expression over $\Sigma^{*}$ is a well-formed formula built inductively from the constants 0 and 1 and the letters $a$ in $\Sigma$ as atomic formulas, using two binary operators $+$ and $\cdot$ and one unary operator $^{*}$. 
-\end{definition}
-If $E$ and $F$ are regular expressions, so are $(\mathrm{E}+\mathrm{F}), (\mathrm{E} \cdot \mathrm{F})$, and $\left(\mathrm{E}^{*}\right)$. $RatE \text{ } \Sigma^{*}$ denotes the set of regular expressions over $\Sigma^{*}$~\cite{Sakarovitch15}. With every expression $\mathrm{E}$ in $RatE \text{ } \Sigma^{*}$ is associated a language of $\Sigma^{*}$, called the language of $\mathrm{E}$ and denoted by $|\mathrm{E}|$. The language $|\mathrm{E}|$ is inductively defined by $|0|=\emptyset,|1|=\left\{1_{\Sigma^{*}}\right\},|a|=\{a\}$ for every $a$ in $\Sigma$, $|(\mathrm{E}+\mathrm{F})|=|\mathrm{E}| \cup|\mathrm{F}|,|(\mathrm{E} \cdot \mathrm{F})|=|\mathrm{E}||\mathrm{F}|$, and $\left|\left(\mathrm{E}^{*}\right)\right|=\{|\mathrm{E}|\}^{*}$. Two expressions are equivalent if they denote the same language.
-
-Like any formula, an expression $\mathrm{E}$ is canonically represented by a tree, which is called the \textit{syntactic tree} of $\mathrm{E}$. $\mathit{l}(E)$ is the literal length of the expression $\mathrm{E}$ (that is, the number of all occurences of letters from $\Sigma$ in $ \mathrm{E}$) and by $\mathit{d}(\mathrm{E}$) the depth of $\mathrm{E}$ which is defined as the depth of the syntactic tree of the expression.
-
-\begin{definition}
-The constant term of an expression $\mathrm{E}$ over $\Sigma^*$, written $c(\mathrm{E})$, is the Boolean value, inductively defined and computed using the following equations:
-\end{definition}
-\begin{center}
-$c(0)=0$, $c(1)=1$, $\forall a \in \Sigma \text{  } c(a) = 0$, \\
-$c(F+G) = c(F) + c(G)$, $c(F \cdot G) = c(F).c(G)$, $c(F^*) = 1$
-\end{center}
-The constant term of a language $\mathrm{L}$ of $\Sigma^*$ is the Boolean value c($\mathrm{L}$) that is equal to 1 if and only if $1_{\Sigma^*}$ belongs to $\mathrm{L}$. By induction on $\mathit{d}(\mathrm{E})$, $c(\mathrm{E}) = c (|\mathrm{E}|)$ holds.
-
+% ─────────────────────────────────────────────
 \section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ─────────────────────────────────────────────
 
-In this chapter, we have laid the groundwork for our subsequent discussions by introducing essential concepts and methodologies. We began with Petri Nets and LTS, providing a foundation for understanding system behaviors and state transitions. We then explored SOG and Test Coverage Criteria, emphasizing their roles in evaluating and verifying system models. Finally, we reviewed Linear Programming, which serves as a tool for optimizing various aspects of these models, and Regular Expressions, which facilitate the formal representation and generation of test paths by capturing patterns of system behavior.
-
+\paragraph{}This chapter covered the full analysis and design groundwork for the project. We chose Scrum as the development framework and organized the work into five sprints, each building on the previous one. A review of existing test data generation tools showed that none of them could handle the specificity of the Longview context, confirming the need for a purpose-built solution. From the functional and non-functional requirements, we derived a layered architecture built around a React frontend, a NestJS backend with entity-specific generation services, an optional Gemini API integration for data realism, and a read-only SQL Server connection for connected mode. The product backlog and sprint plan gave the implementation a clear roadmap. The next chapter covers Sprint 1 — the discovery phase where the existing SQL scripts were studied and the base generation engine was designed and built.
