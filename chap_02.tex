@@ -5,49 +5,104 @@
 \addcontentsline{toc}{section}{Introduction}
 % ─────────────────────────────────────────────
 
-\paragraph{}With the project context and problem statement established in the previous chapter, this chapter moves into the analysis and design phase. We start by describing the development methodology chosen to structure the work across the internship period. We then look at existing tools that address similar problems, and explain why none of them were a suitable fit for this specific context. From there, we derive the functional and non-functional requirements the system must satisfy, translate them into a global architecture, and lay out the product backlog and sprint plan that guided the implementation. The chapter closes with a description of the technical environment used throughout the project.
+\paragraph{}With the project context and problem statement established in 
+the previous chapter, this chapter moves into the analysis and design phase. 
+We begin by presenting the Agile Scrum methodology adopted to structure the 
+work across the internship period. We then examine existing tools that 
+address similar problems and explain why none of them were suitable for this 
+specific context. From there, we derive the functional and non-functional 
+requirements the system must satisfy, translate them into a global 
+architecture, and present the product backlog and sprint plan that guided 
+the implementation. The chapter closes with a description of the technical 
+environment used throughout the project.
 
 % ─────────────────────────────────────────────
 \section{Development Methodology}
 % ─────────────────────────────────────────────
 
-\paragraph{}Given the exploratory and iterative nature of this project — building a domain-specific tool with requirements that sharpen as understanding of the target platform deepens — an agile approach was the natural choice. Among the available agile frameworks, Scrum was selected for its lightweight structure, its emphasis on short delivery cycles, and the way it accommodates changing requirements without derailing the overall plan.
+\paragraph{}Given the exploratory and iterative nature of this project which is
+building a domain-specific tool whose requirements sharpen understanding 
+of the target platform deepens, an Agile approach was the perfect choice. 
+Among the available Agile frameworks, Scrum was selected for its lightweight 
+structure, its emphasis on short delivery cycles, and its ability to 
+accommodate evolving requirements without derailing the overall plan 
+\cite{schwaber2020scrum}.
 
 % ─────────────────────────────────────────────
 \subsection{Scrum Framework Overview}
 % ─────────────────────────────────────────────
 
-\paragraph{}Scrum organizes work into fixed-length iterations called sprints, each ending with a potentially shippable increment of the product. Within this project, the Scrum roles were adapted to the internship context as follows:
+\begin{figure}[h!]
+\centering
+%\includegraphics[width=0.85\textwidth]{img/scrum-process.png}
+\caption{The Scrum process framework \cite{schwaber2020scrum}}
+\label{fig:scrum}
+\end{figure}
+
+\paragraph{}Scrum organizes work into fixed-length iterations called 
+\textbf{sprints}, each ending with a potentially shippable increment of the 
+product. Three core roles structure the team, three artifacts capture the 
+work, and four ceremonies punctuate each sprint cycle, as illustrated in 
+Figure~\ref{fig:scrum}.
+
+\paragraph{}Within this project, the Scrum roles were adapted to the 
+internship context as follows:
 
 \begin{itemize}
-    \item \textbf{Product Owner:} The internship supervisor at Linedata, responsible for defining priorities, validating deliverables, and ensuring the tool aligned with the team's actual testing needs.
-    \item \textbf{Scrum Master / Developer:} The intern, responsible for planning, executing, and delivering each sprint increment, as well as managing impediments and adjusting scope when needed.
+    \item \textbf{Product Owner:} The internship supervisor at Linedata, 
+    responsible for defining priorities, validating deliverables, and 
+    ensuring the tool aligned with the team's actual testing needs.
+    \item \textbf{Scrum Master / Developer:} The intern, responsible for 
+    planning, executing, and delivering each sprint increment, managing 
+    impediments, and adjusting scope when needed.
 \end{itemize}
 
-\paragraph{}The main Scrum artifacts used throughout the project were the \textbf{product backlog} — a prioritized list of all features and tasks — and the \textbf{sprint backlog} — the subset of items committed to for each sprint. Brief review sessions at the end of each sprint served as the delivery checkpoint, where the increment was demonstrated and feedback was collected before planning the next cycle.
+\paragraph{}The main Scrum artifacts used throughout the project were:
+
+\begin{itemize}
+    \item \textbf{Product Backlog:} A prioritized list of all features and 
+    tasks to be delivered across the project lifetime.
+    \item \textbf{Sprint Backlog:} The subset of backlog items committed to 
+    for each sprint, refined at the start of each cycle.
+    \item \textbf{Sprint Increment:} The functional, testable deliverable 
+    produced at the end of each sprint, demonstrated to the supervisor 
+    during the sprint review.
+\end{itemize}
 
 % ─────────────────────────────────────────────
 \subsection{Sprint Planning Overview}
 % ─────────────────────────────────────────────
 
-\paragraph{}The internship was organized into five sprints, each targeting a distinct phase of the project. Table~\ref{tab:sprints} gives an overview of the sprint plan.
+\paragraph{}The internship was organized into five sprints, each targeting 
+a distinct phase of the project. Table~\ref{tab:sprints} gives an overview 
+of the sprint plan.
 
 \begin{table}[h!]
 \centering
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{|c|p{4cm}|p{7.5cm}|}
+\begin{tabular}{|c|p{3.5cm}|p{7.5cm}|}
 \hline
 \textbf{Sprint} & \textbf{Focus} & \textbf{Main Objectives} \\
 \hline
-1 & Discovery \& Analysis & Study existing SQL scripts, understand Longview's data model, business rules, and pre-BCP buffer conventions \\
+1 & Discovery and Analysis 
+  & Understanding Longview's data model, 
+    business rules, and pre-BCP buffer conventions \\
 \hline
-2 & Standalone Mode & Build the base SQL generation engine and templates; implement parameter-driven data generation; deliver initial UI \\
+2 & Standalone Mode 
+  & Build the base SQL generation engine and templates; implement 
+    parameter-driven data generation; deliver initial UI \\
 \hline
-3 & Connected Mode & Add read-only SQL Server connection; implement generation based on existing accounts, securities, and models \\
+3 & Connected Mode 
+  & Add read-only SQL Server connection; implement generation based 
+    on existing accounts, securities, and models \\
 \hline
-4 & LLM Integration & Integrate Gemini API; generate realistic financial data through prompt engineering; validate and post-process LLM output \\
+4 & LLM Integration 
+  & Integrate Gemini API; generate realistic financial data through 
+    prompt engineering, validate and post-process LLM output \\
 \hline
-5 & Testing \& Finalization & Write unit and integration tests; validate generated scripts on SQL Server; finalize and polish the UI \\
+5 & Testing and Finalization 
+  & Validate generated scripts on 
+    SQL Server and Longview, finalize and polish the UI \\
 \hline
 \end{tabular}
 \caption{Sprint planning overview}
@@ -58,29 +113,76 @@
 \section{Study of Existing Solutions}
 % ─────────────────────────────────────────────
 
-\paragraph{}Before designing anything, it made sense to look at what already exists in the space of test data generation. Several tools and approaches address this problem in general terms. Understanding where they fall short in this specific context helped justify the decision to build a custom solution.
+\paragraph{}Before designing anything, we examined the tools and approaches 
+that already exist in the space of test data generation. Understanding where 
+they fall short in this specific context helps justify the decision to build 
+a custom solution.
 
 % ─────────────────────────────────────────────
 \subsection{Generic Test Data Generation Tools}
 % ─────────────────────────────────────────────
 
-\paragraph{}The most commonly used tools for generating synthetic test data fall into three categories:
+\paragraph{}The most commonly used tools for generating synthetic test data 
+fall into three categories:
 
 \begin{itemize}
-    \item \textbf{Mockaroo} \cite{mockaroo}: A web-based tool that generates random data across a wide range of field types and exports it in various formats including SQL, CSV, and JSON. It is quick to use for simple flat datasets but has no concept of relational integrity or cross-table dependencies. There is no way to encode the kind of rules that Longview requires — for instance, ensuring that every position references a security that has a corresponding price record, or that execution quantities never exceed the parent order.
+    \item \textbf{Mockaroo} \cite{mockaroo}: A web-based tool that generates 
+    random data across a wide range of field types and exports it in various 
+    formats including SQL, CSV, and JSON. It is quick to use for simple flat 
+    datasets but has no concept of relational integrity or cross-table 
+    dependencies.
 
-    \item \textbf{Faker (various language libraries)} \cite{faker}: A widely used library available in Python, JavaScript, and other languages that generates plausible fake data — names, addresses, numbers, dates. It is excellent for populating individual fields with realistic-looking values, but it operates at the field level, not the dataset level. Building coherent multi-table financial datasets on top of Faker requires writing all the coordination logic by hand, which is essentially the same problem the tool was meant to solve.
+    \item \textbf{Faker (various language libraries)} \cite{faker}: A widely 
+    used library available in Python, JavaScript, and other languages that 
+    generates plausible fake data (names, addresses, numbers, and dates). 
+    It is effective for populating individual fields with realistic-looking 
+    values, but it operates at the field level, not the dataset level. 
 
-    \item \textbf{SQL Server Data Tools / Redgate SQL Data Generator} \cite{redgate}: These tools are closer to the target use case — they generate SQL INSERT statements for relational schemas and can respect foreign key relationships. However, they operate on a generic schema inference basis. They have no knowledge of financial domain rules, no concept of Longview's pre-BCP buffer mechanism, and no way to produce the specific Unicode and type casting conventions the platform requires. The scripts they produce would need significant manual post-processing before they could be used with Longview.
+    \item \textbf{Redgate SQL Data Generator} \cite{redgate}: This tool is 
+    closer to the target use case, it generates SQL \texttt{INSERT} 
+    statements for relational schemas and can respect foreign key 
+    relationships. However, it operates on a generic schema inference basis. 
+    It has no knowledge of financial domain rules, no concept of Longview's 
+    pre-BCP buffer mechanism, and no way to produce the specific Unicode 
+    casting and type conventions the platform requires.
 \end{itemize}
 
 % ─────────────────────────────────────────────
-\subsection{Why None of Them Fit}
+\subsection{Comparison Summary}
 % ─────────────────────────────────────────────
 
-\paragraph{}The gap these tools all share comes down to the same thing: they are built for the general case, not for a specific financial platform with its own data model, its own loading conventions, and its own business rules. Longview's pre-BCP buffer architecture, the \texttt{N'...'} Unicode prefix requirement, the typed numeric identifiers, the cross-entity constraints between orders, executions, positions, and prices — none of this can be encoded in a generic tool without effectively rebuilding the domain logic from scratch. At that point, you are no longer configuring an existing tool; you are building a custom one anyway.
+\paragraph{}Table~\ref{tab:tools-comparison} summarizes how each existing 
+solution covers the key requirements of this project.
 
-\paragraph{}This analysis confirmed that a purpose-built solution was the right path, and that the core value of the tool would lie precisely in the domain knowledge encoded into its generation logic.
+\begin{table}[h!]
+\centering
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.8cm}|c|c|c|c|}
+\hline
+\textbf{Criterion} 
+  & \textbf{Mockaroo} 
+  & \textbf{Faker} 
+  & \textbf{Redgate} 
+  & \textbf{Our Solution} \\
+\hline
+Relational integrity       & \xmark & \xmark & \cmark & \cmark \\
+Financial business rules   & \xmark & \xmark & \xmark & \cmark \\
+Longview SQL conventions   & \xmark & \xmark & \xmark & \cmark \\
+LLM-enriched realism       & \xmark & \xmark & \xmark & \cmark \\
+Connected mode (read-only) & \xmark & \xmark & \xmark & \cmark \\
+No manual post-processing  & \xmark & \xmark & \xmark & \cmark \\
+\hline
+\end{tabular}
+\caption{Comparison of existing tools against project requirements}
+\label{tab:tools-comparison}
+\end{table}
+
+\paragraph{}The gap these tools all share comes down to the same root cause: 
+they are built for the general case, not for a specific financial platform 
+with its own data model, its own loading conventions, and its own business 
+rules. This analysis confirmed that a purpose-built solution was the right 
+path, and that the core value of the tool lies precisely in the domain 
+knowledge encoded into its generation logic.
 
 % ─────────────────────────────────────────────
 \section{Requirements}
@@ -90,42 +192,59 @@
 \subsection{Functional Requirements}
 % ─────────────────────────────────────────────
 
-\paragraph{}The functional requirements were gathered through analysis of the existing SQL scripts, discussions with the Longview development team, and review of the project brief. They fall naturally into two groups, corresponding to the two operating modes of the system.
+\paragraph{}The functional requirements were gathered through analysis of 
+the existiing Extracts, discussions with the Longview development team, 
+and review of the project brief. They fall naturally into two groups 
+corresponding to the two operating modes of the system.
 
-\subsubsection{Mode 1 — Parameter-Driven Generation (Standalone)}
+\subsubsection{Mode 1 --- Parameter-Driven Generation (Standalone)}
 
-\paragraph{}In this mode, the system generates a complete, self-contained test dataset from user-supplied parameters, with no database connection required. The specific requirements are:
+\paragraph{}In this mode, the system generates a complete, self-contained 
+test dataset from user-supplied parameters, with no database connection 
+required:
 
 \begin{itemize}
-    \item The user must be able to specify the number of accounts, securities per asset class, orders, executions, and positions to generate.
-    \item The user must be able to configure date ranges, base currencies, instrument types, and scenario-level options through a web interface.
-    \item The system must generate all entities in dependency order — securities before accounts, accounts before orders, orders before executions and positions.
-    \item All generated data must respect Longview's pre-BCP buffer conventions: \texttt{N'...'} string literals, \texttt{CAST(N'...' AS DateTime)} date values, and \texttt{CAST(n AS Numeric(10,0))} identifiers.
-    \item The output must be a complete, executable SQL script that can be run on any clean Longview SQL Server instance without modification.
-    \item The system must support all major asset classes handled by Longview: equities, fixed income, futures, options, and FX forwards.
+    \item The user must be able to specify the number of accounts, 
+    securities per asset class, orders, executions, and positions to 
+    generate.
+    \item The user must be able to configure date ranges, base currencies, 
+    instrument types, and scenario-level options through a web interface.
+    \item The system must generate all entities in dependency order : 
+    securities before accounts, accounts before orders, orders before 
+    executions and positions.
+    \item All generated data must respect Longview's pre-BCP buffer 
+    conventions.
+    \item The output must be a complete, executable SQL script that can be 
+    run on any clean Longview SQL Server instance without modification.
+    \item The system must support all major asset classes handled by 
+    Longview: equities, fixed income, futures, options, and FX forwards.
 \end{itemize}
 
-\subsubsection{Mode 2 — Existing Data Generation (Connected)}
+\subsubsection{Mode 2 --- Existing Data Generation (Connected)}
 
-\paragraph{}In this mode, the system connects to a live Longview SQL Server instance in read-only mode, reads what is already there, and generates additional records that are coherent with the existing database state. The specific requirements are:
+\paragraph{}In this mode, the system connects to a live Longview SQL Server 
+instance in read-only mode, reads existing reference data, and generates 
+additional records coherent with the current database state:
 
 \begin{itemize}
-    \item The user must be able to provide SQL Server connection credentials through the interface.
-    \item The system must retrieve existing accounts, securities, models, and prices from the connected instance.
-    \item Generated orders, executions, and positions must reference only entities that actually exist in the connected database.
-    \item The connection must be strictly read-only — the application must never write to, modify, or delete any data in the connected database.
-    \item The output is still a SQL script, not a direct database write — the user runs it manually after review.
+    \item The user must be able to provide SQL Server connection credentials 
+    through the interface.
+    \item The system must connect to the SQL Server instance and retrieve existing Data Model entities: account groups, accounts and securities.
+    \item Generated orders, executions, and positions must reference only 
+    entities that have be chossen from the User in the actually exist in the connected database.
+    \item The output is a SQL script delivered to the user for manual 
+    review and execution.
 \end{itemize}
 
 \subsubsection{Global Use Case Diagram}
 
-% TODO: Replace with actual use case diagram image
+\paragraph{}Figure~\ref{fig:usecase-global} presents the global use case 
+diagram of the system, showing the two main actors and the features 
+available to each.
+
 \begin{figure}[h!]
 \centering
-% \includegraphics[width=0.9\textwidth]{img/usecase-global.png}
-\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
-\textit{[Global use case diagram — to be inserted]}
-\vspace{2cm}}}
+%\includegraphics[width=0.9\textwidth]{img/usecase-global.png}
 \caption{Global use case diagram of the test data generator}
 \label{fig:usecase-global}
 \end{figure}
@@ -134,108 +253,192 @@
 \subsection{Non-Functional Requirements}
 % ─────────────────────────────────────────────
 
-\paragraph{}Beyond what the system must do, several quality constraints shape how it should behave:
+\paragraph{}Beyond what the system must do, the following quality 
+constraints shape how it must behave:
 
 \begin{itemize}
-    \item \textbf{Performance:} Generating a dataset of typical size — covering one account with a full set of securities, orders, executions, and positions — should complete within a few seconds. LLM-assisted generation is allowed to take longer given the network round-trip involved, but the result should still feel responsive from the user's perspective.
+    \item \textbf{Performance:} Generating a typical dataset ; one account 
+    with a full set of securities, orders, executions, and positions must 
+    complete within a few seconds in standalone mode. LLM-assisted generation 
+    may take longer due to the network round-trip, but the experience must 
+    remain responsive from the user's perspective.
 
-    \item \textbf{Security:} The connected mode must operate in strict read-only mode. The application must have no capability to write, update, or delete data in any connected database. Connection credentials must not be stored or logged beyond the active session.
+    \item \textbf{Security:} The connected mode must operate in strict 
+    read-only mode. The application must have no capability to write, update, 
+    or delete data in any connected database. Connection credentials must not 
+    be persisted or logged beyond the active session.
 
-    \item \textbf{Maintainability:} The generation logic for each entity type must be isolated in its own service module, so that adding support for a new instrument type or updating a business rule does not require changes across the entire codebase.
+    \item \textbf{Maintainability:} The generation logic for each entity type 
+    must be isolated in its own service module, so that updating a business 
+    rule or adding a new instrument type does not require changes across the 
+    entire codebase.
 
-    \item \textbf{Extensibility:} The system architecture must make it straightforward to add new entity types, new asset classes, or new output formats in the future without restructuring the core engine.
+    \item \textbf{Extensibility:} The architecture must make it 
+    straightforward to add new entity types, asset classes, or output formats 
+    in the future without restructuring the core engine.
 
-    \item \textbf{Usability:} The web interface must be usable by QA engineers who are not necessarily developers. Error messages must be clear, form inputs must be validated before submission, and the generated SQL output must be easy to copy or download.
+    \item \textbf{Usability:} The web interface must be accessible to QA 
+    engineers who are not necessarily developers. Error messages must be 
+    explicit, form inputs must be validated before submission, and the 
+    generated SQL output must be easy to download.
 \end{itemize}
 
 % ─────────────────────────────────────────────
 \section{Global Architecture}
 % ─────────────────────────────────────────────
 
-\paragraph{}The requirements above point toward a classic full-stack web application architecture, with a clear separation between the user interface, the generation logic, the LLM integration, and the database access layer.
+\paragraph{}The requirements above point toward a full-stack web application 
+architecture with a clear separation between the user interface, the 
+generation logic, the LLM integration, and the database access layer.
 
 % ─────────────────────────────────────────────
 \subsection{Logical Architecture}
 % ─────────────────────────────────────────────
 
-\paragraph{}At the logical level, the system is organized into four layers that communicate in a well-defined sequence, as shown in Figure~\ref{fig:arch-logical}.
+\paragraph{}At the logical level, the system is organized into four layers 
+that communicate in a well-defined sequence, as illustrated in 
+Figure~\ref{fig:arch-logical}.
 
-% TODO: Replace with actual logical architecture diagram
 \begin{figure}[h!]
 \centering
-% \includegraphics[width=0.88\textwidth]{img/arch-logical.png}
-\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
-\textit{[Logical architecture diagram: Frontend → Backend → Gemini API / SQL Server]}
-\vspace{2cm}}}
+%\includegraphics[width=0.88\textwidth]{img/arch-logical.png}
 \caption{Logical architecture of the test data generator}
 \label{fig:arch-logical}
 \end{figure}
 
 \begin{itemize}
-    \item \textbf{Presentation layer (Frontend):} A React application that exposes the configuration forms, displays the generated SQL output, and handles user interaction. It communicates with the backend exclusively through a REST API.
-    \item \textbf{Business logic layer (Backend):} A NestJS application that hosts all generation services — one per entity type. It receives configuration parameters from the frontend, orchestrates the generation sequence, optionally calls the Gemini API for realistic field values, and assembles the final SQL script.
-    \item \textbf{LLM integration layer:} An optional component that sends structured prompts to the Google Gemini API and processes the responses. Its output feeds back into the generation services to enrich specific fields — security names, symbols, descriptions — with realistic financial content.
-    \item \textbf{Data access layer:} Active only in connected mode. A read-only SQL Server connection that retrieves existing reference data from a live Longview instance, which the generation services then use as anchors for the new records they produce.
+    \item \textbf{Presentation layer (Frontend):} A React application that 
+    exposes configuration forms, displays the generated SQL output, and 
+    handles all user interaction. It communicates with the backend 
+    exclusively through a REST API.
+
+    \item \textbf{Business logic layer (Backend):} A NestJS application 
+    hosting all generation services (one per entity type). It receives 
+    parameters from the frontend, orchestrates generation in dependency 
+    order, optionally calls the Gemini API for realistic field values, and 
+    assembles the final SQL script.
+
+    \item \textbf{LLM integration layer:} An optional component that sends 
+    structured prompts to the Google Gemini API and processes the responses. 
+    Its output enriches specific fields with realistic financial content.
+
+    \item \textbf{Data access layer:} Active only in connected mode. A 
+    read-only SQL Server connection that retrieves existing reference data 
+    from a live Longview instance, which the generation services use as 
+    anchors for newly generated records.
 \end{itemize}
 
 % ─────────────────────────────────────────────
 \subsection{Physical Architecture}
 % ─────────────────────────────────────────────
 
-\paragraph{}At the physical level, the system runs as two separate processes on the developer's machine during development, and can be containerized for deployment, as illustrated in Figure~\ref{fig:arch-physical}.
+\paragraph{}At the physical level, the system runs as two separate 
+processes during development and can be containerized for deployment, as 
+shown in Figure~\ref{fig:arch-physical}.
 
-% TODO: Replace with actual physical architecture diagram
 \begin{figure}[h!]
 \centering
-% \includegraphics[width=0.88\textwidth]{img/arch-physical.png}
-\fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}
-\textit{[Physical architecture diagram — to be inserted]}
-\vspace{2cm}}}
+%\includegraphics[width=0.88\textwidth]{img/arch-physical.png}
 \caption{Physical architecture of the test data generator}
 \label{fig:arch-physical}
 \end{figure}
 
 \begin{itemize}
-    \item The \textbf{React frontend} runs as a Vite development server (or as a static build) and is accessed through a browser.
-    \item The \textbf{NestJS backend} runs as a Node.js process, exposing a REST API on a configurable port.
-    \item The \textbf{Gemini API} is an external service accessed over HTTPS — no local installation is required.
-    \item The \textbf{SQL Server instance} is an existing Linedata environment accessed in read-only mode in connected mode. In standalone mode, no database connection is needed at all.
+    \item The \textbf{React frontend} runs as a Vite development server or 
+    as a static build, accessed through any modern browser.
+    \item The \textbf{NestJS backend} runs as a Node.js process, exposing 
+    a REST API on a configurable port.
+    \item The \textbf{Gemini API} is an external service accessed over 
+    HTTPS --- no local installation required.
+    \item The \textbf{SQL Server instance} is an existing Linedata 
+    environment accessed in read-only mode in connected mode. In standalone 
+    mode, no database connection is needed at all.
 \end{itemize}
 
 % ─────────────────────────────────────────────
 \section{Product Backlog and Sprint Planning}
 % ─────────────────────────────────────────────
 
-\paragraph{}The product backlog captures all the features and tasks identified during the analysis phase, organized by priority. Table~\ref{tab:backlog} presents the main backlog items grouped by sprint.
+\paragraph{}The product backlog captures all features and tasks identified 
+during the analysis phase, prioritized in collaboration with the Product 
+Owner. Table~\ref{tab:backlog} presents the main backlog items grouped by 
+sprint.
 
 \begin{table}[h!]
 \centering
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{|c|p{4.5cm}|p{6.5cm}|c|}
+\begin{tabular}{|c|p{4cm}|p{6cm}|c|}
 \hline
-\textbf{Sprint} & \textbf{User Story} & \textbf{Description} & \textbf{Priority} \\
+\textbf{Sprint} & \textbf{User Story} & \textbf{Description} 
+  & \textbf{Priority} \\
 \hline
-1 & Study existing scripts & Analyze reference SQL files, identify conventions, constraints, and entity dependencies & High \\
-1 & Map Longview data model & Document pre-BCP buffer tables, stored procedures, and field-level type rules & High \\
+1 & Study existing scripts 
+  & Analyze reference SQL files, identify conventions, constraints, 
+    and entity dependencies 
+  & High \\
+1 & Map Longview data model 
+  & Document pre-BCP buffer tables, stored procedures, and 
+    field-level type rules 
+  & High \\
 \hline
-2 & Generate securities & Produce valid equity, fixed income, futures, options, and FX forward records & High \\
-2 & Generate accounts & Produce accounts linked to currencies, models, and managers & High \\
-2 & Generate orders \& executions & Produce orders with correct quantities and linked executions & High \\
-2 & Generate positions & Produce position records consistent with executed orders & High \\
-2 & Build SQL template engine & Assemble TRUNCATE, IDENTITY\_INSERT, INSERT, and stored procedure call blocks & High \\
-2 & Build parameter form UI & Allow users to configure generation options through the web interface & Medium \\
+2 & Generate securities 
+  & Produce valid equity, fixed income, futures, options, and FX 
+    forward records 
+  & High \\
+2 & Generate accounts 
+  & Produce accounts linked to currencies, models, and managers 
+  & High \\
+2 & Generate orders \& executions 
+  & Produce orders with correct quantities and linked executions 
+  & High \\
+2 & Generate positions 
+  & Produce position records consistent with executed orders 
+  & High \\
+2 & Build SQL template engine 
+  & Assemble TRUNCATE, IDENTITY\_INSERT, INSERT, and stored 
+    procedure call blocks 
+  & High \\
+2 & Build parameter form UI 
+  & Allow users to configure generation options through the 
+    web interface 
+  & Medium \\
 \hline
-3 & SQL Server connection & Implement read-only connection with credential input and connection testing & High \\
-3 & Retrieve existing entities & Fetch accounts, securities, models, and prices from a connected instance & High \\
-3 & Connected mode generation & Generate orders, executions, and positions anchored to existing database records & High \\
+3 & SQL Server connection 
+  & Implement read-only connection with credential input and 
+    connection testing 
+  & High \\
+3 & Retrieve existing entities 
+  & Fetch accounts, securities, models, and prices from a 
+    connected instance 
+  & High \\
+3 & Connected mode generation 
+  & Generate orders, executions, and positions anchored to 
+    existing database records 
+  & High \\
 \hline
-4 & Gemini API integration & Set up API client, manage prompts, handle responses and errors & High \\
-4 & LLM-enriched generation & Use Gemini to produce realistic security names, symbols, and descriptions & Medium \\
-4 & LLM output validation & Parse, validate, and sanitize Gemini responses before injecting into templates & High \\
+4 & Gemini API integration 
+  & Set up API client, manage prompts, handle responses and errors 
+  & High \\
+4 & LLM-enriched generation 
+  & Use Gemini to produce realistic security names, symbols, and 
+    descriptions 
+  & Medium \\
+4 & LLM output validation 
+  & Parse, validate, and sanitize Gemini responses before injecting 
+    into templates 
+  & High \\
 \hline
-5 & Unit tests & Test individual generation service methods for correctness and constraint compliance & Medium \\
-5 & Integration tests & Validate full generation pipeline output against SQL Server & High \\
-5 & UI finalization & Polish interface, improve error handling, add download and copy features & Medium \\
+5 & Unit tests 
+  & Test individual generation service methods for correctness and 
+    constraint compliance 
+  & Medium \\
+5 & Integration tests 
+  & Validate full generation pipeline output against SQL Server 
+  & High \\
+5 & UI finalization 
+  & Polish interface, improve error handling, add download and 
+    copy features 
+  & Medium \\
 \hline
 \end{tabular}
 \caption{Product backlog organized by sprint}
@@ -246,44 +449,77 @@
 \section{Technical Environment}
 % ─────────────────────────────────────────────
 
-\paragraph{}The technology choices made for this project reflect both the requirements of the system and the constraints of the internship environment. The stack covers the full development chain from the user interface down to the database layer.
+\paragraph{}The technology choices reflect both the system requirements and 
+the constraints of the internship environment, covering the full development 
+chain from the user interface down to the database layer.
 
 % ─────────────────────────────────────────────
 \subsection{Hardware}
 % ─────────────────────────────────────────────
 
-\paragraph{}Development was carried out on a standard workstation provided by Linedata Tunisia, running Windows 10. The same machine was used for running the frontend and backend processes locally, and for connecting to the SQL Server instances available in the team's development environment.
+\paragraph{}Development was carried out on a standard workstation provided 
+by Linedata Tunisia, running Windows 10. The machine hosted both the 
+frontend and backend development servers locally and provided connectivity 
+to the SQL Server instances available in the team's development environment.
 
 % ─────────────────────────────────────────────
 \subsection{Software and Technologies}
 % ─────────────────────────────────────────────
 
-\paragraph{}Table~\ref{tab:techstack} summarizes the main tools and technologies used across the project.
+\paragraph{}Table~\ref{tab:techstack} summarizes the main tools and 
+technologies used across the project, along with the justification for 
+each choice.
 
 \begin{table}[h!]
 \centering
 \renewcommand{\arraystretch}{1.4}
-\begin{tabular}{|p{3.5cm}|p{3cm}|p{6.5cm}|}
+\begin{tabular}{|p{3cm}|p{3cm}|p{7cm}|}
 \hline
 \textbf{Category} & \textbf{Technology} & \textbf{Justification} \\
 \hline
-Frontend framework & React 18 + TypeScript & Component-based architecture, strong typing, large ecosystem, well-suited for form-heavy interfaces \\
+Frontend framework 
+  & React 18 + TypeScript 
+  & Component-based architecture, strong typing, well-suited for 
+    form-heavy interfaces \\
 \hline
-UI styling & Tailwind CSS + shadcn/ui & Utility-first CSS for rapid, consistent UI development without custom stylesheets \\
+UI styling 
+  & Tailwind CSS + shadcn/ui 
+  & Utility-first CSS for rapid, consistent UI development without 
+    custom stylesheets \\
 \hline
-Build tool & Vite & Fast development server and optimized production builds for React projects \\
+Build tool 
+  & Vite 
+  & Fast development server and optimized production builds for 
+    React projects \\
 \hline
-Backend framework & NestJS + TypeScript & Modular, decorator-based architecture that maps naturally to the service-per-entity design; built on Node.js \\
+Backend framework 
+  & NestJS + TypeScript 
+  & Modular, decorator-based architecture that maps naturally to the 
+    service-per-entity design; built on Node.js \\
 \hline
-Database driver & mssql (node-mssql) & Official Node.js driver for SQL Server, supports connection pooling and parameterized queries \\
+Database driver 
+  & node-mssql 
+  & Official Node.js driver for SQL Server, supports connection 
+    pooling and parameterized queries \\
 \hline
-LLM API & Google Gemini API & Accessible REST API with strong instruction-following capability for structured financial data generation \\
+LLM API 
+  & Google Gemini API 
+  & Accessible REST API with strong instruction-following capability 
+    for structured financial data generation \\
 \hline
-Version control & Git + GitHub & Standard version control for tracking progress, managing branches, and sharing code \\
+Version control 
+  & Git + GitHub 
+  & Standard version control for tracking progress, managing 
+    branches, and sharing code \\
 \hline
-Target database & SQL Server & The database platform underlying all Longview deployments \\
+Target database 
+  & SQL Server 
+  & The database platform underlying all Longview deployments \\
 \hline
-IDE & Visual Studio Code & Lightweight, extensible, with strong TypeScript and NestJS support through extensions \\
+IDE 
+  & Visual Studio Code 
+  & Lightweight and extensible, with strong TypeScript and NestJS 
+    support through extensions \\
 \hline
 \end{tabular}
 \caption{Technical stack summary}
@@ -295,4 +531,16 @@ IDE & Visual Studio Code & Lightweight, extensible, with strong TypeScript and N
 \addcontentsline{toc}{section}{Conclusion}
 % ─────────────────────────────────────────────
 
-\paragraph{}This chapter covered the full analysis and design groundwork for the project. We chose Scrum as the development framework and organized the work into five sprints, each building on the previous one. A review of existing test data generation tools showed that none of them could handle the specificity of the Longview context, confirming the need for a purpose-built solution. From the functional and non-functional requirements, we derived a layered architecture built around a React frontend, a NestJS backend with entity-specific generation services, an optional Gemini API integration for data realism, and a read-only SQL Server connection for connected mode. The product backlog and sprint plan gave the implementation a clear roadmap. The next chapter covers Sprint 1 — the discovery phase where the existing SQL scripts were studied and the base generation engine was designed and built.
+\paragraph{}This chapter covered the full analysis and design groundwork 
+for the project. We adopted Scrum as the development framework and organized 
+the work into five incremental sprints. A review of existing test data 
+generation tools confirmed that none of them could address the specificity 
+of the Longview context, validating the need for a purpose-built solution. 
+From the functional and non-functional requirements, we derived a layered 
+architecture built around a React frontend, a NestJS backend with 
+entity-specific generation services, an optional Gemini API integration for 
+data realism, and a read-only SQL Server connection for connected mode. The 
+product backlog and sprint plan gave the implementation a clear and 
+structured roadmap. The next chapter covers Sprint 1 --- the discovery phase 
+in which the existing SQL scripts were analyzed and the Longview data model 
+was fully mapped in preparation for the generation engine.
