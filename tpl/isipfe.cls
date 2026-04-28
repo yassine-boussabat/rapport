@@ -106,8 +106,8 @@
 % the one page when a figure exists
 \renewcommand\floatpagefraction{0.8} %   Default = 0.5
 
-%% Disable hyphenation
-\usepackage[none]{hyphenat}
+%% Enable hyphenation for better text wrapping
+\usepackage[hyphens]{url}
 
 %% Defining section, subsection and subsubsection spacing
 

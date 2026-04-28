@@ -1,324 +1,343 @@
-\chapter{SOG- and Optimal LTS-based testing}
+\chapter{Sprint 1 -- Discovery and Data Model Mapping}
+
+% ─────────────────────────────────────────────
 \section*{Introduction}
-This chapter integrates Symbolic Observation Graph (SOG)-based testing \cite{sogbased} and Optimal LTS-based testing \cite{bouachir2022}, both addressing state space explosion in system verification. First, we discuss the SOG-based approach for Petri nets, focusing on structure-based coverage, on-the-fly generation of observable traces, and abstract trace extraction. Finally, we present the Optimal LTS-based approach, covering regular expression generation, path extraction, and optimization through linear programming. 
+\addcontentsline{toc}{section}{Introduction}
+% ─────────────────────────────────────────────
 
-\section{Methodology workflow and tasks}
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=1\textwidth]{img/tab-ch3-end.png}
-    \caption{Kanban Board Overview for Chapter 3}
-    \label{fig:trello-3}
-\end{figure}
-In Chapter 3, we will focus on tasks related to understanding the two existing approaches: SOG-based testing and optimal LTS-based testing. 
+\paragraph{}This chapter covers the first sprint of the project, which lasted two weeks and focused entirely on
+discovery and data model mapping. Before any line of generation code could be written, a thorough
+understanding of the Longview data model was required: the entities that make up a valid test
+dataset, the buffer tables that back them in SQL Server, the stored procedures used to load them,
+the order in which they must be populated, and the field-level constraints and business rules that
+govern each record. This chapter presents the sprint backlog, the results of the data model
+analysis, a detailed description of each entity and its key attributes as reflected in the implemented
+Data Transfer Objects (DTOs), and the class diagram that captures all entities and their
+relationships.
 
-Figure \ref{fig:trello-3} shows the state of the Kanban board at the end of this chapter. The tasks completed include reading relevant articles, reviewing existing code and documentation, and working through manually executed examples to deepen our understanding of both approaches. The analysis and understanding of the SOG-based approach are marked as completed, reflecting a successful exploration of its key concepts and methodology. For the LTS-based approach, the subtasks involve analysis, verification, and evaluation. However, by the end of this chapter, only the understanding and analysis of the optimal LTS-based approach were fully accomplished, while verification and evaluation remain ongoing.
+% ─────────────────────────────────────────────
+\section{Sprint Backlog}
+% ─────────────────────────────────────────────
 
-\section{Symbolic Observation Graph based Testing}
-In this section, we will address three key elements: structure analysis, SOG generation, and the generation of abstract paths.
-\subsection{Structure-Based Coverage Relation for Petri Nets}
-In this subsection, we present how covering a reduced set of transitions can ensure coverage of all the system’s transitions. To achieve this, we introduce an original approach that identifies specific structural patterns within a Petri net model. We will present a pattern that we search for in the Petri net, which allows us to establish a coverage relation between the transitions. These patterns help deduce behavioral information related to the firing of the model's transitions, ensuring comprehensive coverage.
+\paragraph{}Sprint 1 targeted user story \textbf{US-1} from the product backlog, which covered the discovery and
+documentation of the Longview data model as a prerequisite for all subsequent implementation
+sprints. The sprint backlog is presented in Table~\ref{tab:sprint1-backlog}.
 
-\begin{definition}
-The coverage relation, denoted by $\triangleright$, is the transitive relation defined as follows: $\triangleright : T \rightarrow T$ such that $\forall t' \in T,\; t' \triangleright t$ implies that any firing sequence containing $t'$ necessarily contains $t$.
-\end{definition}
-
-In the following, we define \emph{unobservable} transitions.
-
-\begin{definition}
-\label{def:unobs}
-A transition $t$ in a marked Petri net $(\mathcal{N}, m_0)$ is said to be \textbf{unobservable} $\iff$ $\exists$ place $p \in \postset{t}$, $\preset{p} = \{t\} \wedge \postset{p} \neq \emptyset \wedge m_{0}(p) = 0$. For a given transition $t$, the set of such places is denoted by $t^{\sim}$.
-\end{definition}
-
-\begin{figure}[H]
+\begin{table}[h!]
 \centering
-\input{img/pattern}
-\caption{Unobservable transition $t$\label{Tux} \cite{sogbased}}
-\end{figure}
+\caption{Sprint 1 backlog}
+\label{tab:sprint1-backlog}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|p{0.06\linewidth}|p{0.28\linewidth}|p{0.44\linewidth}|p{0.12\linewidth}|}
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+T1-1 & Collect and review existing SQL scripts & Gather all manually written INSERT scripts and Extract files used by the QA team, identify the tables they target, and map each table to its entity domain. & 2 days \\
+\hline
+T1-2 & Document the pre-BCP buffer tables & For each pre-BCP buffer table, document its columns, data types, nullability constraints, primary and foreign keys, and any identity columns. & 3 days \\
+\hline
+T1-3 & Document stored procedures and load order & Identify the stored procedures invoked during data loading, their input parameters, and the strict dependency order in which tables must be populated. & 2 days \\
+\hline
+T1-4 & Extract field-level business rules & Enumerate the financial domain constraints applied at the field level: valid value ranges, enumerated code lists, cross-field consistency rules, and referential integrity requirements. & 2 days \\
+\hline
+T1-5 & Produce the entity class diagram & Consolidate the discovered model into a UML class diagram showing all entities, their key attributes, and their relationships. & 1 day \\
+\hline
+\end{tabular}
+\end{table}
 
-Informally (see Figure~\ref{Tux}), an unobservable transition $t$ is a transition having, at least, one unmarked output place $p$ such that no other transition can produce tokens in $p$ ($\preset{p}=\{t\}$). Thus, with $p$ being initially unmarked, the firing of any output transition of $p$ is impossible before firing $t$. For this reason, any firing sequence containing any transition $t' \in \postset{p}$ necessarily contains $t$ (i.e., $t' \triangleright t$).
+% ─────────────────────────────────────────────
+\section{Longview Pre-BCP Buffer Mechanism}
+% ─────────────────────────────────────────────
 
-As a deduction, covering the structurally identified observable transitions ensures that the entire set of system transitions is adequately covered. By focusing on these observable transitions, we can effectively reduce the complexity of the testing process without sacrificing coverage. Thus, it is sufficient to generate a collection of firing sequences that incorporate all observable transitions to ensure that every transition in the system is accounted for. Therefore, we need to generate traces of the system that pass through these observable transitions, ensuring comprehensive coverage of the system’s behavior while optimizing the testing process.
+\paragraph{}Longview uses a \textbf{pre-BCP (Bulk Copy Program) buffer} loading mechanism to ingest test data into
+its SQL Server database. Instead of inserting records directly into the platform's live tables, data is
+first written into a set of dedicated staging tables, referred to as pre-BCP buffer tables. Once all
+buffer tables are populated, a set of stored procedures validates the records, enforces cross-table
+business rules, and transfers the data into the live schema in the correct dependency order.
 
-\begin{figure}[!htb]
-\centering
-\begin{minipage}[b]{0.48\linewidth}
-\resizebox{\textwidth}{!}{\input{img/example-lts}}
-    \caption{Example of an LTS \cite{sogbased}}
-    \label{exp-lts}
-\end{minipage}
-\hfill
-\begin{minipage}[b]{.48\linewidth}
-\resizebox{\textwidth}{!}{\input{img/example-pn.tex}}
-    \caption{Example of a Petri Net \cite{sogbased}}
-    \label{exp-pn}
-\end{minipage}
-\end{figure}
+\paragraph{}This mechanism has two important implications for the data generator. First, the generator must
+produce INSERT statements targeting the buffer tables, not the live tables. Second, it must respect
+a strict population order: a buffer table that depends on another through a foreign key or a stored
+procedure input parameter cannot be populated before the table it depends on. The discovery
+phase mapped this order explicitly across all buffer tables, and each entity's TypeScript DTO was
+designed to mirror the exact column set of its corresponding buffer table.
 
-\textbf{Example: \\}
-Consider the Petri net depicted in Figure \ref{exp-pn}, which represents a system. The corresponding marking graph, shown in Figure \ref{exp-lts}, illustrates the behavior of this Petri net. Each path in this graph represents a possible execution of the underlying system. 
+% ─────────────────────────────────────────────
+\section{Entity Discovery and Description}
+% ─────────────────────────────────────────────
 
- After performing the structural analysis, we identified the set of unobservable transitions is :  \(
- $\{t_1, t_2, t_3, t_4, t_5, t_6, t_9\}$ \). However, transitions $t_7$, $t_8$, $t_{10}$, and $t_{11}$ are not unobservable. Specifically, each of the transitions $t_7$, $t_8$, and $t_{10}$ has a single output place that is also the input for another transition. Transition $t_{11}$ is observable because place $p_1$ is initially marked. These transitions are highlighted in color to indicate they are observable.
+\paragraph{}The analysis of the existing SQL scripts and the Longview schema documentation identified seven
+primary entity domains. Each domain groups one or more buffer tables and corresponds to a distinct
+financial concept in the Longview data model. The following sections describe each entity, its role
+in the data model, and its key attributes as they appear in the corresponding TypeScript DTO classes
+implemented in the generator module.
 
-Now that we have presented the Petri net, we will introduce the corresponding Symbolic Observation Graph (SOG), which serves as a state space reduction technique. The concept of observability motivates the use of the SOG, where a distinction is made between observable and unobservable transitions. The SOG allows us to abstract the state space, resulting in a more compact graph.
+% ─────────────────────────────────────────────
+\subsection{Account Group and Account Hierarchy}
+% ─────────────────────────────────────────────
 
-\begin{figure}[!htb]
-\centering
-\resizebox{\textwidth}{!}{\input{img/example-sog}}
-\caption{SOG related to the LTS of Figure~\ref{exp-lts} under the observation of $\{t_7, t_8, t_{10}, t_{11}\}$ \cite{sogbased} \label{exp-sog}}
-\end{figure}
+\paragraph{}An \textbf{Account Group} is a logical container that groups one or more investment accounts under a
+named label. It is the top-level entity in the account hierarchy. In the Longview buffer model,
+the account group record is identified by a \textbf{client\_account\_group\_name} and is associated to a
+representative account through a \textbf{client\_account\_id} reference. Optional attributes include a
+\textbf{client\_principal\_currency\_code} for the group's base currency and aggregate valuation fields
+\textbf{net\_asset\_value} and \textbf{total\_asset\_value}. Account groups have no financial attributes of their
+own beyond these aggregates; they exist purely to structure the account tree.
 
-In essence, all states that are accessible through unobservable actions are grouped into a single node called an aggregate, which is efficiently encoded in memory using a binary decision diagram (BDD) \cite{Akers78}.
+\paragraph{}The \textbf{Account Hierarchy} entity captures the parent-child relationships between accounts and
+account groups. Each hierarchy record links a child account to its parent group, establishing the
+nesting structure required by the Longview portfolio management layer. The hierarchy buffer table
+must be populated after both the account group and account buffer tables, as it holds foreign key
+references to both.
 
-The SOG construction algorithm is detailed in \cite{Haddad04}. Figure~\ref{exp-sog} illustrates the SOG corresponding to the LTS example in Figure~\ref{exp-lts}, based on the observation of transitions $t_7$, $t_8$, $t_{10}$, and $t_{11}$. 
-
-For clarity, the figure shows both the internal sub-graphs of the aggregates and the connections between explicit states across different aggregates. The internal set of states is represented by a BDD, while only a single solid edge connects two aggregates for observable transition labels.
-
-We can clearly deduce a significant reduction in the state space, where an initial LTS with 15 states has been reduced to a SOG with only 3 states. This reduction is highly advantageous in terms of memory usage, as it allows for more efficient storage and processing of the state space, making the approach particularly valuable for systems with large or complex state spaces. By reducing the number of states so drastically, the SOG not only simplifies the verification process but also enhances the overall performance of model-based testing, enabling faster and more scalable analysis.
-
-
-
-\subsection{ On-The-Fly SOG-Based Generation of Observable Traces}
-
-In this section, we introduce an approach based on the Symbolic Observation Graph (SOG) to generate system traces that specifically pass by observable transitions. This work revisits the construction process of the SOG to allow for the on-the-fly generation of these observable traces—meaning that the construction is halted once all observable transitions have been covered.
-
-Algorithm~\ref{alg:obspath}, detailed below, is designed to extract these observable traces during the SOG construction. Given a system model and a set of observable transitions, the algorithm aims to assemble a test suite $\mathcal{T}_s=\{\sigma_1, \sigma_2, \dots, \sigma_n\}$ such that, for any observable transition $o$, there exists an observable trace $\sigma_i$ containing an occurrence of $o$. 
-
-The algorithm employs a depth-first search (DFS) traversal strategy during the SOG construction to achieve this goal.
-
-\begin{algorithm}[!h]
-\SetAlgoLined
-\caption{Generation of observable traces} \label{alg:obspath}
-
-%\Function{Generation\underline{{ }{ }}of\underline{{ }{ }}observable\underline{{ }{ }}traces}{ }{: } 
-\KwData{$\mathcal{N}$, $m_0$, $\Obs$}
-\KwResult{$\mathcal{T}_s$}
-\SetKwComment{Comment}{/*}{*/}
-
-Stack$<$aggregate, set$<$transition$>$$>$ $st$; Set of traces $\mathcal{T}_s$; aggregate $a$, $a'$\;
- Current observable trace  $curT$; Set of covered observable transitions $Cov$\;
-  
-%  Set $<$aggregate$>$ setAgr
-%  bool allcovered = true\;
-
- \Begin{
-%  $\backslash \backslash$Initialisation
-$Cov \leftarrow\emptyset$\;
-$a \leftarrow$ \texttt{InitialAggregate}($(\mathcal{N}, m_0)$) \;
-%  setAgr=setAgr $\cup$ (Ag)
-st.push($a$, \texttt{EnableObs}($a$))\;
-%  $\backslash \backslash$Exploration
-\While {$(st\neq \emptyset \wedge Cov\subset \Obs)$}
-  {st.pop($a$,$f$)\;
-     \eIf {$(f\neq \emptyset)$ }
-    { $o \leftarrow$ \texttt{chooseTransition}($f$, $Cov$)\;
- %      \If{t$\not\in$Cov}
-  %        allcovered = false
-           $Cov =Cov \cup \{o\}$\;
-   %   \EndIf
-        
-%      f ← f-$\{$t$\}$
-      $curT \leftarrow curT.o$\;
-     
-     %\Comment{add t to sw}
-     \If {$(Cov == \Obs)$}
-           %  \If{!allcovered}
-                {$\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$ % \Comment*[r]{only if curT contains a newly covered transition}
-                }
-            
-      st.push($a$,$f$)\;
-      $a'\leftarrow Succ(a,o)$\;
-        \eIf { ($a'$ already exist)}
-        % \If{!allcovered}
-        {  $\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$ %\Comment*[r]{only if curT contains a newly covered transition}
-       
-          $curT$ $\leftarrow$ $curT-curT.last$\;}
-         {%  setAgr=setAgr $\cup$ (a')
-          st.push($a'$, \texttt{EnableObs}($a'$))\;}
-}  {   % \If{!allcovered}
-               $\mathcal{T}_s \leftarrow \mathcal{T}_s \cup \{curT\}$  %\Comment*[r]{only if curT contains a newly covered transition}
-             %  allcovered=true\;
-         %\EndIf
-         
-          $curT$ $\leftarrow$ $curT-curT.last$\;
-   }    
-    %           \Return $\mathcal{T}$ 
-
-    
-}
-%  \Return $\mathcal{T}$
- } 
-\end{algorithm}
-
-\textbf{Example : }
-When Algorithm~\ref{alg:obspath} is applied to the Petri net in Figure \ref{exp-pn} with an initial marking $m_{0}$ (where only $p_1$ contains a token) and the set of observed transitions $\{t_7, t_8, t_{10}, t_{11}\}$, it begins by generating the initial aggregate $a_{0}$ of Figure \ref{exp-sog} in the initialization step. The algorithm identifies two outgoing transitions, $t_7$ and $t_8$, and creates a new aggregate $a_1$ when one of these transitions is selected. This aggregate $a_1$ has outgoing transitions $t_{10}$ and $t_{11}$, with $t_{10}$ leading to the creation of aggregate $a_2$. The last aggregate created connects back to $a_1$ through either $t_7$ or $t_8$. At this stage, a trace $\langle t_8, t_{10}, t_7 \rangle$ is added to the set of observed traces, $\mathcal{T}s$. Using backtracking, the algorithm returns to $a_1$ to explore $t_{11}$, which leads to $a_0$. This generates a new observed trace $\langle t_8, t_{11} \rangle$. At the end of the process, all transitions are covered, and the stack is empty.
-
-In conclusion, this example produces two observable traces: \textbf{<$t_8, t_{10}, t_7$>} and \textbf{$<t_8, t_{11}>$}. By covering these traces, we ensure that all relevant transitions within the system are comprehensively covered.
-
-\subsection{Extracting Abstract Traces}
-
-Observable traces are essential for triggering specific system executions. However, to achieve full coverage of all system transitions, we need to augment these traces. This involves inserting sequences of unobservable transitions between the observable ones produced by the previous algorithm, starting from the initial marking state. Various criteria can guide the selection of these unobservable sequences, including test feasibility, balanced combinations, and sequence length. In our approach, we prioritize minimizing the length of the sequence traversing an aggregate. 
-An algorithm is presented in \cite{sogbased} to generate complete abstract paths by extending the observable traces. 
-
-To apply this algorithm to our illustrative example, consider the two observable paths provided by the previous algorithm: \( \langle t_8, t_{10}, t_7 \rangle \) and \( \langle t_8, t_{11} \rangle \). Algorithm~2 processes these paths to generate a comprehensive abstract path that covers all necessary transitions in the system. Specifically, the algorithm returns the abstract path:
-
-\begin{equation}
-AP = \langle t_1, t_2, t_6, t_8, t_{10}, t_5, t_7 \rangle.
-\label{eq:ap_sequence}
-\end{equation}
-
-
-This abstract path as shown in Equation~\ref{eq:ap_sequence} is constructed by interleaving unobservable transitions with the observable ones, ensuring that the entire state space is traversed while maintaining the coverage of all transitions. 
-
-The result is a complete path that effectively navigates through both observed and unobserved transitions, thus providing a thorough representation of the system’s behavior.
-
-
-\section{Optimal LTS-based testing}
-
-\subsection{Description of the approach}
-
-This approach starts by taking the initial node of the graph and the set of transitions to be covered as input. The graph is explored recursively, similar to Depth-First Search (DFS), to generate a regular expression that encapsulates all possible paths and transitions. This regular expression is then used to deduce unique paths, ensuring comprehensive coverage of all potential sequences within the graph. These deduced paths are then passed to a linear programming module, which optimizes the selection by minimizing both the number and length of the paths while still covering all transitions. The result is an efficient and effective set of test inputs that thoroughly represents the system's behavior \cite{bouachir2022}.
-\begin{figure}[!htb]
-\centering
-\resizebox{\textwidth}{!}{\input{img/optimal-approach}}
-\caption{Optimal LTS-based testing approach \cite{bouachir2022} \label{optimal-lts}}
-\end{figure}
-
-\subsection{Generation of regular expression from the graph}
-
-To generate the regular expression, the approach begins with the initial node of the graph and explores it while simultaneously creating test paths. It employs a novel algorithm, detailed in Algorithm 3. This algorithm uses a recursive, in-depth analysis to produce a regular expression that generates the language accepted by the graph's automaton.
-
-By building the regular expression dynamically as the graph is explored, the approach ensures that the expression accurately reflects the graph’s structure and transitions in real-time. This on-the-fly generation is a distinctive feature of the approach, enhancing its efficiency and effectiveness in capturing the system's behavior.
-
-\begin{algorithm}[!h]
-\SetAlgoLined
-\caption{Languages Generation} \label{alg:languages_gen}
-\KwData{state $e$}
-\KwResult{List of languages (a pair: a sequence of transitions and a pointer to a node of the graph)}
-\SetKwComment{Comment}{/*}{*/}
-
-\textbf{Function }
-\Fn{$\texttt{ComputeLanguage}(s)$}{
-    \If{$s.languages = \emptyset$}{
-        \KwRet{(\emptyset, \emptyset)}
-    }
-    \ForEach{$\texttt{language} \in s.languages$}{
-        \ForEach{$\texttt{language.state} \neq \emptyset \wedge \texttt{language.state} \notin \texttt{currentPath}$}{
-            $s.languages \leftarrow s.languages \cup \{\texttt{language.sequence} + \texttt{getLanguage(language.state)}\}$\;
-            \texttt{remove(language)}\;
-        }
-    }
-    $\texttt{stringstar} \leftarrow ""$\;
-    $\texttt{integercountCircuit} \leftarrow 0$\;
-    \ForEach{$\texttt{lang} \in s.languages$}{
-        \If{$\texttt{lang.state} = \texttt{s}$}{
-            $\texttt{star} \leftarrow \texttt{star.concat}(\texttt{'('} + \texttt{lang.sequence} + \texttt{')^{*}'})$\;
-            $\texttt{countCircuit} \leftarrow \texttt{countCircuit} + 1$\;
-            \texttt{remove(lang)}\;
-        }
-    }
-    \If{$\texttt{countCircuit} > 1$}{
-        $\texttt{star} \leftarrow \texttt{'('} + \texttt{star} + \texttt{')^{*}'}$\;
-    }
-    \ForEach{$\texttt{lang} \in s.languages$}{
-        $\texttt{lang.sequence} \leftarrow \texttt{star} + \texttt{lang.sequence}$\;
-    }
-    \KwRet{$s.languages$}
-}
-\end{algorithm}
-
-Algorithm~\ref{alg:languages_gen} enables the generation of the regular expression on the fly, dynamically creating it as the graph is explored. This capability is a key feature of the approach, contributing to its originality and effectiveness.
-
-\textbf{Example of regular expression generation :\\}
-We take the example of Figure \ref{graph-exp} to generate its regex based on Algorithm~\ref{alg:languages_gen}.
-
-\begin{figure}[!htb]
-\centering
-\resizebox{0.5\textwidth}{!}{\input{img/graph-exemple}}
-\caption{Example of an LTS \label{graph-exp}}
-\end{figure}
-
-After applying the algorithm to generate the regular expression, the result obtained is \[ t_1 t_5 \left( (t_1 t_2 t_4 t_5)^{*} \cdot (t_4 t_2 t_5 t_5)^{*} \right)^{*} t_3 \].
-
-\subsection{Paths generation}
-
-After generating the regular expression, the next step is to deduce all possible paths by systematically replacing each star (*) operator in the expression with either zero or one, signifying that a given circuit may be included in a path or omitted. This process is divided into three key algorithms.
-
-The first algorithm divides the regular expression string into a vector of elements categorized by type. Each element in the vector includes three attributes: the expression itself, the type of the expression (which may indicate the presence of cycles, denoted by the star operator), and a result vector to store the possible paths derived from that expression. The algorithm iterates through these elements, recursively filling their result vectors by calling a function designed to extract paths, which are returned from the path construction function described in the subsequent algorithm.
-
-The second algorithm focuses on constructing all possible paths from the vector of typed elements by combining existing paths with new ones derived from simplified expressions. Finally, the third algorithm organizes the regular expression into a vector format, simplifying and categorizing the elements to ensure that all potential paths are accurately identified and constructed.
-
-\textbf{Example of deduction of paths from regular expression :\\}
-After applying the algorithm to generate paths from the regular expression derived from the LTS in Figure \ref{graph-exp}, the final set of paths obtained is:
+\paragraph{}Key attributes of the \texttt{AccountGroupDto} class include:
 
 \begin{itemize}
-    \item \(p_0 : t_1 t_5 t_3 \)
-    \item \(p_1 : t_1 t_5 t_1 t_2 t_4 t_5 t_3 \)
-    \item \(p_2 : t_1 t_5 t_4 t_2 t_5 t_5 t_3 \)
-    \item \(p_3 : t_1 t_5 t_1 t_2 t_4 t_5 t_4 t_2 t_5 t_5 t_3 \)
+    \item \textbf{client\_account\_group\_name} (\texttt{string}, required): Human-readable name that uniquely identifies the account group within the system.
+    \item \textbf{client\_account\_id} (\texttt{string}, required): Reference to the representative account associated with the group.
+    \item \textbf{client\_source\_system\_id} (\texttt{string}, optional): Identifier of the originating source system, used for traceability in multi-system environments.
+    \item \textbf{client\_principal\_currency\_code} (\texttt{string}, optional): ISO 4217 currency code of the group's principal currency.
+    \item \textbf{net\_asset\_value} (\texttt{string}, optional): Aggregate net asset value of all accounts in the group.
+    \item \textbf{total\_asset\_value} (\texttt{string}, optional): Aggregate total asset value of all accounts in the group.
 \end{itemize}
 
-These algorithms successfully generate all possible paths that traverse each circuit in the graph zero or one time. The next step involves passing these paths to the linear programming module to select the optimal set that covers all transitions in the graph. This process will be detailed in the following section.
+% ─────────────────────────────────────────────
+\subsection{Account}
+% ─────────────────────────────────────────────
 
-\subsection{Application of linear programming}
-In this project, the problem is modeled using binary programming, a specific case of integer programming where the variables \(x_i\) can only take values of 0 or 1, referred to as binary or 0-1 variables (as discussed in Chapter 2: Preliminaries). Each constraint in this model represents a transition in the graph, making the number of constraints equal to the number of transitions. The constraints are set to be greater than or equal to 1, ensuring that each transition is covered by at least one path. The variables \(x_i\) represent individual paths, while the coefficients \(a_{ij}\) indicate whether a transition \(t_i\) is covered by a path \(p_j\) (\(a_{ij} = 1\) if \(t_i\) is covered by \(p_j\); otherwise, \(a_{ij} = 0\)). The profit coefficients \(c_j\) represent the lengths of the paths, and the objective function aims to minimize the total cost of coverage by reducing the sum of the lengths of the selected paths.
+\paragraph{}An \textbf{Account} represents an investment portfolio or client mandate. It is one of the most central
+entities in the Longview data model because virtually every other entity -- orders, executions,
+positions, and model allocations -- is anchored to one or more accounts through a
+\textbf{client\_account\_id} reference. The \texttt{AccountDto} class mirrors the full column set of the account
+buffer table, distinguishing a small set of mandatory fields from a large set of optional
+configuration and user-defined fields.
 
-\begin{mdframed}[leftmargin=15pt, rightmargin=15pt]
-\begin{equation*}
-\begin{array}{lr@{}c@{}r@{}l@{}r}
-\text{\textbf{Minimize}}   & c_1 x_1   & {}+{\dots}+{} & c_n x_n   &        &   \\
-\text{\textbf{Subject to} } & a_{11}x_1 & {}+{\dots}+{} & a_{1n}x_n & {}\geq 1   & \\
-                   &           &     \vdots    &               & \hspace{1.5cm} x_{j} \in \{0,1\}, j=1 ,..., n   \\
-                   & a_{m1}x_1 & {}+{\dots}+{} & a_{mn}x_n & {}\geq 1 & 
-\end{array}
-\end{equation*}
-\end{mdframed}
+\paragraph{}Key required attributes of the \texttt{AccountDto} class include:
 
+\begin{itemize}
+    \item \textbf{client\_account\_id} (\texttt{string}, required): Unique alphanumeric identifier of the account, used as a foreign key throughout the schema.
+    \item \textbf{short\_name} (\texttt{string}, required): Abbreviated label for the account, used in display and reporting contexts.
+    \item \textbf{name\_1} (\texttt{string}, required): Primary full descriptive name of the account or portfolio.
+    \item \textbf{client\_currency\_code} (\texttt{string}, required): ISO 4217 base currency code of the account (e.g., \texttt{USD}, \texttt{EUR}).
+\end{itemize}
 
+\paragraph{}Notable optional attributes include \textbf{client\_manager\_code} (portfolio manager reference),
+\textbf{inception\allowbreak\_date} (mandate start date), \textbf{client\_default\_model\_name} (default allocation model),
+\textbf{client\_tax\_lot\_relief\allowbreak\_method} (tax lot relief strategy), \textbf{equity\_market\_value} and
+\textbf{fixinc\_market\_value} (pre-loaded valuation figures), and up to sixteen \textbf{user\_field} and
+\textbf{user\_id} extensibility slots that accommodate client-specific metadata without schema changes.
 
-After this modeling, the generated paths from the path deduction module (as shown in Figure \ref{optimal-lts}) are passed to the linear programming module. The coverage matrix \(A\) and the profit vector \(C\) are populated using these paths. Finally, the OR-tools solver \cite{googleoptimization} is used to solve the linear problem, extracting an optimal set of paths that cover all transitions in the graph.
+% ─────────────────────────────────────────────
+\subsection{Model and Model Objective}
+% ─────────────────────────────────────────────
 
-\textbf{Example : \\}
-Applying the ILP model to the previous example results in the following set of equations:
+\paragraph{}A \textbf{Model} defines a target allocation strategy used by the portfolio management layer of Longview.
+It specifies how a portfolio should be invested across asset classes or individual securities. Models
+are referenced by accounts through the \textbf{client\_default\_model\_name} field and drive automatic
+order generation to bring portfolios into alignment with their target weights.
 
-\[
-\left\{
-\begin{aligned}
-t_1: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-t_2: & \quad x_1 + x_2 + x_3 \geq 1 \\
-t_3: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-t_4: & \quad x_1 + x_2 + x_3 \geq 1 \\
-t_5: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-& \quad 3x_0 + 6x_1 + 6x_2 + 9x_3 = z \, \text{(min)}
-\end{aligned}
-\right.
-\]
+\paragraph{}A \textbf{Model Objective} record links a model to a specific target security and defines the target
+weight or allocation rule for that position within the model. Multiple model objectives can be
+attached to a single model, one per target security or asset class. The model service generates both
+the parent model record and its associated objective records as a single coherent unit.
 
+% ─────────────────────────────────────────────
+\subsection{Security}
+% ─────────────────────────────────────────────
 
-After generating all possible paths, these paths are loaded into the coverage matrix and the profit vector.
+\paragraph{}A \textbf{Security} represents a tradeable financial instrument. It is the most structurally complex entity
+in the Longview data model because the platform supports several distinct asset classes, each with
+its own dedicated DTO class and buffer table. The discovery phase identified six security subtypes
+implemented in the generator: equities (\texttt{EquitySecurityDto}), generic instruments
+(\texttt{GenericSecurityDto}), fixed income securities (\texttt{FixedIncomeSecurityDto}), options
+(\texttt{OptionSecurityDto}), \allowbreak futures (\texttt{FutureSecurityDto}), and FX forwards
+(\texttt{FxForwardSecurityDto}).
 
+\paragraph{}All equity and generic security subtypes share a common set of base attributes. The required
+fields of the \texttt{EquitySecurityDto} class are:
 
-\[
-\begin{pmatrix}
-1 & 1 & 1 & 1 \\
-0 & 1 & 1 & 1 \\
-1 & 1 & 1 & 1 \\
-0 & 1 & 1 & 1 \\
-1 & 1 & 1 & 1 \\
-\end{pmatrix}
-\]
+\begin{itemize}
+    \item \textbf{client\_security\_id} (\texttt{string}, required): Unique identifier of the security, used as a foreign key in orders, executions, prices, and positions.
+    \item \textbf{symbol} (\texttt{string}, required): Market ticker symbol of the instrument.
+    \item \textbf{security\_name\_1} (\texttt{string}, required): Primary descriptive name of the security.
+    \item \textbf{security\_type\_code} (\texttt{string}, required): Asset class and instrument type classification code.
+    \item \textbf{pricing\_factor} (\texttt{number}, required): Multiplier applied to raw prices to derive market values.
+    \item \textbf{income\_factor} (\texttt{number}, required): Multiplier applied to income calculations.
+    \item \textbf{client\_principal\_currency\_code} (\texttt{string}, required): ISO 4217 currency code of the security's principal denomination.
+    \item \textbf{client\_income\_currency\_code} (\texttt{string}, required): ISO 4217 currency code used for income distributions.
+    \item \textbf{client\_country\_code} (\texttt{string}, required): ISO country code of the security's domicile.
+\end{itemize}
 
-Each row of the coverage matrix corresponds to a specific transition, while each column represents a path from the set of generated paths. For instance, if the element \( A_{20} \) is equal to zero, this indicates that the first generated path \( p_0 \) does not cover the second transition \( t_2 \). Conversely, if \( A_{12} \) equals 1, this means that the first transition \( t_1 \) is covered by the generated path \( p_2 \).
+\paragraph{}\textbf{Fixed income securities} (\texttt{FixedIncomeSecurityDto}) carry a richer set of required
+fields reflecting their additional complexity: beyond the base identifiers and factors, they require
+\textbf{issuer\_type\_code}, \textbf{principal\_payment\_type\_code}, \textbf{income\_payment\_type\_code},
+\textbf{payment\_frequency}, and \textbf{accrued\_interest\_day\_count}. Optional fields govern the coupon
+and redemption schedule (\textbf{coupon\_rate}, \textbf{maturity\_date}, \textbf{dated\_date},
+\textbf{redemption\_date}, \textbf{redemption\_value}), floating rate characteristics
+(\textbf{client\_bp\_ratevariable\_flag}, \textbf{rate\_reset\_frequency\_code}, \textbf{spread\_over\_index\_rate},
+\textbf{cap\_rate}, \textbf{floor\_rate}), prepayment model parameters, and convertibility flags. Child
+schedule records (call schedules, put schedules, coupon schedules, convertible schedules) are
+stored in dedicated extension buffer tables populated after the parent fixed income record.
 
-To construct the profit vector, we iterate through the generated paths and assign the length of each path to the corresponding position in the profit vector. For this example, the profit vector is given by:
+\paragraph{}\textbf{Derivatives} -- represented by \texttt{OptionSecurityDto} and \texttt{FutureSecurityDto} --
+additionally require an underlying security reference, an expiration date, a strike price (for
+options), and a contract size multiplier. \textbf{FX forwards} (\texttt{FxForwardSecurityDto}) require the
+forward settlement date, the nominal amount, and the two leg currency codes.
 
-\[
-C = \{3, 6, 6, 9\}
-\]
+% ─────────────────────────────────────────────
+\subsection{Price}
+% ─────────────────────────────────────────────
 
-Finally, the problem is solved using the OR-tools solver, yielding an optimal solution. In this case, the optimal solution could be either \( p_1 \) or \( p_2 \) since both cover all transitions and have the same cost. Thus, the final set of optimal paths is either the singleton \( \text{opt} = \{t_1t_5t_1t_2t_4t_5t_3\} \) or \( \text{opt} = \{t_1t_5t_4t_2t_5t_5t_3\} \).
+\paragraph{}A \textbf{Price} record stores the market price of a security on a given date. The Longview pricing
+layer requires at least one price record per security to allow the system to compute portfolio
+valuations and validate order quantities. The \texttt{PriceDto} class links each price record to its
+security through the \textbf{client\_security\_id} foreign key and carries the pricing date and the
+closing price. Price records must be generated after the security records they reference.
 
+% ─────────────────────────────────────────────
+\subsection{Order}
+% ─────────────────────────────────────────────
 
+\paragraph{}A \textbf{Proposed Order} (modelled by \texttt{ProposedOrderDto}) is a buy or sell instruction issued by a
+portfolio manager for a specific account and security. Orders are the primary drivers of the trade
+lifecycle in Longview. The required fields are \textbf{client\_account\_id}, \textbf{client\_security\_id},
+\textbf{side\_mnemonic} (trade direction), and \textbf{proposed\_value} (the target notional amount or
+quantity). Optional fields cover execution constraints such as \textbf{limit\_type},
+\textbf{limit\_price\_1}, \textbf{time\_in\_force}, \textbf{settlement\_date}, and \textbf{delivery\_date}, as well
+as routing attributes (\textbf{client\_broker\_id}, \textbf{client\_trader\allowbreak\_id}), and strategy metadata
+(\textbf{strategy\_mnemonic}). Up to thirty-two \textbf{user\_field} slots accommodate client-specific
+extensions.
+
+\paragraph{}The simpler \texttt{OrderDto} class models a group-level or block order record. Its required fields
+are \textbf{client\_account\_id}, \textbf{client\_security\_id}, \textbf{order\_quantity} (\texttt{number}), and
+\textbf{order\_side\_code}. Optional fields include \textbf{order\_status\_code}, \textbf{limit\_price},
+\textbf{order\_type\_code}, \textbf{order\_date}, and \textbf{settlement\_date}. Group orders must be generated
+before the proposed orders they contain.
+
+% ─────────────────────────────────────────────
+\subsection{Execution}
+% ─────────────────────────────────────────────
+
+\paragraph{}An \textbf{Execution} record (modelled by \texttt{ExecutionDto}) represents the trade confirmation
+produced when a proposed order or part of it is filled in the market. The required fields are
+\textbf{client\_security\_id}, \textbf{client\_side\_code} (trade direction at execution), \textbf{quantity}
+(filled quantity), \textbf{average\_price} (execution price), and \textbf{client\_exec\_broker\_id}
+(the executing broker). Optional fields provide full settlement and cost breakdown: \textbf{client\_account\_id},
+\textbf{trade\_date}, \textbf{settlement\_date}, \textbf{client\_comm\_broker\_id}, \textbf{commission\_rate},
+\textbf{client\_settlement\_currency}, \textbf{settlement\_fx\_rate}, \textbf{local\_commission},
+\textbf{sec\_fee}, \textbf{taxes}, \textbf{stamp\_tax}, and \textbf{other\_charges}. Up to thirty-two
+\textbf{block\_user\_field} extensibility slots are also available. Execution records must be generated
+after the proposed order records they fill.
+
+% ─────────────────────────────────────────────
+\subsection{Position (Tax Lot)}
+% ─────────────────────────────────────────────
+
+\paragraph{}A \textbf{Position} record (modelled by \texttt{PositionDto}) represents the current inventory holding
+of a specific security within a specific account, stored as a tax lot in the Longview schema. The
+only strictly required fields are \textbf{client\_account\_id} and \textbf{client\_security\_id}, which
+together identify the holding. The full set of optional attributes covers the economic substance of
+the lot: \textbf{trade\_date\_qty} (current quantity held), \textbf{trade\_date} (acquisition date),
+\textbf{cost} (total acquisition cost), \textbf{cost\_base} (base-currency cost), \textbf{unit\_cost\_base}
+(per-unit cost), \textbf{settlement\_date}, and \textbf{accrued\_income\_local}. Additional optional fields
+support analytics: \textbf{delta}, \textbf{macaulay\_duration}, \textbf{modified\_duration},
+\textbf{implied\_volatility}, and \textbf{principal\_factor}. FX-related positions carry
+\textbf{client\_purchased\_currency\_code}, \textbf{client\_sold\allowbreak\_currency\_code}, and the corresponding
+traded volumes. Positions must be generated after all executions for the relevant account-security
+pair have been recorded.
+
+% ─────────────────────────────────────────────
+\section{Table Population Order}
+% ─────────────────────────────────────────────
+
+\paragraph{}One of the most important outputs of the discovery phase was the determination of the strict
+population order that must be respected when generating the SQL INSERT statements. Because the
+pre-BCP buffer tables are linked through foreign key relationships and because the Longview stored
+procedures validate inter-table consistency before transferring data to the live schema, any
+violation of this order causes the entire load to fail.
+
+\paragraph{}Table~\ref{tab:population-order} presents the discovered population order for the pre-BCP buffer
+tables, grouped by entity domain.
+
+\begin{table}[h!]
+\centering
+\caption{Pre-BCP buffer table population order}
+\label{tab:population-order}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|p{0.06\linewidth}|p{0.35\linewidth}|p{0.49\linewidth}|}
+\hline
+\textbf{Step} & \textbf{Buffer Table / Entity} & \textbf{Dependency} \\
+\hline
+1  & Account Group (\texttt{AccountGroupDto})            & No dependency \\
+2  & Account (\texttt{AccountDto})                       & Account Group \\
+3  & Account Hierarchy                                    & Account Group, Account \\
+4  & Model                                               & No dependency \\
+5  & Model Objective                                     & Model \\
+6  & Security -- Equity (\texttt{EquitySecurityDto})     & No dependency \\
+7  & Security -- Generic (\texttt{GenericSecurityDto})   & No dependency \\
+8  & Security -- Fixed Income (\texttt{FixedIncomeSecurityDto}) & No dependency \\
+9  & Fixed Income Call Schedule buffer                   & Fixed Income Security \\
+10 & Fixed Income Put Schedule buffer                    & Fixed Income Security \\
+11 & Coupon Schedule buffer                              & Fixed Income Security \\
+12 & Convertible Schedule buffer                         & Fixed Income Security \\
+13 & Security -- Option (\texttt{OptionSecurityDto})     & Underlying Security \\
+14 & Security -- Future (\texttt{FutureSecurityDto})     & Underlying Security \\
+15 & Security -- FX Forward (\texttt{FxForwardSecurityDto}) & No dependency \\
+16 & Price (\texttt{PriceDto})                           & Security (any subtype) \\
+17 & Group Order (\texttt{OrderDto})                     & Account, Security \\
+18 & Proposed Order (\texttt{ProposedOrderDto})          & Account, Security, Group Order \\
+19 & Execution (\texttt{ExecutionDto})                   & Proposed Order \\
+20 & Position / Tax Lot (\texttt{PositionDto})           & Account, Security, Execution \\
+\hline
+\end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────
+\section{Entity Class Diagram}
+% ─────────────────────────────────────────────
+
+\paragraph{}Figure~\ref{fig:class-diagram} presents the UML class diagram of the Longview data model as
+discovered during Sprint 1. The diagram shows all primary entities involved in test data generation,
+their key attributes and types as reflected in the implemented DTO classes, and the relationships
+and multiplicities between them. This diagram served as the primary reference specification for all
+generation services implemented in the subsequent sprints.
+
+\begin{figure}[h!]
+\centering
+%\includegraphics[width=1.0\textwidth]{img/class-diagram.png}
+\caption{UML class diagram of the Longview entities targeted by the test data generator}
+\label{fig:class-diagram}
+\end{figure}
+
+\paragraph{}The relationships captured in the diagram reflect the following structural rules discovered during
+the sprint:
+
+\begin{itemize}
+    \item An \textbf{AccountGroup} is associated with one or more \textbf{Accounts} through the AccountHierarchy link, using \textbf{client\_account\_group\_name} and \textbf{client\_account\_id} as the join keys.
+    \item A \textbf{Model} contains one or more \textbf{ModelObjective} records (\texttt{1} to \texttt{1..*}), each targeting a specific security identified by its \textbf{client\_security\_id}.
+    \item A \textbf{Security} is specialized into one of six subtypes: \textbf{EquitySecurity}, \textbf{GenericSecurity}, \textbf{FixedIncomeSecurity}, \textbf{OptionSecurity}, \textbf{FutureSecurity}, or \textbf{FxForwardSecurity}, each implemented as a distinct DTO class.
+    \item A \textbf{FixedIncomeSecurity} may have zero or more associated \textbf{CallSchedule}, \textbf{PutSchedule}, \textbf{CouponSchedule}, and \textbf{ConvertibleSchedule} child records stored in dedicated extension buffer tables.
+    \item A \textbf{Security} has one or more associated \textbf{Price} records (\texttt{1} to \texttt{1..*}), linked through \textbf{client\_security\_id}.
+    \item A \textbf{GroupOrder} aggregates one or more \textbf{ProposedOrders} (\texttt{1} to \texttt{1..*}).
+    \item A \textbf{ProposedOrder} is linked to exactly one \textbf{Account} via \textbf{client\_account\_id} and one \textbf{Security} via \textbf{client\_security\_id}.
+    \item An \textbf{Execution} is linked to a \textbf{ProposedOrder} (identified by \textbf{client\_security\_id} and \textbf{client\_account\_id} matching), and its \textbf{quantity} must not exceed the remaining unfilled quantity of the parent order.
+    \item A \textbf{Position} (TaxLot) is identified by the combination of \textbf{client\_account\_id} and \textbf{client\_security\_id}, and its \textbf{trade\_date\_qty} is derived from the net sum of execution quantities for that account-security pair.
+\end{itemize}
+
+% ─────────────────────────────────────────────
 \section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ─────────────────────────────────────────────
 
-In this chapter, we explored two approaches for system testing. We first presented the SOG-based testing method, which efficiently reduces the state space for Petri nets through observable trace generation. Finally, we introduced the Optimal LTS-based testing approach, optimizing test paths using regular expressions and linear programming. Both methods were illustrated with examples, demonstrating their effectiveness in managing state space explosion and enhancing test efficiency.
+\paragraph{}This chapter presented the results of Sprint 1, the discovery and data model mapping phase.
+By analyzing the existing SQL scripts, the pre-BCP buffer table schema, and the stored procedures
+used by the Longview loading pipeline, the complete set of entities required for test data generation
+was identified and documented. For each entity -- account groups, accounts, models, securities
+(across six distinct subtypes), prices, orders, executions, and tax lot positions -- the exact field
+names, their TypeScript types, their required or optional status, and their business rule constraints
+were recorded and formalized into the DTO classes that constitute the data contract of the
+generator module. The strict population order across the twenty buffer tables was established, and
+the relationships between all entities were formalized in the UML class diagram presented in
+Figure~\ref{fig:class-diagram}. This foundation gave the implementation of Sprint 2 a precise and
+verified specification to work from. The following chapter presents Sprint 2, which covers the
+core generation engine and the standalone mode of the system.

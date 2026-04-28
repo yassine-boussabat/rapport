@@ -25,6 +25,15 @@
 \input{global_config}
 \usepackage{graphicx}
 \usepackage{ragged2e}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{microtype}
+
+% Global line-breaking configuration for better text wrapping
+\emergencystretch=2em
+\tolerance=9999
+\hyphenpenalty=50
+
 \AtBeginDocument{\justifying}
 
 \begin{document}
@@ -39,12 +48,12 @@
         \vspace*{-2cm}
         \hspace*{-2.8cm}
         \noindent
-        \includegraphics[width=\paperwidth,height=\paperheight]{quran-1.png}
+        %\includegraphics[width=\paperwidth,height=\paperheight]{quran-1.png}
 
-        \input{dedicaces}
+        %\input{dedicaces}
         \clearpage
         \thispagestyle{frontmatter}
-        \input{remerciement}
+        %\input{remerciement}
         \thispagestyle{frontmatter}
         
         \setcounter{secnumdepth}{3}
@@ -65,7 +74,7 @@
     \mainmatter
     \justifying
 
-        \input{introduction}
+        %\input{introduction}
         \clearpage
 
         \input{chap_01}
@@ -77,16 +86,16 @@
         \input{chap_03}
         \clearpage
         
-        \input{chap_04}
+        %\input{chap_04}
         \clearpage
         
-        \input{chap_05}
+        %\input{chap_05}
         \clearpage
 
-        \input{chap_06}
+        %\input{chap_06}
         \clearpage
         
-        \input{conclusion}
+        %\input{conclusion}
         \clearpage
         
         \printbibliography[heading=bibintoc]
