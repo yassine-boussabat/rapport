@@ -30,15 +30,24 @@ while the LLM improves only selected textual and descriptive fields.
 \paragraph{}Sprint 4 targeted the LLM enrichment user story from the product backlog. The sprint backlog is
 presented in Table~\ref{tab:sprint4-backlog}.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 4 backlog}
-\label{tab:sprint4-backlog}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\caption{Sprint 4 backlog}
+\label{tab:sprint4-backlog} \\
 \hline
 \textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
 \hline
+\endfirsthead
+\multicolumn{4}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+\endhead
+\hline
+\multicolumn{4}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 T4-1 & Implement LLM client service & Build a Gemini client wrapper that supports multiple API keys, model fallback, queueing, concurrency limits, and rate-limit cooldowns. & 2 days \\
 \hline
 T4-2 & Design structured prompts & Create prompts for account groups, accounts, models, and each security subtype, requiring JSON responses constrained by Longview field rules. & 2 days \\
@@ -51,8 +60,7 @@ T4-5 & Add resilience and fallback behavior & Ensure the generator remains fully
 \hline
 T4-6 & Validate generated output after enrichment & Run the existing validator after enrichment to ensure LLM-provided values still respect required formats and field lengths. & 1 day \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 
 % ─────────────────────────────────────────────
@@ -112,15 +120,24 @@ continues with a valid dataset, which protects SQL generation from external AI f
 to run in environments with or without AI access. Table~\ref{tab:llm-config} summarizes the main
 configuration values used by the implementation.
 
-\begin{table}[htbp]
-\centering
-\caption{LLM configuration variables}
-\label{tab:llm-config}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.32\linewidth}|P{0.58\linewidth}|}
+\begin{longtable}{|P{0.32\linewidth}|P{0.58\linewidth}|}
+\caption{LLM configuration variables}
+\label{tab:llm-config} \\
 \hline
 \textbf{Variable} & \textbf{Purpose} \\
 \hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Variable} & \textbf{Purpose} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \texttt{LLM\_ENABLED} & Enables or disables the LLM enrichment layer. When it is not set to \texttt{true}, the generator uses only algorithmic values. \\
 \hline
 \texttt{GEMINI\_API\_KEY}, \texttt{GEMINI\_API\_KEY\_2}, \texttt{GEMINI\_API\_KEY\_3} & Provide one or more Gemini API keys used by the client service. \\
@@ -135,8 +152,7 @@ configuration values used by the implementation.
 \hline
 \texttt{LLM\_SECURITY\_BATCH\_SIZE} & Controls how many security records are sent in one batch enrichment prompt. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \subsection{Fallback Strategy}
 
@@ -247,15 +263,24 @@ back to the original generated data instead of attempting unsafe corrections.
 core guarantees of the generator. Table~\ref{tab:sprint4-validation} summarizes the validation
 points.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 4 validation summary}
-\label{tab:sprint4-validation}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\caption{Sprint 4 validation summary}
+\label{tab:sprint4-validation} \\
 \hline
 \textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 Disabled LLM mode & Started generation without enabling the LLM configuration. & Generation completed using algorithmic values only. \\
 \hline
 Fallback behavior & Checked error paths in the client and enrichers. & Failed or invalid LLM responses return the original DTO arrays. \\
@@ -266,8 +291,7 @@ Field constraints & Applied maximum-length checks before merging enriched text i
 \hline
 Post-enrichment validation & Ran the existing \texttt{ValidatorService} after enrichment and before file writing. & Invalid generated records are blocked before SQL assembly. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \paragraph{}The main difficulty of this sprint was balancing realism and reliability. The solution avoids
 making the LLM responsible for business rules, quantities, or relationships. Instead, it uses the

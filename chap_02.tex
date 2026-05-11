@@ -135,21 +135,19 @@ fall into three categories:
 \paragraph{}Table~\ref{tab:tools-comparison} summarizes how each existing
 solution covers the key requirements of this project.
 
-\begin{table}[H]
-\centering
-\caption{Comparison of existing tools against project requirements}
-\label{tab:tools-comparison}
 \begingroup
 \setlength{\tabcolsep}{5pt}
 \renewcommand{\arraystretch}{1.25}
 \newcommand{\yes}{\textcolor{green!45!black}{\cmark}}
 \newcommand{\no}{\textcolor{red!70!black}{\xmark}}
 \arrayrulecolor{isiBlue!45}
-\begin{tabular}{P{0.34\textwidth}
+\begin{longtable}{P{0.34\textwidth}
                 Q{0.12\textwidth}
                 Q{0.12\textwidth}
                 Q{0.12\textwidth}
                 Q{0.14\textwidth}}
+\caption{Comparison of existing tools against project requirements}
+\label{tab:tools-comparison} \\
 \hline
 \rowcolor{isiBlue!15}
 \textbf{Criterion}
@@ -158,6 +156,22 @@ solution covers the key requirements of this project.
   & \textbf{Redgate}
   & \textbf{Our Solution} \\
 \hline
+\endfirsthead
+\multicolumn{5}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\rowcolor{isiBlue!15}
+\textbf{Criterion}
+  & \textbf{Mockaroo}
+  & \textbf{Faker}
+  & \textbf{Redgate}
+  & \textbf{Our Solution} \\
+\hline
+\endhead
+\hline
+\multicolumn{5}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \rowcolor{gray!5} Relational integrity       & \no & \no & \yes & \yes \\
 Financial business rules                      & \no & \no & \no  & \yes \\
 \rowcolor{gray!5} Longview SQL conventions    & \no & \no & \no  & \yes \\
@@ -166,10 +180,9 @@ LLM-enriched realism                          & \no & \no & \no  & \yes \\
 No manual post-processing                     & \no & \no & \no  & \yes \\
 \rowcolor{gray!5} Configuration persistence   & \no & \no & \no  & \yes \\
 \hline
-\end{tabular}
+\end{longtable}
 \arrayrulecolor{black}
 \endgroup
-\end{table}
 
 \paragraph{}The gap these tools all share comes down to the same root cause:
 they are built for the general case, not for a specific financial platform

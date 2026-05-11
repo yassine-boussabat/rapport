@@ -28,15 +28,24 @@ implementation of the core data generation logic and the construction of the SQL
 pipeline. The sprint backlog is presented in Table~\ref{tab:sprint2-backlog}.
 
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 2 backlog}
-\label{tab:sprint2-backlog}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\caption{Sprint 2 backlog}
+\label{tab:sprint2-backlog} \\
 \hline
 \textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
 \hline
+\endfirsthead
+\multicolumn{4}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+\endhead
+\hline
+\multicolumn{4}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 T2-1 & Implement entity generation services & Create one NestJS injectable service per entity domain (AccountGroup, Account, Hierarchy, Model, Security, Price, Order, Execution, Position), each responsible for producing an array of valid DTO instances from input parameters. & 4 days \\
 \hline
 T2-2 & Implement the constraints configuration & Centralise all field-level business rules (valid currency codes, country codes, security type codes, side mnemonics, enumerated lists) in a dedicated \texttt{constraints.ts} configuration file consumed by all generation services. & 1 day \\
@@ -49,8 +58,7 @@ T2-5 & Implement the validator service & Build the \texttt{ValidatorService} tha
 \hline
 T2-6 & Implement the three-step frontend workflow & Build the \texttt{StandaloneMode} page with URL-based step routing across configuration, preview, and generation tabs, and wire it to the backend generation endpoint. & 1 day \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 
 % ─────────────────────────────────────────────
@@ -292,15 +300,24 @@ entity domains, validate them using the \texttt{ValidatorService}, assemble them
 script, and return the script to the frontend for download. The frontend workflow was also checked
 from configuration through preview to generation.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 2 validation summary}
-\label{tab:sprint2-validation}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.22\linewidth}|P{0.42\linewidth}|P{0.26\linewidth}|}
+\begin{longtable}{|P{0.22\linewidth}|P{0.42\linewidth}|P{0.26\linewidth}|}
+\caption{Sprint 2 validation summary}
+\label{tab:sprint2-validation} \\
 \hline
 \textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 Generation parameters & Submitted a standalone configuration containing accounts, securities, models, orders, executions, and prices. & Parameters were accepted and propagated to the backend services. \\
 \hline
 Data coherence & Ran validator checks on generated \texttt{.DAT} files before SQL assembly. & Required fields, lengths, numeric fields, flags, and date formats were checked before writing output. \\
@@ -309,8 +326,7 @@ SQL assembly & Generated the final \texttt{load\_test\_data.sql} script from the
 \hline
 Frontend workflow & Navigated through configuration, preview, and generation tabs. & The three-step standalone workflow produced a downloadable SQL script. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \paragraph{}The following excerpt illustrates the structure of the generated SQL script. The actual script
 contains one section per generated file and keeps \texttt{NULL} values, strings, and numeric values

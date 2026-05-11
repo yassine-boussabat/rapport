@@ -31,15 +31,24 @@ implemented in Sprint 2 while adapting them to grabbed database records.
 Longview SQL Server instance in read-only mode and generating coherent records from existing
 reference data. The sprint backlog is presented in Table~\ref{tab:sprint3-backlog}.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 3 backlog}
-\label{tab:sprint3-backlog}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\caption{Sprint 3 backlog}
+\label{tab:sprint3-backlog} \\
 \hline
 \textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
 \hline
+\endfirsthead
+\multicolumn{4}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+\endhead
+\hline
+\multicolumn{4}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 T3-1 & Implement SQL Server connection service & Create a service able to test, open, reuse, and close SQL Server connections using either Windows authentication or SQL authentication. & 2 days \\
 \hline
 T3-2 & Implement connected backend API & Add endpoints for testing the connection, connecting, disconnecting, fetching allowed tables, grabbing account groups, grabbing accounts, previewing generation, and generating the final SQL script. & 2 days \\
@@ -52,8 +61,7 @@ T3-5 & Implement connected frontend workflow & Build the connection, data grabbe
 \hline
 T3-6 & Add safeguards and validation & Restrict raw table fetching to approved tables, require a live connection before connected actions, and validate generated output before writing files. & 1 day \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 
 % ─────────────────────────────────────────────
@@ -108,15 +116,24 @@ generated according to the selected grab mode.
 database usage: the user must connect first, then grab reference data, then configure only the
 records that still need to be generated.
 
-\begin{table}[htbp]
-\centering
-\caption{Connected mode workflow}
-\label{tab:connected-workflow}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.18\linewidth}|P{0.28\linewidth}|P{0.44\linewidth}|}
+\begin{longtable}{|P{0.18\linewidth}|P{0.28\linewidth}|P{0.44\linewidth}|}
+\caption{Connected mode workflow}
+\label{tab:connected-workflow} \\
 \hline
 \textbf{Step} & \textbf{Route} & \textbf{Purpose} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Step} & \textbf{Route} & \textbf{Purpose} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 Connection & \texttt{/connected/connection} & Enter SQL Server details, choose authentication mode, test the connection, and open the active backend connection. \\
 \hline
 Data grabber & \texttt{/connected/data-grabber} & Browse available account groups, accounts, and security buffer tables, then select the records that will anchor generation. \\
@@ -127,8 +144,7 @@ Preview & \texttt{/connected/preview} & Run the backend generation rules without
 \hline
 Generation & \texttt{/connected/generation} & Generate the final \texttt{.DAT} files, assemble the SQL script, and download \texttt{load\_test\_data.sql}. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \begin{figure}[htbp]
 \centering
@@ -155,23 +171,31 @@ as a structured frontend message instead of leaving the user in an ambiguous sta
 \texttt{grabMode}. The grab mode is inferred automatically on the frontend from the selected data
 and is sent to the backend as part of the connected generation request.
 
-\begin{table}[htbp]
-\centering
-\caption{Connected generation grab modes}
-\label{tab:grab-modes}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.24\linewidth}|P{0.32\linewidth}|P{0.34\linewidth}|}
+\begin{longtable}{|P{0.24\linewidth}|P{0.32\linewidth}|P{0.34\linewidth}|}
+\caption{Connected generation grab modes}
+\label{tab:grab-modes} \\
 \hline
 \textbf{Grab mode} & \textbf{Grabbed data} & \textbf{Generated complement} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Grab mode} & \textbf{Grabbed data} & \textbf{Generated complement} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \texttt{accounts} & Existing accounts or account groups & Securities can be generated, then prices and dependent portfolio/trading records can be generated from the grabbed account universe. \\
 \hline
 \texttt{securities} & Existing securities & Accounts can be generated, then prices and dependent records can be generated from the grabbed security universe. \\
 \hline
 \shortstack[l]{\texttt{accounts\_and\_}\\\texttt{securities}} & Existing accounts and securities & Only dependent records are generated, such as prices, models, positions, orders, and executions. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 
 % ─────────────────────────────────────────────
@@ -206,15 +230,24 @@ allows the user to test credentials before committing to a connected session.
 \paragraph{}The \texttt{ConnectedController} exposes the connected API under the \texttt{/connected} prefix.
 Table~\ref{tab:connected-api} summarizes the main endpoints implemented during this sprint.
 
-\begin{table}[htbp]
-\centering
-\caption{Connected mode backend endpoints}
-\label{tab:connected-api}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.28\linewidth}|Q{0.18\linewidth}|P{0.44\linewidth}|}
+\begin{longtable}{|P{0.28\linewidth}|Q{0.18\linewidth}|P{0.44\linewidth}|}
+\caption{Connected mode backend endpoints}
+\label{tab:connected-api} \\
 \hline
 \textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \texttt{/connected/test} & POST & Test SQL Server credentials and return connection logs. \\
 \hline
 \texttt{/connected/connect} & POST & Open the active SQL Server connection pool. \\
@@ -231,8 +264,7 @@ Table~\ref{tab:connected-api} summarizes the main endpoints implemented during t
 \hline
 \texttt{/connected/generate} & POST & Generate the connected dataset and download the final SQL script. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \subsection{Data Grabber}
 
@@ -313,15 +345,24 @@ browser.
 \paragraph{}Sprint 3 produced the complete connected workflow from connection to SQL script download.
 The main validation activities are summarized in Table~\ref{tab:sprint3-validation}.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 3 validation summary}
-\label{tab:sprint3-validation}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\caption{Sprint 3 validation summary}
+\label{tab:sprint3-validation} \\
 \hline
 \textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 Connection handling & Tested the separate connection test, connect, and disconnect API paths. & The backend can open a temporary pool for testing and a persistent pool for connected sessions. \\
 \hline
 Read-only data access & Checked that the controller only exposes \texttt{SELECT} queries and restricts raw table fetching to \texttt{ALLOWED\_TABLES}. & Connected mode does not expose write, update, or delete operations against SQL Server. \\
@@ -332,8 +373,7 @@ Preview behavior & Used \texttt{/connected/preview} before generation. & The res
 \hline
 Output generation & Generated the final SQL script from connected artifacts. & Non-empty datasets are validated, written as \texttt{.DAT} files, and assembled into \texttt{load\_test\_data.sql}. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \paragraph{}The major technical difficulty of this sprint was reconciling existing database records with the
 strict DTO contracts from Sprint 1. Database column names can differ depending on whether the data

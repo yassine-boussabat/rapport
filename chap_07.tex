@@ -30,15 +30,24 @@ closure.
 \paragraph{}Sprint 5 targeted the configuration library and finalization user stories from the product
 backlog. The sprint backlog is presented in Table~\ref{tab:sprint5-backlog}.
 
-\begin{table}[htbp]
-\centering
-\caption{Sprint 5 backlog}
-\label{tab:sprint5-backlog}
 \renewcommand{\arraystretch}{1.35}
-\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\caption{Sprint 5 backlog}
+\label{tab:sprint5-backlog} \\
 \hline
 \textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
 \hline
+\endfirsthead
+\multicolumn{4}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+\endhead
+\hline
+\multicolumn{4}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 T5-1 & Implement configuration persistence & Add a local SQLite database managed by TypeORM and define the \texttt{SavedConfig} entity. & 1 day \\
 \hline
 T5-2 & Implement configuration library API & Build CRUD endpoints for listing, loading, saving, renaming, deleting, and filtering compatible configurations. & 2 days \\
@@ -53,8 +62,7 @@ T5-6 & Finalize routing and UX safeguards & Add route integration, local storage
 \hline
 T5-7 & Perform final validation & Check the complete standalone, connected, LLM, and library workflows before project closure. & 1 day \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 
 % ─────────────────────────────────────────────
@@ -125,15 +133,24 @@ standalone and connected configurations do not have exactly the same shape. Inst
 relational tables for every section of the form, the system persists the full configuration object
 as text and validates that it is syntactically valid JSON before saving it.
 
-\begin{table}[htbp]
-\centering
-\caption{Saved configuration entity}
-\label{tab:saved-config-entity}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.26\linewidth}|Q{0.18\linewidth}|P{0.46\linewidth}|}
+\begin{longtable}{|P{0.26\linewidth}|Q{0.18\linewidth}|P{0.46\linewidth}|}
+\caption{Saved configuration entity}
+\label{tab:saved-config-entity} \\
 \hline
 \textbf{Field} & \textbf{Type} & \textbf{Description} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Field} & \textbf{Type} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \texttt{id} & UUID & Primary key generated automatically by TypeORM. \\
 \hline
 \texttt{name} & String & User-defined configuration name. Names are checked for uniqueness case-insensitively. \\
@@ -150,8 +167,7 @@ as text and validates that it is syntactically valid JSON before saving it.
 \hline
 \texttt{updatedAt} & Date & Last update timestamp. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \begin{figure}[htbp]
 \centering
@@ -185,15 +201,24 @@ generating dependent trading records without both accounts and securities being 
 Table~\ref{tab:config-library-api}. These endpoints are consumed by the configuration library page
 and by the save/load dialogs inside the generation workflows.
 
-\begin{table}[htbp]
-\centering
-\caption{Configuration library backend endpoints}
-\label{tab:config-library-api}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.30\linewidth}|Q{0.16\linewidth}|P{0.44\linewidth}|}
+\begin{longtable}{|P{0.30\linewidth}|Q{0.16\linewidth}|P{0.44\linewidth}|}
+\caption{Configuration library backend endpoints}
+\label{tab:config-library-api} \\
 \hline
 \textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 \texttt{/config-library} & GET & Return all saved configurations ordered by creation date. \\
 \hline
 \shortstack[l]{\texttt{/config-library/}\\\texttt{compatible/:grabMode}} & GET & Return connected configurations saved for a specific grab mode. \\
@@ -206,8 +231,7 @@ and by the save/load dialogs inside the generation workflows.
 \hline
 \texttt{/config-library/:id} & DELETE & Delete a saved configuration. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \paragraph{}The \texttt{ConfigLibraryService} validates every create request. A configuration must have a
 non-empty name, a valid mode, valid JSON content, and a valid connected grab mode when the mode is
@@ -295,15 +319,24 @@ frontend from keeping a misleading connected state after navigation.
 \paragraph{}The final validation focused on end-to-end behavior across the full application rather than on
 one isolated module. Table~\ref{tab:final-validation} summarizes the main validation scenarios.
 
-\begin{table}[htbp]
-\centering
-\caption{Final validation scenarios}
-\label{tab:final-validation}
 \renewcommand{\arraystretch}{1.3}
-\begin{tabular}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\caption{Final validation scenarios}
+\label{tab:final-validation} \\
 \hline
 \textbf{Scenario} & \textbf{Verification performed} & \textbf{Expected result} \\
 \hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Scenario} & \textbf{Verification performed} & \textbf{Expected result} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
 Standalone generation & Configure standalone data, preview row estimates, generate, and download the SQL script. & A coherent \texttt{load\_test\_data.sql} file is produced. \\
 \hline
 Connected generation & Connect to SQL Server, grab data, configure complements, preview, and generate. & The output script is anchored to grabbed accounts or securities. \\
@@ -316,8 +349,7 @@ Connected compatibility & Attempt to load a connected configuration in an incomp
 \hline
 Validation before output & Generate datasets that pass through \texttt{ValidatorService}. & Invalid required fields, field lengths, date formats, and numeric values are blocked before SQL assembly. \\
 \hline
-\end{tabular}
-\end{table}
+\end{longtable}
 
 \paragraph{}This validation confirmed that the final application covers the project objectives defined at
 the beginning of the report: standalone generation, connected generation, SQL script assembly,
