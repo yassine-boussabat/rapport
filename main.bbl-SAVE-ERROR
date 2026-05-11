@@ -1,0 +1,220 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{linedata_about}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=5de159d40c8f128c799e2e816082834c}{%
+           family={{Linedata}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \strng{bibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorbibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authornamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \field{extraname}{1}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.linedata.com/why-linedata/about-linedata}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{About Linedata}
+      \field{year}{2024}
+    \endentry
+    \entry{linedata_revenue}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=5de159d40c8f128c799e2e816082834c}{%
+           family={{Linedata}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \strng{bibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorbibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authornamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \field{extraname}{2}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://fr.linedata.com/sites/default/files/2024-04/URD_2023_V29042024_VF_compressed.pdf}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{Document d'Enregistrement Universel 2023}
+      \field{year}{2024}
+    \endentry
+    \entry{linedata_ai}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=5de159d40c8f128c799e2e816082834c}{%
+           family={{Linedata}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \strng{bibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorbibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authornamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \field{extraname}{3}
+      \field{sortinit}{6}
+      \field{sortinithash}{b33bc299efb3c36abec520a4c896a66d}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.linedata.com/linedata-labs}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{Linedata Labs}
+      \field{year}{2022}
+    \endentry
+    \entry{longview_oms}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=5de159d40c8f128c799e2e816082834c}{%
+           family={{Linedata}},
+           familyi={L\bibinitperiod}}}%
+      }
+      \strng{namehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{fullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \strng{bibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorbibnamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authornamehash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhash}{5de159d40c8f128c799e2e816082834c}
+      \strng{authorfullhashraw}{5de159d40c8f128c799e2e816082834c}
+      \field{extraname}{4}
+      \field{sortinit}{7}
+      \field{sortinithash}{108d0be1b1bee9773a1173443802c0a3}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.linedata.com/sites/default/files/2021-11/Linedata_Longview_OMS_Suite_Factsheet.pdf}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{Linedata Longview OMS Suite Factsheet}
+      \field{year}{2021}
+    \endentry
+    \entry{schwaber2020scrum}{misc}{}{}
+      \name{author}{2}{}{%
+        {{hash=ee6f08fcba839e09471a0bc69152b6a5}{%
+           family={Schwaber},
+           familyi={S\bibinitperiod},
+           given={Ken},
+           giveni={K\bibinitperiod}}}%
+        {{hash=6e3f26f6f816a26c6ab36bc7a899bcde}{%
+           family={Sutherland},
+           familyi={S\bibinitperiod},
+           given={Jeff},
+           giveni={J\bibinitperiod}}}%
+      }
+      \strng{namehash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{fullhash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{fullhashraw}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{bibnamehash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{authorbibnamehash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{authornamehash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{authorfullhash}{303ea1dc92fd8c772eac56316b2074ef}
+      \strng{authorfullhashraw}{303ea1dc92fd8c772eac56316b2074ef}
+      \field{sortinit}{9}
+      \field{sortinithash}{0a5ebc79d83c96b6579069544c73c7d4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://scrumguides.org/scrum-guide.html}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{The Scrum Guide}
+      \field{year}{2020}
+    \endentry
+    \entry{mockaroo}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=55c6e1c71c4b9d50a75e4de11a2243a0}{%
+           family={{Mockaroo}},
+           familyi={M\bibinitperiod}}}%
+      }
+      \strng{namehash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{fullhash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{fullhashraw}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{bibnamehash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{authorbibnamehash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{authornamehash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{authorfullhash}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \strng{authorfullhashraw}{55c6e1c71c4b9d50a75e4de11a2243a0}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.mockaroo.com/}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{Mockaroo: Random Data Generator and API Mocking Tool}
+      \field{year}{2026}
+    \endentry
+    \entry{faker}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=e1edfc5cea461399a63cb813cf795cc9}{%
+           family={{Faker}},
+           familyi={F\bibinitperiod}}}%
+      }
+      \strng{namehash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{fullhash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{fullhashraw}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{bibnamehash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{authorbibnamehash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{authornamehash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{authorfullhash}{e1edfc5cea461399a63cb813cf795cc9}
+      \strng{authorfullhashraw}{e1edfc5cea461399a63cb813cf795cc9}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://fakerjs.dev/}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{Faker: Generate Massive Amounts of Fake Data}
+      \field{year}{2026}
+    \endentry
+    \entry{redgate}{misc}{}{}
+      \name{author}{1}{}{%
+        {{hash=05c6b96d79785c19975264af161f7108}{%
+           family={{Redgate}},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{05c6b96d79785c19975264af161f7108}
+      \strng{fullhash}{05c6b96d79785c19975264af161f7108}
+      \strng{fullhashraw}{05c6b96d79785c19975264af161f7108}
+      \strng{bibnamehash}{05c6b96d79785c19975264af161f7108}
+      \strng{authorbibnamehash}{05c6b96d79785c19975264af161f7108}
+      \strng{authornamehash}{05c6b96d79785c19975264af161f7108}
+      \strng{authorfullhash}{05c6b96d79785c19975264af161f7108}
+      \strng{authorfullhashraw}{05c6b96d79785c19975264af161f7108}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{\url{https://www.red-gate.com/products/sql-development/sql-data-generator/}}
+      \field{note}{Accessed: April 2026}
+      \field{title}{SQL Data Generator}
+      \field{year}{2026}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

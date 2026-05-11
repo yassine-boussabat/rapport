@@ -13,6 +13,10 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesClass{isipfe}[15/04/2016 ISI PFE LaTeX Class]
 
+% Load the base class before packages that depend on standard LaTeX
+% environments, font sizes, and lengths.
+\LoadClass[11pt,a4paper, oneside]{book}
+
 \usepackage{amssymb} %maths
 \usepackage{amsmath}
 \usepackage{enumitem}
@@ -52,8 +56,6 @@
 % finished processing options
 \ProcessOptions\relax
 
-% load the book class using a4paper
-\LoadClass[11pt,a4paper, oneside]{book}
 \usepackage[a4paper]{geometry}
 
 % give the header a bit more room for fancyhdr below
@@ -168,7 +170,7 @@
 % @author: Stoufa
 % the option `backend=bibtex` is mandatory to avoid the “no \citation commands” error
 % https://tex.stackexchange.com/questions/18045/problem-with-compiling-bibtex-no-citation-commands-error
-\usepackage[backend=bibtex]{biblatex}
+\usepackage{biblatex}
 %\renewcommand*{\bibfont}{\small\raggedright}
 %\DefineBibliographyExtras{english}{\renewcommand*\mkbibnamelast[1]{#1}}
 \addbibresource{biblio.bib}
@@ -306,7 +308,7 @@
 
 \pagestyle{fancy}
 \lhead{\nouppercase{\leftmark}}
-\rhead{\right \thepage}
+\rhead{\thepage}
 
 %=============== Defining Fancy Page Styles ===============%
 
@@ -347,7 +349,7 @@
   \renewcommand{\footrulewidth}{0pt}
   \renewcommand{\headrulewidth}{0pt}
   \setlength{\headheight}{0mm}
-  \setlength{\footskip}{0mm}
+  \setlength{\footskip}{5mm}
 
 }
 

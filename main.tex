@@ -26,7 +26,8 @@
 \usepackage{graphicx}
 \usepackage{ragged2e}
 \usepackage{float}
-\usepackage{placeins}
+\usepackage[section]{placeins}
+\usepackage{longtable}
 \usepackage{microtype}
 
 % Global line-breaking configuration for better text wrapping
@@ -50,7 +51,7 @@
         \noindent
         %\includegraphics[width=\paperwidth,height=\paperheight]{quran-1.png}
 
-        %\input{dedicaces}
+        \input{dedicaces}
         \clearpage
         \thispagestyle{frontmatter}
         %\input{remerciement}
@@ -64,17 +65,17 @@
         \adjustmtc
         \thispagestyle{frontmatter}
         
-        %\listoffigures
-        %\thispagestyle{frontmatter}
-        %\listoftables
-        %\thispagestyle{frontmatter}
+        \listoffigures
+        \thispagestyle{frontmatter}
+        \listoftables
+        \thispagestyle{frontmatter}
         %\listofalgorithms
         %\thispagestyle{frontmatter}
         
     \mainmatter
     \justifying
 
-        %\input{introduction}
+        \input{introduction}
         \clearpage
 
         \input{chap_01}
@@ -86,16 +87,19 @@
         \input{chap_03}
         \clearpage
         
-        %\input{chap_04}
+        \input{chap_04}
         \clearpage
         
-        %\input{chap_05}
+        \input{chap_05}
         \clearpage
 
-        %\input{chap_06}
+        \input{chap_06}
+        \clearpage
+
+        \input{chap_07}
         \clearpage
         
-        %\input{conclusion}
+        \input{conclusion}
         \clearpage
         
         \printbibliography[heading=bibintoc]

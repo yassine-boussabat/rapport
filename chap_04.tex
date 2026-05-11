@@ -1,153 +1,356 @@
-\chapter{Optimal LTS-based testing}
+\chapter{Sprint 2 -- Core Generation Engine and Standalone Mode}
 
-\section*{Inroduction}
 
-This chapter presents a method for generating an optimal set of test paths in Labelled Transition Systems (LTS), focusing on minimizing the number and length of these paths. By combining recursive graph exploration, regular expression generation, and Integer Linear Programming (ILP), this approach ensures comprehensive coverage of all transitions with maximum efficiency. In this chapter, we will first present the generation of regular expressions, followed by the extraction of paths, and finally, the application of ILP for path optimization.
+% ─────────────────────────────────────────────
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+% ─────────────────────────────────────────────
 
-\section{Description of the approach}
 
-This approach starts by taking the initial node of the graph and the set of transitions to be covered as input. The graph is explored recursively, similar to Depth-First Search (DFS), to generate a regular expression that encapsulates all possible paths and transitions. This regular expression is then used to deduce unique paths, ensuring comprehensive coverage of all potential sequences within the graph. These deduced paths are then passed to a linear programming module, which optimizes the selection by minimizing both the number and length of the paths while still covering all transitions. The result is an efficient and effective set of test inputs that thoroughly represents the system's behavior \cite{bouachir2022}.
-\begin{figure}[!htb]
+\paragraph{}This chapter presents Sprint 2 of the project, which spanned two weeks and delivered the
+core generation engine and the first fully operational mode of the test data generator: the
+standalone mode. Building directly on the data model specification established in Sprint 1, this
+sprint translated the DTO contracts and population order into a working NestJS backend capable
+of generating syntactically and semantically valid SQL INSERT scripts for all twenty pre-BCP buffer
+tables, without requiring any connection to a live Longview database. The chapter covers the sprint
+backlog, the architectural design of the generation engine, a description of each generation service
+and the SQL script builder, and the implementation results with a demonstration of the produced
+output.
+
+
+% ─────────────────────────────────────────────
+\section{Sprint Backlog}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}Sprint 2 targeted user stories \textbf{US-2} and \textbf{US-3} from the product backlog: the
+implementation of the core data generation logic and the construction of the SQL script output
+pipeline. The sprint backlog is presented in Table~\ref{tab:sprint2-backlog}.
+
+
+\begin{table}[htbp]
 \centering
-\resizebox{\textwidth}{!}{\input{img/optimal-approach}}
-\caption{Optimal LTS-based testing approach \cite{bouachir2022} \label{optimal-lts}}
+\caption{Sprint 2 backlog}
+\label{tab:sprint2-backlog}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+T2-1 & Implement entity generation services & Create one NestJS injectable service per entity domain (AccountGroup, Account, Hierarchy, Model, Security, Price, Order, Execution, Position), each responsible for producing an array of valid DTO instances from input parameters. & 4 days \\
+\hline
+T2-2 & Implement the constraints configuration & Centralise all field-level business rules (valid currency codes, country codes, security type codes, side mnemonics, enumerated lists) in a dedicated \texttt{constraints.ts} configuration file consumed by all generation services. & 1 day \\
+\hline
+T2-3 & Implement the SQL script generator service & Build the \texttt{SqlScriptGeneratorService} that converts populated DTO arrays into correctly formatted SQL INSERT statements, handles NULL fields, escapes string values, and assembles the final script in the correct population order. & 2 days \\
+\hline
+T2-4 & Implement the orchestrator service & Build the \texttt{GeneratorService} that accepts the user's generation parameters, invokes all entity services in the correct dependency order, passes shared identifiers between services, and returns the assembled SQL script. & 1 day \\
+\hline
+T2-5 & Implement the validator service & Build the \texttt{ValidatorService} that checks the coherence of the generated dataset before script assembly: referential integrity, quantity consistency between orders and executions, and position quantity derivation. & 1 day \\
+\hline
+T2-6 & Implement the three-step frontend workflow & Build the \texttt{StandaloneMode} page with URL-based step routing across configuration, preview, and generation tabs, and wire it to the backend generation endpoint. & 1 day \\
+\hline
+\end{tabular}
+\end{table}
+
+
+% ─────────────────────────────────────────────
+\section{Sprint Design}
+% ─────────────────────────────────────────────
+
+
+\subsection{Standalone Mode Use Case Diagram}
+
+\paragraph{}Figure~\ref{fig:usecase-standalone} details the standalone mode use cases implemented during
+this sprint. The QA team configures the generation parameters, reviews the preview, and generates
+the final SQL file without requiring any database connection. The diagram also shows the optional
+interaction with the LLM API, used only when AI-assisted enrichment is enabled.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1\textwidth]{img/usecase-standalone-mode.jpg}
+\caption{Standalone mode use case diagram}
+\label{fig:usecase-standalone}
 \end{figure}
 
-\section{Generation of regular expression from the graph}
 
-To generate the regular expression, the approach begins with the initial node of the graph and explores it while simultaneously creating test paths. It employs a novel algorithm, detailed in Algorithm 3. This algorithm uses a recursive, in-depth analysis to produce a regular expression that generates the language accepted by the graph's automaton.
+% ─────────────────────────────────────────────
+\subsection{Architecture of the Generation Engine}
+% ─────────────────────────────────────────────
 
-By building the regular expression dynamically as the graph is explored, the approach ensures that the expression accurately reflects the graph’s structure and transitions in real-time. This on-the-fly generation is a distinctive feature of the approach, enhancing its efficiency and effectiveness in capturing the system's behavior.
 
-\begin{algorithm}[!h]
-\SetAlgoLined
-\caption{Languages Generation} \label{alg:languages_gen}
-\KwData{state $e$}
-\KwResult{List of languages (a pair: a sequence of transitions and a pointer to a node of the graph)}
-\SetKwComment{Comment}{/*}{*/}
+\paragraph{}The generation engine follows a layered, service-oriented architecture consistent with the NestJS
+module system. All generation logic is encapsulated in the \texttt{GeneratorModule}, which declares
+one injectable service per entity domain plus three cross-cutting services: the orchestrator
+(\texttt{GeneratorService}), the SQL script builder (\texttt{SqlScriptGeneratorService}), and the
+validator (\texttt{ValidatorService}). A separate \texttt{ConfigLibraryModule} provides the shared
+constraints configuration to all generation services through NestJS dependency injection.
 
-\textbf{Function }
-\Fn{$\texttt{ComputeLanguage}(s)$}{
-    \If{$s.languages = \emptyset$}{
-        \KwRet{(\emptyset, \emptyset)}
-    }
-    \ForEach{$\texttt{language} \in s.languages$}{
-        \ForEach{$\texttt{language.state} \neq \emptyset \wedge \texttt{language.state} \notin \texttt{currentPath}$}{
-            $s.languages \leftarrow s.languages \cup \{\texttt{language.sequence} + \texttt{getLanguage(language.state)}\}$\;
-            \texttt{remove(language)}\;
-        }
-    }
-    $\texttt{stringstar} \leftarrow ""$\;
-    $\texttt{integercountCircuit} \leftarrow 0$\;
-    \ForEach{$\texttt{lang} \in s.languages$}{
-        \If{$\texttt{lang.state} = \texttt{s}$}{
-            $\texttt{star} \leftarrow \texttt{star.concat}(\texttt{'('} + \texttt{lang.sequence} + \texttt{')*'})$\;
-            $\texttt{countCircuit} \leftarrow \texttt{countCircuit} + 1$\;
-            \texttt{remove(lang)}\;
-        }
-    }
-    \If{$\texttt{countCircuit} > 1$}{
-        $\texttt{star} \leftarrow \texttt{'('} + \texttt{star} + \texttt{')*'}$\;
-    }
-    \ForEach{$\texttt{lang} \in s.languages$}{
-        $\texttt{lang.sequence} \leftarrow \texttt{star} + \texttt{lang.sequence}$\;
-    }
-    \KwRet{$s.languages$}
-}
-\end{algorithm}
+\paragraph{}The strict population order established in Sprint 1 is enforced at the script assembly level by
+the orchestrator and SQL generator services. During generation, the orchestrator first prepares the
+data pools needed by dependent services, then writes the resulting \texttt{.DAT} files and SQL
+statements in the Longview loading order. This design ensures that dependent records such as
+prices, orders, executions, and positions are built from valid upstream identifiers while the final
+script remains aligned with the pre-BCP loading sequence.
 
-Algorithm~\ref{alg:languages_gen} enables the generation of the regular expression on the fly, dynamically creating it as the graph is explored. This capability is a key feature of the approach, contributing to its originality and effectiveness.
 
-\textbf{Example of regular expression generation :\\}
-We take the example of Figure \ref{graph-exp} to generate its regex based on Algorithm~\ref{alg:languages_gen} .
 
-\begin{figure}[!htb]
+% ─────────────────────────────────────────────
+\subsection{Generation Request and Response Contract}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}The frontend communicates with the backend through a single \texttt{POST /generate} endpoint.
+The request body carries a \texttt{GenerateDto} object that specifies the quantities of each
+entity type to generate (number of accounts, securities per subtype, orders, executions, and
+positions) and optional configuration flags such as whether to include derivatives or fixed income
+schedules. The response carries a \texttt{GenerationResultDto} containing the assembled SQL script
+as a string and a statistics object summarising the number of INSERT statements produced per
+entity domain.
+
+\paragraph{}Figure~\ref{fig:sequence-diagram} presents the sequence diagram of the complete standalone
+generation workflow. The diagram starts with local configuration and preview, then details the
+generation request sent to the backend through \texttt{POST /generate-and-download}. In the success
+scenario, the backend validates the request, invokes the core generation services, creates the
+dataset, delegates SQL assembly to the script service, and returns \texttt{load\_test\_data.sql} to
+the browser for download.
+
+\paragraph{}The diagram also documents the failure paths handled by the interface. If dataset generation or
+SQL creation fails, the backend returns an error response that is shown to the user. If the request
+does not reach the server because of a network or server availability problem, the frontend reports
+the failure without changing the locally stored configuration.
+
+\begin{figure}[htbp]
 \centering
-\resizebox{0.5\textwidth}{!}{\input{img/graph-exemple}}
-\caption{Example of an LTS \label{graph-exp}}
+\includegraphics[width=0.98\textwidth]{img/sequence-standalone-mode.pdf}
+\caption{Standalone mode SQL generation sequence}
+\label{fig:sequence-diagram}
 \end{figure}
 
-After applying the algorithm to generate the regular expression, the result obtained is \( t_1 t_5 \left( (t_1 t_2 t_4 t_5)* \cdot (t_4 t_2 t_5 t_5)* \right)* t_3 \).
-
-\section{Paths generation}
-
-After generating the regular expression, the next step is to deduce all possible paths by systematically replacing each star (*) operator in the expression with either zero or one, signifying that a given circuit may be included in a path or omitted. This process is divided into three key algorithms.
-
-The first algorithm divides the regular expression string into a vector of elements categorized by type. Each element in the vector includes three attributes: the expression itself, the type of the expression (which may indicate the presence of cycles, denoted by the star operator), and a result vector to store the possible paths derived from that expression. The algorithm iterates through these elements, recursively filling their result vectors by calling a function designed to extract paths, which are returned from the path construction function described in the subsequent algorithm.
-
-The second algorithm focuses on constructing all possible paths from the vector of typed elements by combining existing paths with new ones derived from simplified expressions. Finally, the third algorithm organizes the regular expression into a vector format, simplifying and categorizing the elements to ensure that all potential paths are accurately identified and constructed.
-
-\textbf{Example of deduction of paths from regular expression :\\}
-After applying the algorithm to generate paths from the regular expression derived from the LTS in Figure \ref{graph-exp}, the final set of paths obtained is:
-
-\begin{itemize}
-    \item \(p_0 : t_1 t_5 t_3 \)
-    \item \(p_1 : t_1 t_5 t_1 t_2 t_4 t_5 t_3 \)
-    \item \(p_2 : t_1 t_5 t_4 t_2 t_5 t_5 t_3 \)
-    \item \(p_3 : t_1 t_5 t_1 t_2 t_4 t_5 t_4 t_2 t_5 t_5 t_3 \)
-\end{itemize}
-
-These algorithms successfully generate all possible paths that traverse each circuit in the graph zero or one time. The next step involves passing these paths to the linear programming module to select the optimal set that covers all transitions in the graph. This process will be detailed in the following section.
-
-\section{Application of linear programming}
-In this project, the problem is modeled using binary programming, a specific case of integer programming where the variables \(x_i\) can only take values of 0 or 1, referred to as binary or 0-1 variables (as discussed in Chapter 2: Preliminaries). Each constraint in this model represents a transition in the graph, making the number of constraints equal to the number of transitions. The constraints are set to be greater than or equal to 1, ensuring that each transition is covered by at least one path. The variables \(x_i\) represent individual paths, while the coefficients \(a_{ij}\) indicate whether a transition \(t_i\) is covered by a path \(p_j\) (\(a_{ij} = 1\) if \(t_i\) is covered by \(p_j\); otherwise, \(a_{ij} = 0\)). The profit coefficients \(c_j\) represent the lengths of the paths, and the objective function aims to minimize the total cost of coverage by reducing the sum of the lengths of the selected paths.
-
-\begin{mdframed}[roundcorner=5pt]
-\begin{equation*}
-\begin{array}{lr@{}c@{}r@{}l@{}r}
-\text{\textbf{Minimize}}   & c_1 x_1   & {}+{\dots}+{} & c_n x_n   &        &   \\
-\text{\textbf{Subject to} } & a_{11}x_1 & {}+{\dots}+{} & a_{1n}x_n & {}\geq 1   & \\
-                   &           &     \vdots    &               & \hspace{1.5cm} x_{j} \in \{0,1\}, j=1 ,..., n   \\
-                   & a_{m1}x_1 & {}+{\dots}+{} & a_{mn}x_n & {}\geq 1 & 
-\end{array}
-\end{equation*}
-\end{mdframed}
+\paragraph{}The frontend implements the standalone workflow as a three-step navigation flow using
+React Router, with URL-based step routing across
+\texttt{/standalone/configuration}, \texttt{/standalone/preview}, and
+\texttt{/standalone/generation}. This structure separates parameter input,
+pre-generation review, and result delivery into distinct views, each sharing
+the same underlying \texttt{StandaloneMode} page component.
 
 
-
-After this modeling, the generated paths from the path deduction module (as shown in Figure \ref{optimal-lts}) are passed to the linear programming module. The coverage matrix \(A\) and the profit vector \(C\) are populated using these paths. Finally, the OR-tools solver \cite{googleoptimization} is used to solve the linear problem, extracting an optimal set of paths that cover all transitions in the graph.
-
-\textbf{Example : \\}
-Applying the ILP model to the previous example results in the following set of equations:
-
-\[
-\left\{
-\begin{aligned}
-t_1: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-t_2: & \quad x_1 + x_2 + x_3 \geq 1 \\
-t_3: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-t_4: & \quad x_1 + x_2 + x_3 \geq 1 \\
-t_5: & \quad x_0 + x_1 + x_2 + x_3 \geq 1 \\
-& \quad 3x_1 + 6x_2 + 6x_3 + 9x_4 = z \, \text{(min)}
-\end{aligned}
-\right.
-\]
+% ─────────────────────────────────────────────
+\section{Implementation}
+% ─────────────────────────────────────────────
 
 
-After generating all possible paths, these paths are loaded into the coverage matrix and the profit vector.
+% ─────────────────────────────────────────────
+\subsection{Constraints Configuration}
+% ─────────────────────────────────────────────
 
 
-\[
-\begin{pmatrix}
-1 & 1 & 1 & 1 \\
-0 & 1 & 1 & 1 \\
-1 & 1 & 1 & 1 \\
-0 & 1 & 1 & 1 \\
-1 & 1 & 1 & 1 \\
-\end{pmatrix}
-\]
-
-Each row of the coverage matrix corresponds to a specific transition, while each column represents a path from the set of generated paths. For instance, if the element \( A_{20} \) is equal to zero, this indicates that the first generated path \( p_0 \) does not cover the second transition \( t_2 \). Conversely, if \( A_{12} \) equals 1, this means that the first transition \( t_1 \) is covered by the generated path \( p_2 \).
-
-To construct the profit vector, we iterate through the generated paths and assign the length of each path to the corresponding position in the profit vector. For this example, the profit vector is given by:
-
-\[
-C = \{3, 6, 6, 9\}
-\]
-
-Finally, the problem is solved using the OR-tools solver, yielding an optimal solution. In this case, the optimal solution could be either \( p_1 \) or \( p_2 \) since both cover all transitions and have the same cost. Thus, the final set of optimal paths is either the singleton \( \text{opt} = \{t_1t_5t_1t_2t_4t_5t_3\} \) or \( \text{opt} = \{t_1t_5t_4t_2t_5t_5t_3\} \).
+\paragraph{}All enumerated domain values and valid code lists used across the generation services are
+centralised in \texttt{constraints.ts}. This file exports typed constant arrays for ISO 4217
+currency codes, ISO country codes, security type codes, order side mnemonics, settlement
+currency codes, broker identifiers, and other categorical fields. By referencing this single source
+of truth, every generation service picks values from the same validated set, guaranteeing that the
+generated records satisfy the enumeration constraints enforced by the Longview loading procedures.
 
 
+% ─────────────────────────────────────────────
+\subsection{Entity Generation Services}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}Each entity generation service is an injectable NestJS class that exposes a \texttt{generate()}
+method. The method accepts the user's generation parameters and any upstream identifiers produced
+by previously invoked services, and returns an array of populated DTO instances. The following
+describes the key generation logic of each service.
+
+\paragraph{}\textbf{AccountGroupService} generates the requested number of account group records. Each group
+receives a unique \texttt{client\_account\_group\_name} composed of a realistic asset-class prefix
+(e.g., \texttt{EQUITIES}, \texttt{FIXED\_INCOME}) concatenated with a zero-padded sequence number, a
+randomly sampled \texttt{client\_principal\_currency\_code} drawn from the constraints list, and
+optional aggregate valuation figures computed as random decimal values within a realistic range.
+
+\paragraph{}\textbf{AccountService} generates one or more account records per account group, ensuring that
+the \texttt{client\_account\_id} values produced are unique and that each account's
+\texttt{client\_currency\_code} is consistent with its parent group's principal currency. The service
+also populates optional manager codes, inception dates, and pre-loaded equity and fixed income
+market values.
+
+\paragraph{}\textbf{HierarchyService} produces the account hierarchy records that link each account to its
+parent account group. Because this service depends on the outputs of both the account group and
+account services, it receives both arrays as inputs and produces one hierarchy record per
+account-group pairing.
+
+\paragraph{}\textbf{ModelService} generates model records and their associated model objective records as a
+single unit. Each model receives a unique name and contains one or more allocation rows based on
+sector or portfolio level codes. The service supports equal, weighted, and random allocation modes,
+then normalises the resulting target weights so that each model remains balanced and usable by the
+Longview portfolio layer.
+
+\paragraph{}\textbf{SecurityService} generates security records across all six supported subtypes in
+dependency order: equities and generic securities first (no dependencies), followed by fixed income
+securities and their optional child schedule records, and finally derivatives (options and futures,
+which require an underlying security reference) and FX forwards. The service draws
+\texttt{security\_type\_code}, currency, and country values from the constraints configuration and
+computes realistic \texttt{pricing\_factor} and \texttt{income\_factor} values per asset class.
+
+\paragraph{}\textbf{PriceService} generates one or more price records per security. Each price record carries
+a \texttt{client\_security\_id} reference, a pricing date set to the generation date, and a closing
+price derived from the security's asset class (equities receive prices in the 10--500 range; fixed
+income securities receive prices near par value, i.e., in the 95--105 range; derivatives receive
+prices scaled to their contract size).
+
+\paragraph{}\textbf{OrderService} generates both group order records (\texttt{OrderDto}) and proposed order
+records (\texttt{ProposedOrderDto}) in the correct dependency order. Group orders are generated
+first and assigned a unique reference; proposed orders are then generated referencing valid account
+and security identifiers from the upstream pools and linked to their parent group order.
+
+\paragraph{}\textbf{ExecutionService} generates execution records for a subset of the proposed orders,
+simulating a realistic partial-fill scenario in which some orders remain open. Each execution's
+\texttt{quantity} is constrained to not exceed the parent order's \texttt{proposed\_value}, and the
+\texttt{average\_price} is set to a value within a realistic spread of the security's last generated
+price.
+
+\paragraph{}\textbf{PositionService} derives position (tax lot) records from the net execution quantities
+for each account-security pair. For each unique combination of \texttt{client\_account\_id} and
+\texttt{client\_security\_id} appearing in the execution records, the service sums the filled
+quantities and creates a position record whose \texttt{trade\_date\_qty} equals that net sum,
+ensuring consistency between the execution layer and the position layer of the generated dataset.
+
+
+% ─────────────────────────────────────────────
+\subsection{SQL Script Generator Service}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}The \texttt{SqlScriptGeneratorService} is responsible for converting the arrays of populated DTO
+instances produced by the entity services into a single executable SQL script. For each DTO array,
+the service iterates over the records in the established population order, constructs a
+\texttt{INSERT INTO <buffer\_table> (\ldots) VALUES (\ldots)} statement for each record, handles
+\texttt{NULL} for optional fields that were not populated, escapes single-quote characters in string
+values, and formats numeric values without quotation marks. The assembled statements are grouped
+by entity domain with section header comments to facilitate readability and manual inspection of
+the generated script.
+
+
+% ─────────────────────────────────────────────
+\subsection{Generation Results}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}The standalone mode is structured as a three-step guided workflow accessible from the
+application's mode selection screen. Figure~\ref{fig:mode-selection} shows the mode selection
+screen from which the user enters either the standalone or the connected workflow.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/ch4-mode-selection.png}
+\caption{Mode selection screen}
+\label{fig:mode-selection}
+\end{figure}
+
+\paragraph{}Figure~\ref{fig:step-config} shows the first step of the workflow: the configuration tab,
+where the user specifies the desired quantities for each entity domain and sets optional
+generation flags such as whether to include derivative securities or fixed income schedules.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/ch4-step1-config.png}
+\caption{Step 1 -- Configuration tab}
+\label{fig:step-config}
+\end{figure}
+
+\paragraph{}Figure~\ref{fig:step-preview} shows the second step: the preview tab, which displays an
+estimated row count per entity domain computed from the configured quantities before generation
+is triggered, allowing the user to review the expected output size before committing to the run.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/ch4-step2-preview.png}
+\caption{Step 2 -- Preview tab showing estimated record counts per entity domain}
+\label{fig:step-preview}
+\end{figure}
+
+\paragraph{}Figure~\ref{fig:step-result} shows the third and final step: the generation result tab
+displayed after a successful run, presenting the INSERT statement statistics per entity domain
+and the download button for the assembled SQL script file.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/ch4-step3-result.png}
+\caption{Step 3 -- Generation result tab after a successful run}
+\label{fig:step-result}
+\end{figure}
+
+
+% ─────────────────────────────────────────────
+\subsection{Sprint Review and Validation}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}At the end of Sprint 2, the delivered increment was reviewed against the two user stories
+selected for the sprint. The backend was able to generate \texttt{.DAT} files for the supported
+entity domains, validate them using the \texttt{ValidatorService}, assemble them into a SQL loading
+script, and return the script to the frontend for download. The frontend workflow was also checked
+from configuration through preview to generation.
+
+\begin{table}[htbp]
+\centering
+\caption{Sprint 2 validation summary}
+\label{tab:sprint2-validation}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|P{0.22\linewidth}|P{0.42\linewidth}|P{0.26\linewidth}|}
+\hline
+\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\hline
+Generation parameters & Submitted a standalone configuration containing accounts, securities, models, orders, executions, and prices. & Parameters were accepted and propagated to the backend services. \\
+\hline
+Data coherence & Ran validator checks on generated \texttt{.DAT} files before SQL assembly. & Required fields, lengths, numeric fields, flags, and date formats were checked before writing output. \\
+\hline
+SQL assembly & Generated the final \texttt{load\_test\_data.sql} script from the produced \texttt{.DAT} files. & SQL statements were grouped by loading section and ordered according to the pre-BCP process. \\
+\hline
+Frontend workflow & Navigated through configuration, preview, and generation tabs. & The three-step standalone workflow produced a downloadable SQL script. \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{}The following excerpt illustrates the structure of the generated SQL script. The actual script
+contains one section per generated file and keeps \texttt{NULL} values, strings, and numeric values
+formatted according to the target buffer table columns.
+
+\begin{verbatim}
+-- ACCOUNT.DAT
+INSERT INTO pre_bcp_account_buffer
+(client_account_id, short_name, name_1, client_currency_code)
+VALUES ('ACC001', 'ACC001', 'Test Account 001', 'USD');
+
+-- PRICE.DAT
+INSERT INTO pre_bcp_price_buffer
+(client_security_id, price_date, close_price)
+VALUES ('EQ000001', '20260505', 125.40);
+\end{verbatim}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/ch4-generated-sql-evidence.png}
+\caption{Generated SQL script excerpt}
+\label{fig:ch4-generated-sql-evidence}
+\end{figure}
+
+
+% ─────────────────────────────────────────────
 \section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+% ─────────────────────────────────────────────
 
-In this chapter, we presented an approach for optimal LTS-based testing, where the goal is to generate an optimal set of paths that ensures comprehensive coverage of all transitions in a graph. The process began with the generation of a regular expression from the graph, followed by the deduction of all possible paths. These paths were then optimized through linear programming to obtain the optimal set, which refers to the minimum number of paths that also represent the shortest paths. Examples were used throughout the chapter to clarify the concepts and demonstrate the effectiveness of the approach.
+
+\paragraph{}This chapter presented Sprint 2, which delivered the complete standalone mode of the test
+data generator. The core generation engine was implemented as a set of NestJS injectable services,
+one per entity domain, orchestrated by a central \texttt{GeneratorService} that enforces the
+twenty-step population order established in Sprint 1. A centralised constraints configuration
+guarantees that all generated field values satisfy the enumeration and domain rules of the Longview
+loading pipeline. The \texttt{SqlScriptGeneratorService} assembles the populated DTO arrays into
+a single executable SQL script ready for direct use by the QA team. The three-step frontend
+workflow guides the user from parameter configuration through pre-generation preview to result
+download, providing a complete and self-contained generation experience. The standalone mode
+requires no database connection, making it immediately deployable in any environment. The
+following chapter presents Sprint 3, which extends the system with SQL Server database
+connectivity and the connected mode of the generator.

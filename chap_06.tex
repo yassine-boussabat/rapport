@@ -1,153 +1,291 @@
-\chapter{Solution implementation and
-experimental results}
+\chapter{Sprint 4 -- LLM Integration and Realistic Data Enrichment}
 
+
+% ─────────────────────────────────────────────
 \section*{Introduction}
-In this final chapter, we will detail the implementation phase of our approach. We will begin with an overview of the tools employed to implement the algorithms discussed in the previous chapter. Following this, we will present and analyze the experimental results of tests on randomly generated graphs and toy examples. Finally, we will validate our approach with a paper submission, which underscores the significance and effectiveness of our work.
-
-\section{Methodology workflow and tasks}
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=1\textwidth]{img/tab-ch5-end.png}
-    \caption{Kanban Board Overview for Chapter 5}
-    \label{fig:trello-5}
-\end{figure}
-Figure \ref{fig:trello-5} shows the current Kanban board by the end of this chapter. We ensured that the testing and evaluation process was completed by conducting tests on both randomly generated graphs and manually created graphs, ensuring a comprehensive validation of our approach. Throughout the project, all tasks outlined in the initial backlog of Table \ref{tab:backlog} were systematically moved to the completed card, reflecting a well-organized workflow. This illustrates the disciplined, step-by-step approach we took to address each task, from development to testing and evaluation. The only remaining task by the end of this chapter is the completion of the report writing, signifying that the implementation and experimental phases have been thoroughly executed. This structured progression has allowed us to confidently finalize our approach and move towards project closure.
+\addcontentsline{toc}{section}{Introduction}
+% ─────────────────────────────────────────────
 
 
-\section{Development Context}
-\subsection{Tools}
-\subsubsection{C++}
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.2\textwidth]{img/c++.png}
-    \caption{C++ Logo \cite{zamir1999}}
-    \label{fig:gcc}
-\end{figure}
+\paragraph{}This chapter presents Sprint 4, dedicated to the integration of a Large Language Model
+enrichment layer into the test data generator. The generator implemented in the previous sprints
+already produced structurally valid records, but many descriptive fields were still algorithmic:
+security names, account names, model labels, issuer descriptions, and symbols followed deterministic
+patterns. Sprint 4 aimed to improve the realism of these values while preserving the most important
+constraint of the project: generation must remain reliable even when the external AI service is
+unavailable.
 
-The C++ programming language offers a memory and computation model that closely aligns with the architecture of most modern computers. It provides robust and flexible abstraction mechanisms, allowing programmers to define and utilize new types of objects that align with the application's conceptual needs. C++ supports various programming styles, from low-level programming that involves direct manipulation of hardware resources to achieve high efficiency, to higher-level programming that utilizes user-defined types to model data and computation in a way that more closely reflects human understanding of the task. These higher-level programming styles include data abstraction and object-oriented programming \cite{zamir1999}.
-
-For the implementation of the algorithms discussed in the previous chapters, we used C++. This object-oriented programming language not only provides a clear and organized structure for code but also facilitates code reuse, which helps reduce development costs. Additionally, C++ is a cross-platform language capable of creating high-performance applications, leveraging its object-oriented features to deliver efficient and maintainable software solutions.
-
-\subsubsection{GCC}
-
-The GNU Compiler Collection (GCC), is an integrated compiler developed by the GNU Project. It supports a range of programming languages, including C, C++, Objective-C, and Fortran. GCC functions by taking source code written in these languages and generating binary executable programs in machine language. As an optimizing compiler, GCC supports various programming languages, hardware architectures, and operating systems. The compiler-driver \texttt{g++} is specifically used for C++ and is considered the de facto compiler for C/C++ on the Linux platform, including being the only compiler capable of compiling the Linux kernel. Additionally, we used \texttt{make}, a Unix tool that simplifies the process of building executable programs and libraries from source code. \texttt{make} reads files called Makefiles, which outline how to derive the target program, streamlining the build process \cite{gcc}.
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.2\textwidth]{img/gcc.png}
-    \caption{GCC Logo \cite{gcc}}
-    \label{fig:gcc}
-\end{figure}
-
-\subsubsection{Cmake}
-CMake is a widely adopted, open-source build manager that simplifies the process of building C++ code. With over 2 million downloads per month, it has become the de-facto standard for managing software builds. CMake allows developers to define build parameters in a straightforward, portable text file format. This file is then used to generate project files compatible with various native build tools, including Integrated Development Environments (IDEs) like Microsoft Visual Studio and Apple’s Xcode, as well as UNIX, Linux, NMake, and Borland style Makefiles. It handles complex aspects of software building, such as cross-platform builds, system introspection, and user-customized configurations, making it easier for developers to tailor their builds for intricate hardware and software systems. For those looking to leverage CMake effectively, a range of resources is available to help navigate and utilize its comprehensive features \cite{cmake}.
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.25\textwidth]{img/cmake.png}
-    \caption{Cmake Logo \cite{cmake}}
-    \label{fig:cmake}
-\end{figure}
-
-\subsubsection{Drawio}
-Draw.io, now known as diagrams.net, is an online, open-source modeling tool designed to create a wide range of diagrams, including flowcharts, process diagrams, Unified Modeling Language (UML) diagrams, Entity-Relationship (ER) diagrams, and network diagrams. This versatile tool is distinguished by its smart shapes, intuitive connectors, and a variety of advanced features that significantly aid in diagram creation. Draw.io's user-friendly interface and robust functionality streamline the process of visualizing complex systems, making it an invaluable asset for developing and illustrating figures in our project \cite{drawio}. 
-
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=0.25\textwidth]{img/drawio.jpg}
-    \caption{Drawio Logo \cite{drawio}}
-    \label{fig:gcc}
-\end{figure}
-
-\subsection{Hardware environment}
-We conducted all the experiments using a Dell Precision 7560 laptop, which is equipped with a high-performance Intel(R) Core(TM) i7-11850H processor. This 8-core processor operates at a base clock speed of 2.5 GHz, providing substantial computational power to handle the intensive calculations and algorithms involved in our study. The laptop is also equipped with 32 GiB of memory, which ensures that we can efficiently manage and process large datasets and complex models. The operating system used for these experiments is Ubuntu 20.04, a robust and widely-used Linux distribution that offers a stable environment for running our software and executing our algorithms.
-
-\section{Evaluation and experimental results}
-To evaluate our approach, we conducted an analysis using a selection of representative graphs, which serve as illustrative examples for our study. These toy examples, detailed in Table \ref{tab:graphs}, were carefully chosen to cover a variety of structural characteristics and complexities. 
-\input{tables/Graphs}
-
-Table~\ref{tab:Toysgraphs_summary} presents preliminary results focusing on pathfinding metrics where the first column contains the identifier of each LTS of the twelve toy examples. Column 2 indicates the size of linear programming algorithm, represented by the couple (r,c), where $r$ is the number of rows and $c$ is the number of columns. The former indicates the number of labels to be covered, while the latter denotes the number of generated paths. The time in milliseconds needed to generate the regular expression, extract the paths, and solve the ILP problem is represented by column 3, column 4, and column 5, respectively. The obtained optimal sequence are presented in the last column.
- 
-\input{tables/tabresltsToys}
-
-\newpage
-The ILP resolution process has the most significant impact on the processing time for generating optimal paths as it has a polynomial complexity. 
-For small LTS, for example, $G_1$ ILP resolution takes $60\%$ of the whole process against $96\%$ for large LTS like $G_{11}$.
-The ILP resolution time consumes between $60\%$ and $90\%$ of the total processing time, with $60\%$ for small graphs, and it increases as the complexity of the graph grows.
+\paragraph{}The implemented solution integrates the Google Gemini API through a dedicated
+\texttt{LlmModule}. The LLM layer is optional, controlled through environment variables, and designed
+as an enrichment step on top of already valid DTO objects. This means that the algorithmic generator
+remains the source of truth for identifiers, relationships, quantities, dates, and business rules,
+while the LLM improves only selected textual and descriptive fields.
 
 
-To check the correctness of our algorithm by executing the approach on small test cases, we have manually analyzed these toy examples. The identified optimal paths of all graphs are equal to those generated by the implementation of our approach, except for $G_7$, $G_8$, $G_{10}$, and $G_{11}$. We noticed that manually crafted optimal path (for example, $acdbfd$ in $G_{10}$) is a prefix of the automatically generated one (i. e. $acdbfdaab$). This weakness is related to the path generation process from regular expression. 
+% ─────────────────────────────────────────────
+\section{Sprint Backlog}
+% ─────────────────────────────────────────────
 
-\begin{table}[htb!]
+
+\paragraph{}Sprint 4 targeted the LLM enrichment user story from the product backlog. The sprint backlog is
+presented in Table~\ref{tab:sprint4-backlog}.
+
+\begin{table}[htbp]
 \centering
-\begin{tabular}{|c|c|c|}
+\caption{Sprint 4 backlog}
+\label{tab:sprint4-backlog}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
 \hline
-\textbf{Prefix} & \textbf{Possible Choices} & \textbf{Best Choice} \\ \hline
- & a, b, d & a \\ \hline
-a & a, b, d & a \\ \hline
-ab & a, b, d & b \\ \hline
-abc & a, b, d & d \\ \hline
-abe & a, b, d & d \\ \hline
-abcd & a, b, d & d \\ \hline
-abcde & a, b, d & d \\ \hline
-abfc & f & f \\ \hline
-abf & e, f & f \\ \hline
-abfca & b & b \\ \hline
-abfc & e, f & f \\ \hline
-abfcf & a & a \\ \hline
-b & c, d & b \\ \hline
-bc & c, d & c \\ \hline
-bca & b & b \\ \hline
-bcac & b & b \\ \hline
-bcdc & c, d & c \\ \hline
-bdf & e, f & e \\ \hline
-bde & e & e \\ \hline
-bdef & a & a \\ \hline
-bdfca & c & c \\ \hline
-d & f & f \\ \hline
-df & a & a \\ \hline
-dfa & e, f & e \\ \hline
-dfae & a & a \\ \hline
-dfcf & f & f \\ \hline
+\textbf{ID} & \textbf{Task} & \textbf{Description} & \textbf{Estimate} \\
+\hline
+T4-1 & Implement LLM client service & Build a Gemini client wrapper that supports multiple API keys, model fallback, queueing, concurrency limits, and rate-limit cooldowns. & 2 days \\
+\hline
+T4-2 & Design structured prompts & Create prompts for account groups, accounts, models, and each security subtype, requiring JSON responses constrained by Longview field rules. & 2 days \\
+\hline
+T4-3 & Implement enrichment services & Add enrichers that call the LLM, parse responses, validate expected fields, truncate values to DTO limits, and preserve algorithmic fallback values when needed. & 2 days \\
+\hline
+T4-4 & Integrate enrichment in generation flow & Insert the LLM enrichment layer into \texttt{GeneratorService} without changing the core generation contract. & 1 day \\
+\hline
+T4-5 & Add resilience and fallback behavior & Ensure the generator remains fully operational when the LLM is disabled, rate-limited, returns invalid JSON, or fails entirely. & 1 day \\
+\hline
+T4-6 & Validate generated output after enrichment & Run the existing validator after enrichment to ensure LLM-provided values still respect required formats and field lengths. & 1 day \\
+\hline
 \end{tabular}
-\captionsetup{justification=centering} % Centre le titre du tableau
-\caption{Dataset for Graph6}
-\label{tab:dataset_graph6}
 \end{table}
 
 
-To illustrate the dataset generation process and test it, we use Graph 6 as an example. We start by applying our approach to generate prefixes from Graph9, systematically traversing the graph to extract all possible prefixes of transitions. Once these prefixes are identified, we proceed to compile the complete dataset for the graph. This dataset includes each prefix, the set of possible choices for each prefix, and the best choice based on the optimal paths.
+% ─────────────────────────────────────────────
+\section{Sprint Design}
+% ─────────────────────────────────────────────
 
-The results of this dataset generation process are summarized in table \ref{tab:dataset_graph6}. This table presents a detailed view of the prefixes, their corresponding possible choices, and the best choice for each prefix, showcasing how the approach is applied to a real-world graph and demonstrating its effectiveness in guiding state space exploration.
 
-Each row of the table illustrates a distinct prefix— a sequence of transitions representing a sub-path of the graph. The prefixes are organized from the simplest, such as `a`, to more complex sequences like `abfca` and `dfcf`. For each prefix, the dataset enumerates:
+\subsection{LLM Enrichment Architecture}
+
+\paragraph{}The LLM integration follows a defensive enrichment architecture. The base generation services
+first create complete and valid DTO arrays. These arrays are then passed to \texttt{LlmService}, which
+decides whether enrichment is enabled and delegates the work to specialised enrichers. If the LLM
+layer is disabled or fails, the original DTO arrays are returned unchanged.
+
+\paragraph{}The main components of the integration are:
 
 \begin{itemize}
-    \item \textbf{Possible Choices}: This column lists all the potential transitions that can follow from the given prefix. These choices are derived based on the structure of the graph and the paths available. For example, after the prefix `ab`, the possible choices are `a`, `b`, or `d`, indicating the different transitions that can be taken next.
-    
-    \item \textbf{Best Choice}: This column identifies the optimal transition based on the set of optimal paths previously computed. It reflects the transition that best aligns with the goal of optimizing coverage or achieving specific objectives. For instance, after the prefix `ab`, the best choice is `b`, as it represents the optimal transition from the choices available.
+    \item \textbf{\texttt{LlmClientService}:} low-level Gemini client wrapper responsible for API keys,
+    model selection, queueing, rate-limit handling, and request execution.
+    \item \textbf{\texttt{LlmService}:} facade used by the generator. It exposes methods such as
+    \texttt{enrichSecurities()}, \texttt{enrichAccounts()}, \texttt{enrichModels()}, and
+    \texttt{enrichAccountGroups()}.
+    \item \textbf{Prompt builders:} functions that create structured prompts for each entity type and
+    require JSON output.
+    \item \textbf{Enrichers:} services that parse LLM output, apply field constraints, and merge safe
+    enriched values back into the generated DTOs.
 \end{itemize}
 
+\begin{figure}[htbp]
+\centering
+%\includegraphics[width=0.95\textwidth]{img/ch6-llm-architecture.pdf}
+\caption{Architecture of the LLM enrichment layer}
+\label{fig:ch6-llm-architecture}
+\end{figure}
 
-In summary, the dataset captures the essence of path exploration and optimization within Graph6. It helps in understanding the transition behavior at various stages of the graph and aids in guiding further exploration or decision-making processes in the context of the LTS.
+\paragraph{}Figure~\ref{fig:ch6-llm-sequence} presents the runtime sequence of the enrichment step. The
+core generation services first produce a complete algorithmic dataset, then request enrichment from
+\texttt{LlmService}. If LLM integration is disabled, the service immediately returns the original
+dataset. If it is enabled, the corresponding entity enricher builds a structured prompt, calls the
+LLM client, and waits for a JSON response from the external API.
 
-We conducted a second analysis presented in table~\ref{tab:Randgraph_results}, using randomly generated deterministic LTS. For each experiment, we varied the number of nodes (column 1) from 1000 to 5000, and adjusted the number of arcs (column 2) accordingly. We also performed random selections from a fixed set of 1000 labels. Additionally, we specify the following features: total execution time in column 3, ILP size in column 4, average size of generated paths in column 5, number of optimal paths in column 6, and average size of optimal paths in the last column.
+\paragraph{}The sequence makes the fallback behavior explicit. A fully valid response is merged into all
+items, a partial response enriches only the valid records while preserving the original values for
+the rest, and an invalid or failed request is discarded. In all cases, the generation process
+continues with a valid dataset, which protects SQL generation from external AI failures.
 
-The column 4 indicates the size of linear programming algorithm, represented by the couple (r,c), where, $r$ is the number of rows and the $c$ is the number of columns. Notice that they represent respectively the number of labels aimed to be covered, and the number of generated paths. These metrics indicate the complexity of the linear programming problem generated.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.98\textwidth]{img/sequence-llm-enrichment.pdf}
+\caption{LLM data enrichment sequence}
+\label{fig:ch6-llm-sequence}
+\end{figure}
 
-\input{tables/tabRandSmall}
+\subsection{Configuration Strategy}
 
-These results highlight the variability in computational complexity and path structures across different random graphs as the number of nodes and edges grows. Our proof of concept shows a memory overflow (i.e. MO) indicating that the memory limit was exceeded during the execution process, leading to an abrupt termination of the process. This interruption occurs after path generation, which highlights the limit of using ILP for very large LTS.
+\paragraph{}The LLM layer is controlled entirely by environment variables. This allows the same application
+to run in environments with or without AI access. Table~\ref{tab:llm-config} summarizes the main
+configuration values used by the implementation.
 
-Our approach scales well with larger graphs up to a certain point. However, beyond this threshold, processing becomes impractical within a reasonable time frame (specifically, 1 hour), as indicated by occurrences of 'TO' (Time Out). The value 'MO' (Memory Overflow) indicates that the memory limit was exceeded during the execution process, leading to an abrupt termination of the process.
+\begin{table}[htbp]
+\centering
+\caption{LLM configuration variables}
+\label{tab:llm-config}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|P{0.32\linewidth}|P{0.58\linewidth}|}
+\hline
+\textbf{Variable} & \textbf{Purpose} \\
+\hline
+\texttt{LLM\_ENABLED} & Enables or disables the LLM enrichment layer. When it is not set to \texttt{true}, the generator uses only algorithmic values. \\
+\hline
+\texttt{GEMINI\_API\_KEY}, \texttt{GEMINI\_API\_KEY\_2}, \texttt{GEMINI\_API\_KEY\_3} & Provide one or more Gemini API keys used by the client service. \\
+\hline
+\texttt{LLM\_MAX\_CONCURRENCY} & Controls how many LLM requests can be processed in parallel. \\
+\hline
+\texttt{LLM\_RATE\_LIMIT\_COOLDOWN\_MS} & Defines the cooldown period applied after rate-limit errors. \\
+\hline
+\texttt{LLM\_MAX\_REQUEST\_WAIT\_MS} & Limits how long one enrichment request can wait before falling back. \\
+\hline
+\texttt{LLM\_ENABLE\_PRO\_FALLBACK} & Enables the last-resort Gemini Pro model path when configured. \\
+\hline
+\texttt{LLM\_SECURITY\_BATCH\_SIZE} & Controls how many security records are sent in one batch enrichment prompt. \\
+\hline
+\end{tabular}
+\end{table}
 
-Therefore, with a very large number of initially generated paths, the percentage of optimal paths is significantly low, which is noteworthy.
-These results offer important insights about our algorithm's performances and its limitations when handling large-scale graphs under parameterized random conditions.
+\subsection{Fallback Strategy}
 
-\section{Scientific contribution and paper submission}
-Our project was resumed in a scientific paper written by the team entitled \textit{\textbf{Optimizing Label Coverage using Regular Expression-based Linear Programming}}, authored by Kais Klai, Mohamed Taha Bennani, Jaime Arias, Hanen Ochi, and Hadhami Elouni. The submission was accepted by the VECoS 2024 17th International Conference on Verification and Evaluation of Computer and Communication Systems. 
+\paragraph{}The LLM is treated as an optional quality improvement, not as a required dependency. The
+fallback strategy has three levels. First, if \texttt{LLM\_ENABLED} is false or no API key is
+configured, enrichment is skipped. Second, if a model or key fails, the client attempts another
+configured route. Third, if all LLM attempts fail or return unusable data, the enricher returns the
+algorithmically generated objects without modification.
+
+\paragraph{}This approach protects the generation pipeline from external service instability. A QA engineer
+can therefore continue generating valid SQL scripts even during API outages, quota exhaustion, or
+invalid LLM responses.
+
+\begin{figure}[htbp]
+\centering
+%\includegraphics[width=0.95\textwidth]{img/ch6-llm-fallback-flow.pdf}
+\caption{Fallback strategy for LLM enrichment}
+\label{fig:ch6-llm-fallback-flow}
+\end{figure}
 
 
-The VECoS conference series focuses on the analysis of computer and communication systems, where functional and extra-functional properties are inter-related. VECoS encourages the cross-fertilization between the various formal verification and evaluation approaches, methods, and techniques, especially those developed for concurrent and distributed hardware/software systems \cite{vecos2024}.
+% ─────────────────────────────────────────────
+\section{Implementation}
+% ─────────────────────────────────────────────
 
+
+\subsection{LLM Client Service}
+
+\paragraph{}The \texttt{LlmClientService} wraps the \texttt{@google/generative-ai} SDK. At startup, it reads the
+available API keys and creates one client per key. It then builds a model chain containing Gemini
+2.5 Flash as the primary model, Gemini 2.5 Flash Lite as the overflow model, and optionally Gemini
+2.5 Pro as a last-resort model when enabled by configuration.
+
+\paragraph{}The service also implements a small request scheduler. Incoming prompts are placed in an
+internal queue and processed according to \texttt{LLM\_MAX\_CONCURRENCY}. Each key tracks its own
+in-flight requests and cooldown state per model. When a request fails because of a rate limit, the
+corresponding key/model pair is put on cooldown, and the service tries another available route.
+Denied-access errors disable the affected key for the rest of the run.
+
+\subsection{Security Batch Enrichment}
+
+\paragraph{}Security enrichment is implemented as a batch process because securities are the most numerous
+records in the generated dataset. The \texttt{SecurityBatchEnricher} creates work items for equities,
+fixed income securities, FX forwards, generics, futures, and options. These work items are split
+into chunks according to \texttt{LLM\_SECURITY\_BATCH\_SIZE}, and each chunk is sent to the model with
+a prompt requiring a JSON array response.
+
+\paragraph{}After receiving the response, the enricher parses the JSON, verifies that every returned item has
+the expected identifier and security kind, and applies only the fields that are safe for that
+security subtype. For example, equities may receive improved \texttt{client\_security\_id},
+\texttt{symbol}, and \texttt{security\_name\_1} values, while fixed income securities may receive a
+better \texttt{security\_description}. Each accepted string is truncated using the field length
+constraints so that it remains compatible with the target \texttt{.DAT} file.
+
+\begin{figure}[htbp]
+\centering
+%\includegraphics[width=0.95\textwidth]{img/ch6-llm-prompt-response.pdf}
+\caption{Example of security batch enrichment}
+\label{fig:ch6-security-batch-example}
+\end{figure}
+
+\subsection{Account, Account Group, and Model Enrichment}
+
+\paragraph{}Additional enrichers target account groups, accounts, and models. These services follow the
+same defensive pattern: build a structured prompt, call the LLM client, parse JSON output, merge
+only known fields, and report whether a fallback was used. The enrichers improve descriptive fields
+such as account names, account group names, and model labels without changing numeric quantities,
+foreign keys, or the generated dependency structure.
+
+\subsection{Integration in the Generator}
+
+\paragraph{}The \texttt{GeneratorService} integrates the enrichment layer after base generation and before
+validation and file writing. Securities are generated first, then passed through
+\texttt{llmService.enrichSecurities()}. Models, accounts, and account groups are enriched in the same
+way. The validator still runs after enrichment, which means that LLM-provided values are subject to
+the same checks as algorithmic values.
+
+\paragraph{}This placement was chosen deliberately. If enrichment occurred before DTO creation, the LLM
+would influence structural logic and could create invalid relationships. By enriching complete DTOs,
+the system allows the LLM to improve realism while keeping referential integrity under the control
+of deterministic code.
+
+\subsection{Prompt and Response Constraints}
+
+\paragraph{}Prompts are designed to request concise JSON responses rather than free-form text. The expected
+response shape is different for each entity type, but all prompts share the same principle: each
+returned item must be traceable to the original generated item through an identifier. The enrichers
+reject responses with missing identifiers, wrong kinds, invalid arrays, or unexpected lengths.
+
+\paragraph{}This strict parsing is important because LLMs can produce extra text, malformed JSON, or values
+that do not match the requested schema. The implementation treats such output as unusable and falls
+back to the original generated data instead of attempting unsafe corrections.
+
+\begin{figure}[htbp]
+\centering
+%\includegraphics[width=0.95\textwidth]{img/ch6-enrichment-comparison.pdf}
+\caption{Comparison between algorithmic and LLM-enriched generated data}
+\label{fig:ch6-enrichment-comparison}
+\end{figure}
+
+
+% ─────────────────────────────────────────────
+\section{Sprint Review and Validation}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}Sprint 4 was validated by checking that LLM enrichment improves realism without weakening the
+core guarantees of the generator. Table~\ref{tab:sprint4-validation} summarizes the validation
+points.
+
+\begin{table}[htbp]
+\centering
+\caption{Sprint 4 validation summary}
+\label{tab:sprint4-validation}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
+\hline
+\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\hline
+Disabled LLM mode & Started generation without enabling the LLM configuration. & Generation completed using algorithmic values only. \\
+\hline
+Fallback behavior & Checked error paths in the client and enrichers. & Failed or invalid LLM responses return the original DTO arrays. \\
+\hline
+Schema protection & Parsed LLM responses as JSON arrays and matched returned identifiers to requested work items. & Unexpected response shapes are rejected. \\
+\hline
+Field constraints & Applied maximum-length checks before merging enriched text into DTOs. & Enriched strings remain compatible with \texttt{.DAT} constraints. \\
+\hline
+Post-enrichment validation & Ran the existing \texttt{ValidatorService} after enrichment and before file writing. & Invalid generated records are blocked before SQL assembly. \\
+\hline
+\end{tabular}
+\end{table}
+
+\paragraph{}The main difficulty of this sprint was balancing realism and reliability. The solution avoids
+making the LLM responsible for business rules, quantities, or relationships. Instead, it uses the
+LLM only as a controlled text-enrichment layer. This decision keeps the generator predictable while
+still improving the readability and plausibility of generated financial records.
+
+
+% ─────────────────────────────────────────────
 \section*{Conclusion}
-In conclusion, this chapter has provided a comprehensive overview of the solution implementation and experimental results. We detailed the development context, including the tools and hardware environment used, which laid the foundation for our experimentation. The evaluation, encompassing both toy examples and randomly generated graphs, demonstrated the effectiveness and versatility of our approach. Finally, we discussed the validation of our results through the submission and acceptance of a paper to the VECoS 2024 conference.
+\addcontentsline{toc}{section}{Conclusion}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}This chapter presented Sprint 4, which integrated optional LLM enrichment into the Longview Test
+Data Generator. A dedicated client service manages Gemini API calls, fallback models, multiple API
+keys, queueing, concurrency, and rate-limit cooldowns. Entity-specific enrichers improve textual
+and descriptive fields while preserving deterministic generation as the source of truth for data
+structure and business consistency. The resulting system can generate more realistic datasets when
+the LLM is available, but it remains fully operational when the LLM is disabled or unavailable. The
+following chapter presents Sprint 5, which finalizes the application with the configuration library
+and global report-level validation.

@@ -1,184 +1,149 @@
 \chapter{Project Context}
 
-
 % ─────────────────────────────────────────────
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}This chapter describes the professional and organizational context within which this internship project was conducted. The chapter begins with an introduction to Linedata Services, the host organization, followed by a description of its Tunisian subsidiary and the specific team responsible for Longview development. Subsequently, we present an overview of Longview, the front-office trade management platform, detailing its principal functions and the core financial entities that constitute its data model. The remainder of the chapter focuses on the existing test data preparation procedures employed by the quality assurance and development teams, identifying specific limitations and operational challenges. Finally, we formulate the central problem that motivated this work and outline the subsequent chapters.
-
+\paragraph{}This chapter presents the professional and organizational context of this internship project. It begins with an introduction to Linedata Services, the host company, followed by a description of its Tunisian office. We then provide an overview of Longview, the front-office trade management platform, covering its main functions and the key financial entities that make up its data model. The rest of the chapter examines the test data preparation methods currently used by the quality assurance and development teams, highlighting their main limitations and practical challenges. Finally, we define the core problem that motivated this project and outline the structure of the remaining chapters.
 
 % ─────────────────────────────────────────────
 \section{Host Organization: Linedata}
 % ─────────────────────────────────────────────
 
-
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.4\textwidth]{img/linedata_logo_square.png}
 \caption{Logo of Linedata \cite{linedata_about}}
 \label{fig:linedata}
 \end{figure}
 
+\paragraph{}Linedata Services S.A. was founded in 1998 and has grown into a major player in the financial technology industry. The company is headquartered in Neuilly-sur-Seine, France, and operates in more than twenty offices across Europe, North America, Asia, and Africa. As of 2024, Linedata employs over 1,100 people and serves around 700 clients in 50 countries, with annual revenues exceeding \texteuro{}183 million. The company is listed on Euronext Paris under the ticker symbol LIN \cite{linedata_about, linedata_revenue}.
 
-\paragraph{}Linedata Services S.A. was established in 1998 and has developed into a significant participant in the financial technology sector. Headquartered in Neuilly-sur-Seine, France, the organization maintains operational presence across Europe, North America, Asia, and Africa through more than twenty regional offices. As of 2024, Linedata employed over 1,100 personnel and served approximately 700 clients distributed across 50 countries, generating annual revenues exceeding \texteuro{}183 million. The company is publicly listed on Euronext Paris under the stock ticker LIN \cite{linedata_about, linedata_revenue}.
-
-
-\paragraph{}The company's core mission involves enhancing the accessibility and effectiveness of financial technology through the delivery of comprehensive software platforms, data management solutions, and professional services. Linedata's offerings support financial institutions including asset managers, hedge funds, and lending organizations in achieving greater operational efficiency, agility, and regulatory compliance. The company's service portfolio is organized around two primary business segments: Asset Management and Lending \& Leasing \cite{linedata_about}.
-
+\paragraph{}Linedata's main goal is to make financial technology more accessible and effective by offering software platforms, data management solutions, and professional services. Its products help financial institutions such as asset managers, hedge funds, and lending organizations improve their operational efficiency, flexibility, and regulatory compliance. The company's offerings are organized into two main business segments: Asset Management and Lending \& Leasing \cite{linedata_about}.
 
 \begin{itemize}
-    \item \textbf{Asset Management:} Front-to-back software solutions covering portfolio management, order and execution management (OMS/EMS), investment compliance, risk analytics, and fund administration. More than 63,000 financial professionals rely on Linedata's asset management products on a daily basis.
-    \item \textbf{Lending \& Leasing:} End-to-end solutions for lending institutions and leasing companies, covering origination, servicing, and portfolio oversight.
+\item \textbf{Asset Management:} End-to-end software solutions covering portfolio management, order and execution management (OMS/EMS), investment compliance, risk analytics, and fund administration. More than 63,000 financial professionals use Linedata's asset management products every day.
+\item \textbf{Lending \& Leasing:} Complete solutions for lending institutions and leasing companies, covering origination, servicing, and portfolio management.
 \end{itemize}
 
-
-\paragraph{}Linedata's technological infrastructure is designed for cloud deployment and horizontal scalability, incorporating an open architecture capable of interoperating with third-party accounting systems, trading execution platforms, external data providers, and custodial interfaces. The organization has undertaken progressive integration of artificial intelligence and machine learning capabilities within its data management and analytical workflows \cite{linedata_ai}.
-
+\paragraph{}Linedata's technology is built for cloud deployment and can scale horizontally. It uses an open architecture that can connect with third-party accounting systems, trading platforms, external data providers, and custodial interfaces. The company has also been progressively integrating artificial intelligence and machine learning into its data management and analytical workflows \cite{linedata_ai}.
 
 % ─────────────────────────────────────────────
 \subsection{Linedata Tunisia}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}The Tunisian subsidiary of Linedata fulfills a central role in the organization's research, development, and engineering initiatives. The office, situated in Tunis, houses software engineers, quality assurance specialists, and technical leadership responsible for the continued development and maintenance of Linedata's core financial platforms, particularly the Longview system.
-
+\paragraph{}The Tunisian subsidiary of Linedata plays a central role in the company's research, development, and engineering activities. Located in Tunis, the office employs software engineers, quality assurance specialists and technical leads who are responsible for the development and maintenance of Linedata's core financial platforms, particularly the Longview system.
 
 \begin{itemize}
-    \item \textbf{Address:} Immeuble Cl\'eopâtre Center, Bloc B, Centre Urbain Nord, 1082 Tunis, Tunisia
-    \item \textbf{Phone:} +216 71 185 800
+\item \textbf{Address:} Immeuble Cléopâtre Center, Bloc B, Centre Urbain Nord, 1082 Tunis, Tunisia
+\item \textbf{Phone:} +216 71 185 800
 \end{itemize}
-
 
 % ─────────────────────────────────────────────
 \subsection{Organizational Structure and Internship Context}
 % ─────────────────────────────────────────────
 
+\paragraph{}Engineering work at Linedata Tunisia is divided into dedicated product teams that operate under the research and development department. The internship described in this report was carried out within the Longview development team.
 
-\paragraph{}Engineering activities at Linedata Tunisia are organized into distinct product-focused teams functioning under the research and development department. The internship described in this document was conducted within the Longview development team.
-
-
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.82\textwidth]{img/orgchart.png}
 \caption{Organizational structure of Linedata Tunisia and internship team placement}
 \label{fig:orgchart}
 \end{figure}
 
-
-\paragraph{}The primary objective of this internship was to design and implement a configurable system capable of generating valid test data for the Longview platform. This system was developed to address significant inefficiencies observed in the existing manual test data preparation procedures.
-
+\paragraph{}The main goal of this internship was to design and build a configurable system that can generate valid test data for the Longview platform. This system was created to resolve the serious inefficiencies found in the existing manual test data preparation process.
 
 % ─────────────────────────────────────────────
 \section{Longview}
 % ─────────────────────────────────────────────
 
-
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.5\textwidth]{img/longview_logo.png}
 \caption{Linedata Longview, Front-Office Trade Order Management Platform \cite{longview_oms}}
 \label{fig:longview}
 \end{figure}
 
-
-\paragraph{}Longview is an integrated, multi-tenant front-office trade order management platform designed specifically for buy-side financial institutions. The platform provides comprehensive support for the complete investment lifecycle, encompassing portfolio construction, compliance verification, order administration, electronic trading execution, and post-transaction settlement. Built upon a relational SQL Server architecture, Longview facilitates twenty-four-hour global trading operations and automated end-to-end processing. At the time of this project, the platform maintained version 8.2 and continues to receive ongoing maintenance and enhancement \cite{longview_oms}.
-
+\paragraph{}Longview is an integrated, multi-tenant front-office trade order management platform built specifically for buy-side financial institutions. The platform supports the full investment lifecycle, including portfolio construction, compliance checks, order management, electronic trade execution, and post-trade settlement. Built on a relational SQL Server database, Longview supports continuous global trading operations and automated end-to-end processing. At the time of this project, the platform was at version 8.2 and continues to receive regular maintenance and improvements \cite{longview_oms}.
 
 % ─────────────────────────────────────────────
 \subsection{Core Financial Entities}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}The Longview data model relies upon a set of interrelated financial entities that must maintain strict referential integrity and consistent adherence to business rule constraints. The platform's underlying architecture centers on several essential entity categories, including Accounts, Securities, Brokers, Orders, Executions, and Positions.
-
+\paragraph{}The Longview data model is built around a set of related financial entities that must maintain strict referential integrity and comply with business rule constraints. The platform's architecture is centered on several key entity types, including Accounts, Securities, Orders, Executions, and Positions.
 
 \begin{itemize}
-    \item \textbf{Accounts:} Investment portfolios or client mandates, each identified by a unique account identifier, associated with a base currency, a portfolio manager, and optional regulatory and compliance attributes.
-    \item \textbf{Securities:} Financial instruments supported across multiple asset classes, equities and funds, fixed income instruments (bonds, money market securities, mortgage pass-throughs), futures, options, and FX forwards, each governed by its own set of required fields and valuation rules.
-    \item \textbf{Brokers:} Counterparties and dealers through which orders are routed and executed, each associated with commission structures and eligible instrument types.
-    \item \textbf{Orders:} Buy or sell instructions generated by portfolio managers, linked to specific accounts and securities, and subject to quantity, timing, and allocation constraints.
-    \item \textbf{Executions and Positions:} Trade confirmations resulting from order fulfillment, and the resulting inventory positions held by each account across its securities.
+\item \textbf{Accounts:} Investment portfolios or client mandates, each identified by a unique account ID, linked to a base currency, a portfolio manager, and optional regulatory and compliance attributes.
+\item \textbf{Securities:} Financial instruments across multiple asset classes, including equities and funds, fixed income instruments (bonds, money market securities, mortgage pass-throughs), futures, options, and FX forwards. Each type has its own required fields and valuation rules.
+\item \textbf{Orders:} Buy or sell instructions created by portfolio managers, linked to specific accounts and securities, and subject to quantity, timing, and allocation constraints.
+\item \textbf{Executions and Positions:} Trade confirmations produced when orders are filled, and the resulting inventory positions held by each account across its securities.
 \end{itemize}
 
-
-\paragraph{}The intricate nature of the relationships and constraints governing these entities renders the generation of valid test data a non-trivial undertaking. Violations of referential integrity or business rule constraints render datasets unusable and compromise the effectiveness of the quality assurance process.
-
+\paragraph{}The complex relationships and constraints between these entities make generating valid test data a challenging task. Any violation of referential integrity or business rules makes a dataset unusable and reduces the effectiveness of the quality assurance process.
 
 % ─────────────────────────────────────────────
 \section{Current Testing Procedure}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}Ensuring correctness and reliability across Longview releases necessitates a robust and continuous testing methodology. The quality assurance and development teams bear responsibility for validating new features, conducting regression analysis, and verifying the preservation of existing functionality as the platform evolves. This process depends fundamentally upon the availability of relevant, varied, and realistic test datasets.
-
+\paragraph{}Ensuring the correctness and reliability of each Longview release requires a solid and continuous testing process. The quality assurance and development teams are responsible for validating new features, running regression tests, and confirming that existing functionality is preserved as the platform evolves. This process depends on having relevant, varied, and realistic test datasets.
 
 % ─────────────────────────────────────────────
 \subsection{Manual Test Data Preparation}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}Currently, test data generation is accomplished through largely manual procedures. Quality assurance engineers and developers compose Structured Query Language scripts through direct manual composition, executing these against the Longview SQL Server database using INSERT, TRUNCATE, IDENTITY\_INSERT statements, and invocations of stored procedures. For each test scenario, personnel must identify the relevant database tables, manually construct valid records satisfying all primary and foreign key relationships, and verify conformance to Longview's business rules. This process requires both comprehensive understanding of SQL Server schema architecture and substantive knowledge of financial domain logic.
-
+\paragraph{}Currently, test data is generated through mostly manual procedures. Quality assurance engineers and developers write SQL scripts by hand and execute them against the Longview SQL Server database using INSERT, TRUNCATE, and IDENTITY\_INSERT statements, as well as stored procedure calls. For each test scenario, team members must identify the relevant database tables, manually build valid records that satisfy all primary and foreign key relationships, and verify that the data follows Longview's business rules. This process requires a thorough understanding of both the SQL Server schema and financial domain logic.
 
 % ─────────────────────────────────────────────
 \subsection{Limitations of the Current Approach}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}The manual approach presents several substantive limitations that reduce the efficiency, coverage, and reliability of quality assurance processes:
-
+\paragraph{}The manual approach has several important limitations that reduce the efficiency, coverage, and reliability of the quality assurance process:
 
 \begin{itemize}
-    \item \textbf{Time-consuming:} Building a coherent dataset across multiple interdependent tables can take hours for complex scenarios such as full trade lifecycles involving group orders, multi-account allocations, and broker tickets.
-    \item \textbf{Error-prone:} Human errors like mismatched foreign keys, execution quantities exceeding parent order quantities, or missing price records, frequently cause test failures unrelated to the feature under test, leading to wasted debugging effort.
-    \item \textbf{Limited scenario coverage:} The manual process naturally yields a small number of datasets, leaving edge cases, boundary conditions, and less common instrument types such as repos, TBAs, swaps, and NDFs largely untested.
-    \item \textbf{Lack of reproducibility:} Test data is created ad hoc and not stored in a structured, version-controlled format, making it difficult to reproduce, share, or reuse across regression cycles.
-    \item \textbf{Confidentiality constraints:} Production data cannot be used for testing due to strict confidentiality agreements and regulatory requirements, forcing teams to rely entirely on artificially constructed datasets.
-    \item \textbf{Environment dependency:} Tests requiring a live SQL Server instance depend on the availability of a correctly configured database environment, introducing additional setup overhead and potential instability.
+\item \textbf{Time-consuming:} Building a complete dataset across multiple dependent tables can take hours for complex scenarios, such as full trade lifecycles involving group orders, multi-account allocations, and broker tickets.
+\item \textbf{Error-prone:} Human mistakes such as mismatched foreign keys, execution quantities exceeding the parent order quantity, or missing price records frequently cause test failures that are unrelated to the feature being tested, leading to wasted debugging time.
+\item \textbf{Lack of reproducibility:} Test data is created on an ad hoc basis and is not stored in a structured, version-controlled format, making it difficult to reproduce, share, or reuse across regression cycles.
+\item \textbf{Confidentiality constraints:} Production data cannot be used for testing due to strict confidentiality agreements and regulatory requirements, so teams must rely entirely on artificially constructed datasets.
 \end{itemize}
 
-
-\begin{figure}[h!]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.85\textwidth]{img/current-process.png}
 \caption{Current manual test data creation workflow at Linedata}
 \label{fig:current-process}
 \end{figure}
 
-
 % ─────────────────────────────────────────────
 \section{Problem Statement}
 % ─────────────────────────────────────────────
 
+\paragraph{}These limitations together point to a significant gap in Linedata's testing infrastructure. As the Longview platform expands to support a wider range of financial instrument types and regulatory frameworks, the need for varied and quickly deployable test data grows accordingly. The current manual approach is not able to meet these growing demands.
 
-\paragraph{}These limitations collectively indicate a significant deficiency in Linedata's testing infrastructure. As the Longview platform extends coverage to encompass increasingly diverse financial instrument types and regulatory frameworks, the corresponding demand for varied and rapidly deployable test data grows proportionally. The existing manual methodology demonstrates insufficient capacity to meet these expanding requirements.
+\paragraph{}This situation leads to the central problem statement of this project: \textit{How can Linedata's development and quality assurance teams be provided with an automated, configurable, and domain-aware tool that can generate realistic, coherent, and SQL-compatible test data for the Longview platform, while correctly enforcing the complex relationships between entities and the financial business rules that govern its data model?}
 
-
-\paragraph{}This situation necessitates the formulation of the central problem statement for this project: \textit{How can Linedata's development and quality assurance teams be equipped with an automated, configurable, and domain-aware tool capable of generating realistic, coherent, and SQL-compatible test data for the Longview platform while correctly enforcing the complex inter-entity relationships and financial business rules that govern its data model?}
-
-
-\paragraph{}This question unfolds into three core challenges:
-
+\paragraph{}This question breaks down into three core challenges:
 
 \begin{itemize}
-    \item \textbf{Financial data consistency:} Generating valid test data requires simultaneously enforcing business rules across dozens of interdependent tables. Any violation renders the dataset unusable.
+\item \textbf{Financial data consistency:} Generating valid test data requires enforcing business rules across dozens of interdependent tables at the same time. Any violation makes the dataset unusable.
 
-    \item \textbf{Dual-mode operation:} The tool must function in two distinct modes. In \textit{standalone mode}, it generates fully synthetic data without requiring any external database connection. In \textit{connected mode}, it connects to an existing Longview SQL Server instance, retrieves real reference data (securities, accounts, models), and generates additional records consistent with the existing database state.
+\item \textbf{Dual-mode operation:} The tool must work in two distinct modes. In \textit{standalone mode}, it generates fully synthetic data without needing any database connection. In \textit{connected mode}, it connects to an existing Longview SQL Server instance, retrieves real reference data (securities, accounts, models), and generates additional records that are consistent with the existing database state.
 
-    \item \textbf{Configurability and usability:} Test engineers must be able to specify data volume, instrument types, date ranges, and other parameters through an intuitive web-based interface, making the tool accessible to both developers and less technical QA profiles.
+\item \textbf{Configurability and usability:} Test engineers must be able to specify data volume, instrument types, date ranges, and other parameters through an easy-to-use web interface, making the tool accessible to both developers and less technical QA team members.
 \end{itemize}
 
+\paragraph{}Addressing these challenges required designing and building a full-stack web application that includes modular generation services for each financial entity, reliable SQL Server integration for connected operation, and Large Language Model integration for improved data realism and the system remains fully functional even without LLM support. This is the core system described and developed throughout the rest of this report.
 
-\paragraph{}Addressing these challenges required the design and implementation of a comprehensive full-stack web application incorporating modular generation services for each financial entity, robust SQL Server integration for connected operation, and optional Large Language Model integration for enhanced data realism. The resulting system maintains full operational capability even without LLM functionality. This represents the core system described and developed throughout the remainder of this report.
+% ─────────────────────────────────────────────
+\section{Proposed Solution}
+% ─────────────────────────────────────────────
 
+\paragraph{}To address the identified challenges, a configurable test data generation system named \textbf{Longview Test Data Generator} has been designed and implemented. The system operates in two complementary modes: \textit{standalone mode} generates fully synthetic test data without requiring any database connection, while \textit{connected mode} integrates with an existing Longview SQL Server instance to retrieve reference data and generate supplementary records that remain consistent with the production environment. Through these two modes, the tool provides QA engineers and developers with a flexible, automated approach to generating valid, realistic, and reproducible test datasets on demand.
 
 % ─────────────────────────────────────────────
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
 % ─────────────────────────────────────────────
 
-
-\paragraph{}This chapter has established the professional and technical context for this project. We have introduced Linedata and its Tunisian subsidiary as the host organization, and identified the Longview development team as the internship setting. We have presented the Longview platform (version 8.2) and outlined the core financial entities constituting its data model. The chapter examined current manual test data creation procedures and identified key limitations in operational efficiency, error management, and scenario coverage. Finally, we formulated the central problem statement: the necessity for an automated, domain-aware, and configurable test data generation system for Longview supporting both standalone and connected operation modes. To address this problem, the project was conducted following an Agile Scrum methodology, structured into five incremental sprints. The following chapter presents the requirements analysis, detailed methodology, and system architecture.
+\paragraph{}This chapter has established the professional and technical context for this project. We introduced Linedata and its Tunisian office as the host organization, and identified the Longview development team as the internship setting. We presented the Longview platform and described the core financial entities that make up its data model. The chapter reviewed the current manual test data creation process and identified its main weaknesses in terms of efficiency, error management, and time consumption. Finally, we defined the central problem statement: the need for an automated, domain-aware, and configurable test data generation system for Longview that supports both standalone and connected operation modes. To address this problem, the project was carried out using an Agile Scrum methodology, organized into five incremental sprints. The following chapter presents the requirements analysis, methodology, and system architecture.

@@ -1,104 +1,67 @@
+% Global report configuration
 
-%=== File containing Global Configuration of the report ===%
-%                                                          %
-% Copyright (C) ISI - All Rights Reserved                  %
-% Proprietary                                              %
-% Written by Med Hossam <med.hossam@gmail.com>, April 2016 %
-%                                                          %
-% @author: HEDHILI Med Houssemeddine                       %
-% @linkedin: http://tn.linkedin.com/in/medhossam           %
-%==========================================================%
-
-%=========== You MUST type your information here ==========%
-% global_config.tex file is designed to configure your     %
-% cover pages (main, back and black covers)                %
-%==========================================================%
-
-%============= Config new columns type ==============%
 \newcolumntype{L}{>{\raggedright\arraybackslash}}
 \newcolumntype{R}{>{\raggedleft\arraybackslash}}
 \newcolumntype{C}{>{\centering\arraybackslash}}
-%==================================================%
+\newcolumntype{P}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{Q}[1]{>{\centering\arraybackslash}p{#1}}
 
-%========= Config the cover section ==========%
-
+% Cover page
 \title{Test Data Generator using LLM}
-
 \author{Mohamed Yassine Boussabat}
-%%% if necessary
-% Set isBinomal to true and type second author name
-%\setboolean{isBinomal}{true}
-%\secondAuthor{Prénom NOM}
 
 \diplomaName{National Bachelor Degree in Computer Science}
 \speciality{Software engineering and information systems}
 
-%% Encadrant professionnel
+% Supervisors are intentionally left empty until the final names are confirmed.
 \proFramerName{}
-\proFramerSpeciality{Proesseur des universités}
-
-%% Encadrant académique
+\proFramerSpeciality{}
 \academicFramerName{}
-\academicFramerSpeciality{Maître Assistante}
+\academicFramerSpeciality{}
 
-%% Entreprise d'accueil
 \companyName{LINEDATA}
-
-%% Année universitaire
 \collegeYear{2025 - 2026}
 
-%%%%%% Signatures section %%%%%%
+\proSignSentence{J'autorise l'etudiant a faire le depot de son rapport de stage en vue d'une soutenance.}
+\academicSignSentence{J'autorise l'etudiant a faire le depot de son rapport de stage en vue d'une soutenance.}
 
-% You can simply remove theses sentences by typing an empty string
-% \proSignSentence{}
+% Abstracts
+\arabicAbstract{}
+\arabicAbstractKeywords{}
 
-\proSignSentence{J'autorise l'étudiant à faire le dépôt de son rapport de stage en vue d'une soutenance.}
-
-\academicSignSentence{J'autorise l'étudiant à faire le dépôt de son rapport de stage en vue d'une soutenance.}
-%%% AR
-%%% AR
-%%% ARABIC ABSTRACT
-\arabicAbstract{
-يهدف هذا المشروع إلى التحقق الرسمي من برامج \textLR{WebAssembly} \textLR{(WASM)} من خلال تطوير مترجم من تنسيق النص \textLR{(WAT)} إلى لغة التحقق \textLR{Boogie}. توفر هذه الترجمة إمكانيات تحليل سلوك العقود الذكية المكتوبة بـ \textLR{WASM} باستخدام أدوات تعتمد على المحللات المنطقية مثل \textLR{Z3}. يعتمد العمل على قواعد رسمية تحافظ على دلالات التكديس للغة \textLR{WAT}، مما يضمن تحويل آمن وقابل للتحقق. تم تنفيذ هذا العمل في إطار بحثي في مختبر \textLR{LIP6} بالتعاون مع \textLR{Fondation du Risque}، مع تطبيق محتمل في أنظمة البلوكشين الحديثة مثل \textLR{XRPL}.
-}
-
-\arabicAbstractKeywords{التحقق الرسمي، العقود الذكية، \textLR{WebAssembly}، \textLR{Boogie}، مترجم، البلوكشين، \textLR{Z3}}
-
-
-%%% ENGLISH ABSTRACT
 \englishAbstract{
-This project targets the formal verification of WebAssembly (WASM) programs by designing a translator from the WebAssembly Text Format (WAT) to the Boogie intermediate verification language. This translation enables the use of SMT-based verification tools such as Z3 to analyze the behavior of smart contracts compiled to WASM. The work defines formal translation rules that preserve WASM’s stack-based semantics while producing verifiable Boogie code. The project was conducted within the LIP6 laboratory in collaboration with the Fondation du Risque, with potential applications in emerging blockchain ecosystems such as XRPL.
+This final-year project was carried out within Linedata Tunisia and addresses the automation of test data preparation for the Longview front-office trade order management platform. The proposed solution is a configurable web application that generates coherent SQL-ready financial datasets for accounts, securities, prices, orders, executions, positions, models, and related entities. The system supports standalone generation without a database connection and connected generation based on read-only reference data retrieved from a Longview SQL Server instance. It is built with a React and TypeScript frontend, a NestJS backend, TypeORM-based configuration persistence, and optional Google Gemini enrichment to improve the realism of generated financial values. The result is a reusable tool that reduces manual SQL scripting effort, improves reproducibility, and helps QA teams prepare valid test scenarios more efficiently.
 }
 
-\englishAbstractKeywords{Formal Verification, Smart Contracts, WebAssembly, Boogie, Translator, Blockchain, Z3}
+\englishAbstractKeywords{Test Data Generation, LLM, Longview, SQL Server, React, NestJS, Financial Data, Automation}
 
-
-%%% FRENCH ABSTRACT
 \frenchAbstract{
-Ce projet vise à permettre la vérification formelle des programmes WebAssembly (WASM) en développant un traducteur du format texte \textLR{WAT} vers le langage intermédiaire de vérification \textLR{Boogie}. Cette traduction rend possible l’analyse automatique de contrats intelligents en WASM à l’aide d’outils de vérification formelle fondés sur des solveurs SMT comme \textLR{Z3}. Le travail repose sur des règles de traduction formelles qui préservent les sémantiques de pile de WASM tout en générant du code Boogie vérifiable. Le projet a été réalisé au sein du laboratoire \textLR{LIP6}, en collaboration avec la Fondation du Risque, avec des perspectives d’application dans des blockchains modernes comme \textLR{XRPL}.
+Ce projet de fin d'etudes a ete realise au sein de Linedata Tunisie et porte sur l'automatisation de la preparation des donnees de test pour la plateforme Longview, une solution front-office de gestion des ordres de trading. La solution proposee est une application web configurable capable de generer des jeux de donnees financiers coherents et compatibles avec SQL Server, couvrant les comptes, les titres, les prix, les ordres, les executions, les positions, les modeles et les entites associees. Le systeme prend en charge un mode autonome, sans connexion a une base de donnees, ainsi qu'un mode connecte exploitant en lecture seule des donnees de reference issues d'une instance Longview. L'application repose sur un frontend React et TypeScript, un backend NestJS, une persistance locale des configurations via TypeORM, et une integration optionnelle de Google Gemini afin d'ameliorer le realisme des valeurs generees. Ce travail permet de reduire l'effort de scripting SQL manuel, d'ameliorer la reproductibilite des scenarios de test et de faciliter le travail des equipes QA.
 }
 
-\frenchAbstractKeywords{Vérification formelle, Contrats intelligents, WebAssembly, Boogie, Traduction, Blockchain, Z3}
+\frenchAbstractKeywords{Generation de donnees de test, LLM, Longview, SQL Server, React, NestJS, Donnees financieres, Automatisation}
 
-
-%% if you want to get rid of the company address just set the boolean variable to false
-% PS : it's optional
 \setboolean{wantToTypeCompanyAddress}{false}
 
-\companyEmail{contact@company.com}
-\companyTel{71 111 111}
-\companyFax{71 222 222}
-\companyAddressAR{نهج بحيرة ملاران - ضفاف البحيرة - تونس}
-\companyAddressFR{Rue du Lac Malaren, Les Berges du Lac 1053 Tunis}
+\companyEmail{contact@linedata.com}
+\companyTel{+216 71 185 800}
+\companyFax{}
+\companyAddressAR{}
+\companyAddressFR{Immeuble Cleopatre Center, Bloc B, Centre Urbain Nord, 1082 Tunis, Tunisia}
 
-\usepackage[backend=biber, style=ieee, sorting=none]{biblatex}
-\addbibresource{references.bib}
-
+% Additional packages and commands used by the report.
 \usepackage{pifont}
 \usepackage{svg}
 \usepackage{enumitem}
-\usepackage{longtable}
 \usepackage{xurl}
 
-\newcommand{\cmark}{\ding{51}}  % ✓
-\newcommand{\xmark}{\ding{55}}  % ✗
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\figureplaceholder}[2]{%
+  \fbox{%
+    \begin{minipage}[c][#1][c]{0.92\textwidth}
+      \centering
+      \small\textit{#2}
+    \end{minipage}%
+  }%
+}
