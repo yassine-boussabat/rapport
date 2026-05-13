@@ -33,9 +33,9 @@ environment used throughout the project.
 
 \paragraph{}Scrum organizes work into fixed-length iterations called
 \textbf{sprints}, each ending with a potentially shippable increment of the
-product. Three core roles structure the team, three artifacts capture the
-work, and four ceremonies punctuate each sprint cycle, as illustrated in
-Figure~\ref{fig:scrum}.
+product. In its standard form, Scrum defines three core roles, three
+artifacts, and four ceremonies that punctuate each sprint cycle, as
+illustrated in Figure~\ref{fig:scrum}.
 
 \begin{figure}[H]
 \centering
@@ -237,8 +237,8 @@ QA Engineer
             without any database connection
       \item Provide SQL Server credentials and test connectivity in
             connected mode
-      \item Browse and select existing database entities (accounts,
-            securities, models) to anchor generated records
+      \item Browse and select existing account groups, accounts, and
+            securities to anchor generated records in connected mode
       \item Trigger LLM-enriched generation for improved data realism
       \item Download the generated SQL script from the web interface
       \item Save the current generation configuration to the local
@@ -297,11 +297,10 @@ generation process, namely the LLM API and the Longview SQL Server instance.
 constraints shape how it must behave:
 
 \begin{itemize}
-    \item \textbf{Performance:} Generating a typical dataset -- one account
-    with a full set of securities, orders, executions, and positions -- must
-    complete within ten seconds in standalone mode for a typical QA dataset. LLM-assisted generation
-    may take longer due to the network round-trip, but the experience must
-    remain responsive from the user's perspective.
+    \item \textbf{Performance:} Standalone generation should complete
+    quickly for a typical QA dataset. LLM-assisted generation may take
+    longer due to network round-trips, but the experience must remain
+    responsive from the user's perspective.
 
     \item \textbf{Resilience:} The system must remain fully operational
     regardless of LLM availability. If the Gemini API is unreachable or
@@ -371,7 +370,7 @@ configurations.
 \begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{%
-\includegraphics[width=1.4\textwidth,height=0.92\textheight,keepaspectratio]{img/global-package-diagram.pdf}}
+\includegraphics[width=1.5\textwidth,height=0.92\textheight,keepaspectratio]{img/global-package-diagram.pdf}}
 \caption{Global package diagram of the test data generator}
 \label{fig:global-package-diagram}
 \end{figure}
@@ -497,24 +496,26 @@ Table~\ref{tab:backlog} presents the global product backlog.
     data into Longview with a single file. \\
 \hline
 11 & Connected Mode
-  & As a QA engineer, I want to connect to a live Longview instance
-    in read-only mode so that I can anchor generated records to
-    existing database entities. \\
+  & As a QA engineer, I want to test, open, and close a read-only
+    connection to a live Longview instance, grab account groups and
+    accounts, fetch securities and reference data, and preview
+    generation so that I can anchor new data to existing entities
+    before export. \\
 \hline
 12 & LLM Enrichment
-  & As a QA engineer, I want to enable AI-assisted generation so that
-    security names, ticker symbols, and descriptions are realistic
-    and contextually meaningful. \\
+  & As a QA engineer, I want to optionally enrich account groups,
+    accounts, models, and securities with AI-assisted labels so that
+    the generated dataset is more realistic and readable. \\
 \hline
 13 & Configuration Library
-  & As a QA engineer, I want to save and reload named generation
-    configurations so that I do not have to re-enter parameters at
-    every session. \\
+  & As a QA engineer, I want to save, reload, rename, delete, and
+    filter compatible generation configurations so that I can reuse
+    scenarios without re-entering parameters each time. \\
 \hline
 14 & Validation and Error Handling
-  & As a QA engineer, I want the interface to validate my inputs and
-    display clear error messages so that I can correct mistakes before
-    triggering generation. \\
+  & As a QA engineer, I want the interface to validate inputs, show
+    warnings and clear errors, and expose generation logs so that I
+    can correct issues and monitor execution. \\
 \hline
 
 \end{longtable}
@@ -568,13 +569,14 @@ interfaces such as the generation parameter configuration panel.
 
 
 % ── Tailwind CSS ───────────────────────────────
-\paragraph{}\textbf{Tailwind CSS + shadcn/ui}\\
+\paragraph{}\textbf{Tailwind CSS + Radix UI + lucide-react}\\
 Tailwind CSS is a utility-first CSS framework that enables rapid and
 consistent UI development directly in markup, without writing custom
-stylesheets. It was complemented by shadcn/ui, a collection of accessible
-and composable UI components built on top of Radix UI primitives, which
-provided ready-made form controls, dialogs, and layout elements consistent
-with the application's design system.
+stylesheets. It was complemented by Radix UI primitives for accessible form
+controls, dialogs, progress indicators, and selection components, while
+\texttt{lucide-react} provided the icon set used throughout the interface.
+Custom React components were then built on top of these libraries to keep the
+application consistent with its own design system.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.12\textwidth]{img/logo-tailwind.png}
@@ -605,7 +607,8 @@ scalable server-side applications. Its modular, decorator-based architecture
 maps naturally to the service-per-entity design of the generation engine,
 where each entity type (securities, accounts, orders, executions, positions)
 is encapsulated in its own dedicated service module. TypeScript support is
-first-class and shares the same type definitions with the frontend.
+first-class and helps keep backend contracts and frontend integration
+strongly typed and easier to maintain.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.12\textwidth]{img/logo-nestjs.png}
@@ -706,6 +709,21 @@ within the editor.
 \includegraphics[width=0.12\textwidth]{img/logo-vscode.png}
 \caption{Visual Studio Code logo}
 \label{fig:logo-vscode}
+\end{figure}
+
+
+% ── StarUML ────────────────────────────────────
+\paragraph{}\textbf{StarUML}\\
+StarUML is a UML modeling tool used to design and document software
+architecture through standard diagrams. In this project, it was used to
+produce the use case, package, physical architecture, class, and sequence
+diagrams included throughout the report, helping formalize both the analysis
+and the system design.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.12\textwidth]{img/logo-staruml.png}
+\caption{StarUML logo}
+\label{fig:logo-staruml}
 \end{figure}
 
 

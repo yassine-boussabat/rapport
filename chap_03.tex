@@ -1,27 +1,30 @@
-﻿\chapter{Sprint 1 -- Discovery and Data Model Mapping}
+\chapter{Sprint 1 -- Discovery and Data Model Mapping}
 
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 
-\paragraph{}This chapter covers the first sprint of the project, which lasted two weeks and focused entirely on
-discovery and data model mapping. Before any line of generation code could be written, a thorough
-understanding of the Longview data model was required: the entities that make up a valid test
-dataset, the buffer tables that back them in SQL Server, the stored procedures used to load them,
-the order in which they must be populated, and the field-level constraints and business rules that
-govern each record. This chapter presents the sprint backlog, the results of the data model
-analysis, a detailed description of each entity and its key attributes as reflected in the implemented
-Data Transfer Objects (DTOs), and the class diagram that captures all entities and their
-relationships.
+\paragraph{}This chapter presents the first sprint of the project. Its purpose was not to
+implement the generator yet, but to build the financial and technical understanding needed before
+implementation. Since the application produces data for Longview, I first had to move from a
+computer science view of the problem to a finance-aware view: what is an account, what is a
+security, why orders and executions are different, and how positions represent what an account
+already owns.
 
-% ─────────────────────────────────────────────
+\paragraph{}The chapter is therefore written as a progressive discovery story. It begins with the
+sprint backlog, then explains how the analysis of Longview extracts, manually prepared SQL files,
+and QA team feedback led to the selection of the most important entities to generate. After that,
+the chapter presents the discovered relationships, the Longview pre-BCP loading mechanism, the
+technical population order, and finally the class diagrams used as the reference for implementation.
+
+% ---------------------------------------------------------
 \section{Sprint Backlog}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 
-\paragraph{}Sprint 1 targeted user story \textbf{US-1} from the product backlog, which covered the discovery and
-documentation of the Longview data model as a prerequisite for all subsequent implementation
-sprints. The sprint backlog is presented in Table~\ref{tab:sprint1-backlog}.
+\paragraph{}Sprint 1 targeted user story \textbf{US-1}, dedicated to discovering and documenting the
+Longview data model before starting the generation engine. The sprint backlog is presented in
+Table~\ref{tab:sprint1-backlog}.
 
 \Needspace{12\baselineskip}
 \renewcommand{\arraystretch}{1.35}
@@ -42,235 +45,156 @@ sprints. The sprint backlog is presented in Table~\ref{tab:sprint1-backlog}.
 \endfoot
 \hline
 \endlastfoot
-T1-1 & Collect and review existing SQL scripts & Gather all manually written INSERT scripts and Extract files used by the QA team, identify the tables they target, and map each table to its entity domain. & 2 days \\
+T1-1 & Review existing SQL and extract files & Identify the files used by the QA team, the tables they populate, and the business entities behind them. & 2 days \\
 \hline
-T1-2 & Document the pre-BCP buffer tables & For each pre-BCP buffer table, document its columns, data types, nullability constraints, primary and foreign keys, and any identity columns. & 3 days \\
+T1-2 & Study pre-BCP buffer tables & Document the columns, mandatory fields, keys, and identity columns required by the Longview loading layer. & 3 days \\
 \hline
-T1-3 & Document stored procedures and load order & Identify the stored procedures invoked during data loading, their input parameters, and the strict dependency order in which tables must be populated. & 2 days \\
+T1-3 & Map stored procedures and load order & Identify the loading procedures and the dependency order that must be respected when generating SQL. & 2 days \\
 \hline
-T1-4 & Extract field-level business rules & Enumerate the financial domain constraints applied at the field level: valid value ranges, enumerated code lists, cross-field consistency rules, and referential integrity requirements. & 2 days \\
+T1-4 & Extract business rules & Collect the main financial constraints, code lists, and referential rules used to validate the generated records. & 2 days \\
 \hline
-T1-5 & Produce the entity class diagram & Consolidate the discovered model into a UML class diagram showing all entities, their key attributes, and their relationships. & 1 day \\
+T1-5 & Produce entity diagrams & Consolidate the discovered entities, attributes, and relationships into UML class diagrams. & 1 day \\
 \hline
 \end{longtable}
 
-% ─────────────────────────────────────────────
-\section{Longview Pre-BCP Buffer Mechanism}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
+\section{From Extract Analysis to Target Entities}
+% ---------------------------------------------------------
 
-\paragraph{}Longview uses a \textbf{pre-BCP (Bulk Copy Program) buffer} loading mechanism to ingest test data into
-its SQL Server database. Instead of inserting records directly into the platform's live tables, data is
-first written into a set of dedicated staging tables, referred to as pre-BCP buffer tables. Once all
-buffer tables are populated, a set of stored procedures validates the records, enforces cross-table
-business rules, and transfers the data into the live schema in the correct dependency order.
+\paragraph{}Longview provides many extract files, and at the beginning of the sprint it was not
+realistic or useful to generate all of them. The first discovery work was therefore to understand
+which extracts were actually important for QA scenarios. To do this, I analyzed the existing
+extract files, the SQL scripts that were generated manually by the team, and the recurring data
+needs expressed during discussions with QA engineers.
 
-\paragraph{}This mechanism has two important implications for the data generator. First, the generator must
-produce INSERT statements targeting the buffer tables, not the live tables. Second, it must respect
-a strict population order: a buffer table that depends on another through a foreign key or a stored
-procedure input parameter cannot be populated before the table it depends on. The discovery
-phase mapped this order explicitly across all buffer tables, and each entity's TypeScript DTO was
-designed to mirror the exact column set of its corresponding buffer table.
+\paragraph{}This analysis showed that the generator had to focus on the entities that form the
+core portfolio and trading workflow. These entities were selected because they are frequently
+needed in tests, because they are connected by strong dependencies, and because generating them
+manually is time-consuming and error-prone. The selected scope covers accounts and account
+groups, models, securities, prices, hierarchy rows, positions, proposed orders, orders, and
+executions.
 
-% ─────────────────────────────────────────────
-\section{Entity Discovery and Description}
-% ─────────────────────────────────────────────
+\paragraph{}For a reader coming from computer science, these extracts become easier to
+understand when they are read as a business workflow rather than as isolated files. Longview
+manages client portfolios. Each portfolio belongs to an account structure, holds financial
+instruments, receives market prices, and can generate trading activity. The generator had to
+reproduce this story with valid test data.
 
-\paragraph{}The analysis of the existing SQL scripts and the Longview schema documentation identified seven
-primary entity domains. Each domain groups one or more buffer tables and corresponds to a distinct
-financial concept in the Longview data model. The following sections describe each entity, its role
-in the data model, and its key attributes as they appear in the corresponding TypeScript DTO classes
-implemented in the generator module.
+\paragraph{}At a simplified level, the workflow is the following:
 
-% ─────────────────────────────────────────────
-\subsection{Account Group and Account Hierarchy}
-% ─────────────────────────────────────────────
+\begin{enumerate}
+    \item \textbf{Portfolio structure:} accounts and account groups define where holdings and trades belong.
+    \item \textbf{Investment definition:} models describe target allocations that may guide how an account should be invested.
+    \item \textbf{Market universe:} securities define the instruments that can be priced, classified, held, or traded.
+    \item \textbf{Current holdings:} positions describe what each account already owns.
+    \item \textbf{Trading activity:} proposed orders, orders, and executions describe the intention to trade, the trading instruction, and the market fill.
+\end{enumerate}
 
-\paragraph{}An \textbf{Account Group} is a logical container that groups one or more investment accounts under a
-named label. It is the top-level entity in the account hierarchy. In the Longview buffer model,
-the account group record is identified by a \textbf{client\_account\_group\_name} and is associated to a
-representative account through a \textbf{client\_account\_id} reference. Optional attributes include a
-\textbf{client\_principal\_currency\_code} for the group's base currency and aggregate valuation fields
-\textbf{net\_asset\_value} and \textbf{total\_asset\_value}. Account groups have no financial attributes of their
-own beyond these aggregates; they exist purely to structure the account tree.
+\paragraph{}This business sequence became the first mental model for the application. It helped
+identify which objects had to be generated first and which identifiers had to be shared between
+services. For example, an order cannot be meaningful without an existing account and security.
+Similarly, a sell order is safer when the application knows the account's current position, because
+the generated scenario should not sell an impossible quantity.
 
-\paragraph{}The \textbf{Account Hierarchy} entity captures the parent-child relationships between accounts and
-account groups. Each hierarchy record links a child account to its parent group, establishing the
-nesting structure required by the Longview portfolio management layer. The hierarchy buffer table
-must be populated after both the account group and account buffer tables, as it holds foreign key
-references to both.
+\Needspace{10\baselineskip}
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|P{0.22\textwidth}|P{0.34\textwidth}|P{0.34\textwidth}|}
+\caption{Reader's map of the main financial concepts}
+\label{tab:finance-map} \\
+\hline
+\textbf{Concept} & \textbf{Finance meaning} & \textbf{Role in the generator} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Concept} & \textbf{Finance meaning} & \textbf{Role in the generator} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Account & A client portfolio or investment account. & Main owner of positions, proposed orders, orders, and optional executions. \\
+\hline
+Account Group & A business grouping of accounts. & Adds hierarchy and reporting structure around generated accounts. \\
+\hline
+Model & A target allocation strategy. & Provides allocation data and optional model references for account scenarios. \\
+\hline
+Security & A tradeable financial instrument such as an equity, bond, option, future, generic instrument, or FX forward. & Central reference reused by prices, hierarchy rows, positions, orders, and executions. \\
+\hline
+Price & The market value of a security. & Allows generated securities to be valued by Longview. \\
+\hline
+Position & What an account already owns. & Gives the generator holding context, especially for sell-side order scenarios. \\
+\hline
+Proposed Order / Order & An intention to trade and the actual trading instruction. & Creates trading activity for valid account-security pairs. \\
+\hline
+Execution & A market fill confirming that a trade was executed. & Completes the trade lifecycle for generated equity orders. \\
+\hline
+\end{longtable}
 
-\paragraph{}Key attributes of the \texttt{AccountGroupDto} class include:
+% ---------------------------------------------------------
+\section{Discovered Entities and Relationships}
+% ---------------------------------------------------------
 
-\begin{itemize}
-    \item \textbf{client\_account\_group\_name} (\texttt{string}, required): Human-readable name that uniquely identifies the account group within the system.
-    \item \textbf{client\_account\_id} (\texttt{string}, required): Reference to the representative account associated with the group.
-    \item \textbf{client\_source\_system\_id} (\texttt{string}, optional): Identifier of the originating source system, used for traceability in multi-system environments.
-    \item \textbf{client\_principal\_currency\_code} (\texttt{string}, optional): ISO 4217 currency code of the group's principal currency.
-    \item \textbf{net\_asset\_value} (\texttt{string}, optional): Aggregate net asset value of all accounts in the group.
-    \item \textbf{total\_asset\_value} (\texttt{string}, optional): Aggregate total asset value of all accounts in the group.
-\end{itemize}
+\paragraph{}After selecting the target extracts, the next step was to describe the relationships
+between their entities. The goal was to keep only the relationships that influence valid data
+generation: mandatory references, optional references that must be valid when supplied, and
+implementation rules used by the application.
 
-% ─────────────────────────────────────────────
-\subsection{Account}
-% ─────────────────────────────────────────────
+\paragraph{}The most important discovery was that the generated values are not independent. A
+price is only valid if it refers to an existing security. A position is only valid if it connects an
+existing account to an existing security. Proposed orders and orders also depend on valid
+account-security pairs, and sell-side scenarios must be coherent with the positions already held by
+the account.
 
-\paragraph{}An \textbf{Account} represents an investment portfolio or client mandate. It is one of the most central
-entities in the Longview data model because virtually every other entity -- orders, executions,
-positions, and model allocations -- is anchored to one or more accounts through a
-\textbf{client\_account\_id} reference. The \texttt{AccountDto} class mirrors the full column set of the account
-buffer table, distinguishing a small set of mandatory fields from a large set of optional
-configuration and user-defined fields.
+\paragraph{}Some relationships are direct extract constraints, while others are generation rules
+added to keep the scenario realistic. For example, an option must reference an underlying security,
+and an execution generated by the application is produced from an equity order even when the
+extract itself mainly validates the security and account references. These links explain why the
+generator had to share identifiers between services instead of producing each file separately.
 
-\paragraph{}Key required attributes of the \texttt{AccountDto} class include:
+\paragraph{}This relationship mapping became the basis for the DTO design and for the later
+generation pipeline. Each service had to know which upstream identifiers were already available,
+which optional references could be left empty, and which references had to be preserved to make
+the final dataset load correctly in Longview.
 
-\begin{itemize}
-    \item \textbf{client\_account\_id} (\texttt{string}, required): Unique alphanumeric identifier of the account, used as a foreign key throughout the schema.
-    \item \textbf{short\_name} (\texttt{string}, required): Abbreviated label for the account, used in display and reporting contexts.
-    \item \textbf{name\_1} (\texttt{string}, required): Primary full descriptive name of the account or portfolio.
-    \item \textbf{client\_currency\_code} (\texttt{string}, required): ISO 4217 base currency code of the account (e.g., \texttt{USD}, \texttt{EUR}).
-\end{itemize}
+% ---------------------------------------------------------
+\section{Longview Pre-BCP Loading Mechanism}
+% ---------------------------------------------------------
 
-\paragraph{}Notable optional attributes include \textbf{client\_manager\_code} (portfolio manager reference),
-\textbf{inception\allowbreak\_date} (mandate start date), \textbf{client\_default\_model\_name} (default allocation model),
-\textbf{client\_tax\_lot\_relief\allowbreak\_method} (tax lot relief strategy), \textbf{equity\_market\_value} and
-\textbf{fixinc\_market\_value} (pre-loaded valuation figures), and up to sixteen \textbf{user\_field} and
-\textbf{user\_id} extensibility slots that accommodate client-specific metadata without schema changes.
+\paragraph{}Once the target entities and their relationships were clear, the next question was how
+Longview expects this data to be loaded. Longview does not insert the generated records directly
+into its live business tables. Instead, data is first inserted into pre-BCP buffer tables. These
+staging tables receive the raw records, then Longview stored procedures validate them, apply
+business rules, and transfer the accepted data into the live schema.
 
-% ─────────────────────────────────────────────
-\subsection{Model and Model Objective}
-% ─────────────────────────────────────────────
+\paragraph{}This mechanism shaped the generator in two important ways. First, the generated SQL
+had to target the buffer tables, not the final Longview tables. Second, the output script had to
+respect a strict population order. If a row references an account, a security, a model, or a
+classification level, that referenced data must already exist in Longview or be loaded earlier in
+the same generated scenario.
 
-\paragraph{}A \textbf{Model} defines a target allocation strategy used by the portfolio management layer of Longview.
-It specifies how a portfolio should be invested across asset classes or individual securities. Models
-are referenced by accounts through the \textbf{client\_default\_model\_name} field and drive automatic
-order generation to bring portfolios into alignment with their target weights.
+\paragraph{}For this reason, Sprint 1 linked each selected business entity to its extract file, its
+DTO representation, its buffer table, and the stored procedure order used during loading. This is
+the point where the finance workflow becomes a technical dependency graph.
 
-\paragraph{}A \textbf{Model Objective} record links a model to a specific target security and defines the target
-weight or allocation rule for that position within the model. Multiple model objectives can be
-attached to a single model, one per target security or asset class. The model service generates both
-the parent model record and its associated objective records as a single coherent unit.
-
-% ─────────────────────────────────────────────
-\subsection{Security}
-% ─────────────────────────────────────────────
-
-\paragraph{}A \textbf{Security} represents a tradeable financial instrument. It is the most structurally complex entity
-in the Longview data model because the platform supports several distinct asset classes, each with
-its own dedicated DTO class and buffer table. The discovery phase identified six security subtypes
-implemented in the generator: equities (\texttt{EquitySecurityDto}), generic instruments
-(\texttt{GenericSecurityDto}), fixed income securities (\texttt{FixedIncomeSecurityDto}), options
-(\texttt{OptionSecurityDto}), \allowbreak futures (\texttt{FutureSecurityDto}), and FX forwards
-(\texttt{FxForwardSecurityDto}).
-
-\paragraph{}All equity and generic security subtypes share a common set of base attributes. The required
-fields of the \texttt{EquitySecurityDto} class are:
-
-\begin{itemize}
-    \item \textbf{client\_security\_id} (\texttt{string}, required): Unique identifier of the security, used as a foreign key in orders, executions, prices, and positions.
-    \item \textbf{symbol} (\texttt{string}, required): Market ticker symbol of the instrument.
-    \item \textbf{security\_name\_1} (\texttt{string}, required): Primary descriptive name of the security.
-    \item \textbf{security\_type\_code} (\texttt{string}, required): Asset class and instrument type classification code.
-    \item \textbf{pricing\_factor} (\texttt{number}, required): Multiplier applied to raw prices to derive market values.
-    \item \textbf{income\_factor} (\texttt{number}, required): Multiplier applied to income calculations.
-    \item \textbf{client\_principal\_currency\_code} (\texttt{string}, required): ISO 4217 currency code of the security's principal denomination.
-    \item \textbf{client\_income\_currency\_code} (\texttt{string}, required): ISO 4217 currency code used for income distributions.
-    \item \textbf{client\_country\_code} (\texttt{string}, required): ISO country code of the security's domicile.
-\end{itemize}
-
-\paragraph{}\textbf{Fixed income securities} (\texttt{FixedIncomeSecurityDto}) carry a richer set of required
-fields reflecting their additional complexity: beyond the base identifiers and factors, they require
-\textbf{issuer\_type\_code}, \textbf{principal\_payment\_type\_code}, \textbf{income\_payment\_type\_code},
-\textbf{payment\_frequency}, and \textbf{accrued\_interest\_day\_count}. Optional fields govern the coupon
-and redemption schedule (\textbf{coupon\_rate}, \textbf{maturity\_date}, \textbf{dated\_date},
-\textbf{redemption\_date}, \textbf{redemption\_value}), floating rate characteristics
-(\textbf{client\_bp\_ratevariable\_flag}, \textbf{rate\_reset\_frequency\_code}, \textbf{spread\_over\_index\_rate},
-\textbf{cap\_rate}, \textbf{floor\_rate}), prepayment model parameters, and convertibility flags. Child
-schedule records (call schedules, put schedules, coupon schedules, convertible schedules) are
-stored in dedicated extension buffer tables populated after the parent fixed income record.
-
-\paragraph{}\textbf{Derivatives} -- represented by \texttt{OptionSecurityDto} and \texttt{FutureSecurityDto} --
-additionally require an underlying security reference, an expiration date, a strike price (for
-options), and a contract size multiplier. \textbf{FX forwards} (\texttt{FxForwardSecurityDto}) require the
-forward settlement date, the nominal amount, and the two leg currency codes.
-
-% ─────────────────────────────────────────────
-\subsection{Price}
-% ─────────────────────────────────────────────
-
-\paragraph{}A \textbf{Price} record stores the market price of a security on a given date. The Longview pricing
-layer requires at least one price record per security to allow the system to compute portfolio
-valuations and validate order quantities. The \texttt{PriceDto} class links each price record to its
-security through the \textbf{client\_security\_id} foreign key and carries the pricing date and the
-closing price. Price records must be generated after the security records they reference.
-
-% ─────────────────────────────────────────────
-\subsection{Order}
-% ─────────────────────────────────────────────
-
-\paragraph{}A \textbf{Proposed Order} (modelled by \texttt{ProposedOrderDto}) is a buy or sell instruction issued by a
-portfolio manager for a specific account and security. Orders are the primary drivers of the trade
-lifecycle in Longview. The required fields are \textbf{client\_account\_id}, \textbf{client\_security\_id},
-\textbf{side\_mnemonic} (trade direction), and \textbf{proposed\_value} (the target notional amount or
-quantity). Optional fields cover execution constraints such as \textbf{limit\_type},
-\textbf{limit\_price\_1}, \textbf{time\_in\_force}, \textbf{settlement\_date}, and \textbf{delivery\_date}, as well
-as routing attributes (\textbf{client\_broker\_id}, \textbf{client\_trader\allowbreak\_id}), and strategy metadata
-(\textbf{strategy\_mnemonic}). Up to thirty-two \textbf{user\_field} slots accommodate client-specific
-extensions.
-
-\paragraph{}The simpler \texttt{OrderDto} class models a group-level or block order record. Its required fields
-are \textbf{client\_account\_id}, \textbf{client\_security\_id}, \textbf{order\_quantity} (\texttt{number}), and
-\textbf{order\_side\_code}. Optional fields include \textbf{order\_status\_code}, \textbf{limit\_price},
-\textbf{order\_type\_code}, \textbf{order\_date}, and \textbf{settlement\_date}. Group orders must be generated
-before the proposed orders they contain.
-
-% ─────────────────────────────────────────────
-\subsection{Execution}
-% ─────────────────────────────────────────────
-
-\paragraph{}An \textbf{Execution} record (modelled by \texttt{ExecutionDto}) represents the trade confirmation
-produced when a proposed order or part of it is filled in the market. The required fields are
-\textbf{client\_security\_id}, \textbf{client\_side\_code} (trade direction at execution), \textbf{quantity}
-(filled quantity), \textbf{average\_price} (execution price), and \textbf{client\_exec\_broker\_id}
-(the executing broker). Optional fields provide full settlement and cost breakdown: \textbf{client\_account\_id},
-\textbf{trade\_date}, \textbf{settlement\_date}, \textbf{client\_comm\_broker\_id}, \textbf{commission\_rate},
-\textbf{client\_settlement\_currency}, \textbf{settlement\_fx\_rate}, \textbf{local\_commission},
-\textbf{sec\_fee}, \textbf{taxes}, \textbf{stamp\_tax}, and \textbf{other\_charges}. Up to thirty-two
-\textbf{block\_user\_field} extensibility slots are also available. Execution records must be generated
-after the proposed order records they fill.
-
-% ─────────────────────────────────────────────
-\subsection{Position (Tax Lot)}
-% ─────────────────────────────────────────────
-
-\paragraph{}A \textbf{Position} record (modelled by \texttt{PositionDto}) represents the current inventory holding
-of a specific security within a specific account, stored as a tax lot in the Longview schema. The
-only strictly required fields are \textbf{client\_account\_id} and \textbf{client\_security\_id}, which
-together identify the holding. The full set of optional attributes covers the economic substance of
-the lot: \textbf{trade\_date\_qty} (current quantity held), \textbf{trade\_date} (acquisition date),
-\textbf{cost} (total acquisition cost), \textbf{cost\_base} (base-currency cost), \textbf{unit\_cost\_base}
-(per-unit cost), \textbf{settlement\_date}, and \textbf{accrued\_income\_local}. Additional optional fields
-support analytics: \textbf{delta}, \textbf{macaulay\_duration}, \textbf{modified\_duration},
-\textbf{implied\_volatility}, and \textbf{principal\_factor}. FX-related positions carry
-\textbf{client\_purchased\_currency\_code}, \textbf{client\_sold\allowbreak\_currency\_code}, and the corresponding
-traded volumes. Positions must be generated after all executions for the relevant account-security
-pair have been recorded.
-
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 \section{Table Population Order}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 
-\paragraph{}One of the most important outputs of the discovery phase was the determination of the strict
-population order that must be respected when generating the SQL INSERT statements. Because the
-pre-BCP buffer tables are linked through foreign key relationships and because the Longview stored
-procedures validate inter-table consistency before transferring data to the live schema, any
-violation of this order causes the entire load to fail.
+\paragraph{}After understanding the pre-BCP mechanism, the next step was to determine the order
+in which the application must write the generated records. This order is used by the SQL script
+generator when it emits \texttt{INSERT} statements, identity-column handling blocks, and stored
+procedure calls.
 
-\paragraph{}Table~\ref{tab:population-order} presents the discovered population order for the pre-BCP buffer
-tables, grouped by entity domain.
+\paragraph{}Table~\ref{tab:population-order} summarizes the selected pre-BCP loading order used
+by the application. It is ordered by the technical dependency sequence, not by the explanatory
+business sequence used earlier in the chapter.
 
 \Needspace{14\baselineskip}
 \renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|Q{0.08\textwidth}|P{0.38\textwidth}|P{0.44\textwidth}|}
+\begin{longtable}{|Q{0.08\textwidth}|P{0.40\textwidth}|P{0.42\textwidth}|}
 \caption{Pre-BCP buffer table population order}
 \label{tab:population-order} \\
 \hline
@@ -287,75 +211,86 @@ tables, grouped by entity domain.
 \endfoot
 \hline
 \endlastfoot
-1  & Account Group (\texttt{AccountGroupDto})            & No dependency \\
-2  & Account (\texttt{AccountDto})                       & Account Group \\
-3  & Account Hierarchy                                    & Account Group, Account \\
-4  & Model                                               & No dependency \\
-5  & Model Objective                                     & Model \\
-6  & Security -- Equity (\texttt{EquitySecurityDto})     & No dependency \\
-7  & Security -- Generic (\texttt{GenericSecurityDto})   & No dependency \\
-8  & Security -- Fixed Income (\texttt{FixedIncomeSecurityDto}) & No dependency \\
-9  & Fixed Income Call Schedule buffer                   & Fixed Income Security \\
-10 & Fixed Income Put Schedule buffer                    & Fixed Income Security \\
-11 & Coupon Schedule buffer                              & Fixed Income Security \\
-12 & Convertible Schedule buffer                         & Fixed Income Security \\
-13 & Security -- Option (\texttt{OptionSecurityDto})     & Underlying Security \\
-14 & Security -- Future (\texttt{FutureSecurityDto})     & Underlying Security \\
-15 & Security -- FX Forward (\texttt{FxForwardSecurityDto}) & No dependency \\
-16 & Price (\texttt{PriceDto})                           & Security (any subtype) \\
-17 & Group Order (\texttt{OrderDto})                     & Account, Security \\
-18 & Proposed Order (\texttt{ProposedOrderDto})          & Account, Security, Group Order \\
-19 & Execution (\texttt{ExecutionDto})                   & Proposed Order \\
-20 & Position / Tax Lot (\texttt{PositionDto})           & Account, Security, Execution \\
+1 & Security masters: \texttt{EQUITY.DAT}, \texttt{FIXINC.DAT}, \texttt{FUTURE.DAT}, \texttt{GENERIC.DAT}, \texttt{FXFORWARD.DAT} & Base security universe. \\
+\hline
+2 & Option security (\texttt{OPTION.DAT}) & Generated after equities and futures because options need an underlying security. \\
+\hline
+3 & Fixed-income schedules: \texttt{CALL.DAT}, \texttt{PUT.DAT}, \texttt{COUP.DAT}, \texttt{CONVERT.DAT} & Fixed income parent security. \\
+\hline
+4 & Hierarchy (\texttt{HIERARCH.DAT}) & Generated securities and classification definitions. \\
+\hline
+5 & Price (\texttt{PRICE.DAT}) & Security identifiers, including synthetic FX forward identifiers. \\
+\hline
+6 & Model properties (\texttt{MODEL\_PROP.DAT}) & Generated model names and model settings. \\
+\hline
+7 & Model allocations (\texttt{MODEL.DAT}) & Model names from \texttt{MODEL\_PROP.DAT}. \\
+\hline
+8 & Model of Models (\texttt{MOMODEL.DAT}) & Existing parent and submodel identifiers. \\
+\hline
+9 & Account (\texttt{AccountDto}) & No mandatory generated dependency; optional references must already exist when populated. \\
+\hline
+10 & Account Group (\texttt{AccountGroupDto}) & Account membership through \textbf{client\_account\_id}. \\
+\hline
+11 & Position / Tax Lot (\texttt{PositionDto}) & Account and security. Generated before orders to support coherent sell scenarios. \\
+\hline
+12 & Proposed Order (\texttt{ProposedOrderDto}) & Account, security, and current position context. \\
+\hline
+13 & Order (\texttt{ProposedOrderDto} written as \texttt{ORDER.DAT}) & Same row shape as proposed orders, loaded with the appropriate Longview procedure mode. \\
+\hline
+14 & Execution (\texttt{ExecutionDto}) & Generated from equity orders only; references security and account when supplied. \\
 \hline
 \end{longtable}
 
-% ─────────────────────────────────────────────
+\paragraph{}The distinction between business order and technical load order is important. From a
+finance point of view, positions, orders, and executions describe a trade story. From a loading
+point of view, the script must satisfy Longview dependencies. The generator therefore combines
+both views: it creates a coherent business scenario while emitting SQL in the order accepted by
+the pre-BCP pipeline.
+
+% ---------------------------------------------------------
 \section{Entity Class Diagram}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 
-\paragraph{}Figure~\ref{fig:class-diagram} presents the UML class diagram of the Longview data model as
-discovered during Sprint 1. The diagram shows all primary entities involved in test data generation,
-their key attributes and types as reflected in the implemented DTO classes, and the relationships
-and multiplicities between them. This diagram served as the primary reference specification for all
-generation services implemented in the subsequent sprints.
+\paragraph{}Figure~\ref{fig:class-diagram} presents the UML class diagram produced at the end of
+Sprint 1. It shows the main Longview entities targeted by the generator, their key attributes, and
+the relationships between them. This diagram served as the reference for the DTO classes and for
+the generation services implemented in the following sprint.
 
-\begin{figure}[h!]
+\begin{figure}[H]
 \centering
-%\includegraphics[width=1.0\textwidth]{img/class-diagram.png}
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.5\textwidth,height=0.78\textheight,keepaspectratio]{img/classdiagram-entities.pdf}%
+}
 \caption{UML class diagram of the Longview entities targeted by the test data generator}
 \label{fig:class-diagram}
 \end{figure}
 
-\paragraph{}The relationships captured in the diagram reflect the following structural rules discovered during
-the sprint:
+\paragraph{}Because securities are the most specialized part of the model, Figure~\ref{fig:security-class-diagram}
+isolates the security DTO hierarchy. It shows how the general security concept is divided into
+equities, fixed income securities, options, futures, generic securities, and FX forwards. This
+separation was necessary because each subtype has different fields and different validation rules,
+even though all of them can later be priced, classified, held, or traded depending on the scenario.
 
-\begin{itemize}
-    \item An \textbf{AccountGroup} is associated with one or more \textbf{Accounts} through the AccountHierarchy link, using \textbf{client\_account\_group\_name} and \textbf{client\_account\_id} as the join keys.
-    \item A \textbf{Model} contains one or more \textbf{ModelObjective} records (\texttt{1} to \texttt{1..*}), each targeting a specific security identified by its \textbf{client\_security\_id}.
-    \item A \textbf{Security} is specialized into one of six subtypes: \textbf{EquitySecurity}, \textbf{GenericSecurity}, \textbf{FixedIncomeSecurity}, \textbf{OptionSecurity}, \textbf{FutureSecurity}, or \textbf{FxForwardSecurity}, each implemented as a distinct DTO class.
-    \item A \textbf{FixedIncomeSecurity} may have zero or more associated \textbf{CallSchedule}, \textbf{PutSchedule}, \textbf{CouponSchedule}, and \textbf{ConvertibleSchedule} child records stored in dedicated extension buffer tables.
-    \item A \textbf{Security} has one or more associated \textbf{Price} records (\texttt{1} to \texttt{1..*}), linked through \textbf{client\_security\_id}.
-    \item A \textbf{GroupOrder} aggregates one or more \textbf{ProposedOrders} (\texttt{1} to \texttt{1..*}).
-    \item A \textbf{ProposedOrder} is linked to exactly one \textbf{Account} via \textbf{client\_account\_id} and one \textbf{Security} via \textbf{client\_security\_id}.
-    \item An \textbf{Execution} is linked to a \textbf{ProposedOrder} (identified by \textbf{client\_security\_id} and \textbf{client\_account\_id} matching), and its \textbf{quantity} must not exceed the remaining unfilled quantity of the parent order.
-    \item A \textbf{Position} (TaxLot) is identified by the combination of \textbf{client\_account\_id} and \textbf{client\_security\_id}, and its \textbf{trade\_date\_qty} is derived from the net sum of execution quantities for that account-security pair.
-\end{itemize}
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1\textwidth,height=0.78\textheight,keepaspectratio]{img/classdiagram-securities.pdf}%
+}
+\caption{UML class diagram of the security DTO hierarchy}
+\label{fig:security-class-diagram}
+\end{figure}
 
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
-% ─────────────────────────────────────────────
+% ---------------------------------------------------------
 
-\paragraph{}This chapter presented the results of Sprint 1, the discovery and data model mapping phase.
-By analyzing the existing SQL scripts, the pre-BCP buffer table schema, and the stored procedures
-used by the Longview loading pipeline, the complete set of entities required for test data generation
-was identified and documented. For each entity -- account groups, accounts, models, securities
-(across six distinct subtypes), prices, orders, executions, and tax lot positions -- the exact field
-names, their TypeScript types, their required or optional status, and their business rule constraints
-were recorded and formalized into the DTO classes that constitute the data contract of the
-generator module. The strict population order across the twenty buffer tables was established, and
-the relationships between all entities were formalized in the UML class diagram presented in
-Figure~\ref{fig:class-diagram}. This foundation gave the implementation of Sprint 2 a precise and
-verified specification to work from. The following chapter presents Sprint 2, which covers the
-core generation engine and the standalone mode of the system.
+\paragraph{}This chapter presented Sprint 1 as the discovery phase that allowed the project to
+enter the Longview finance domain before implementing the application. The main result was a
+clear mapping between financial concepts, DTOs, pre-BCP buffer tables, and dependency rules.
+
+\paragraph{}By understanding accounts, securities, prices, positions, orders, and executions as
+connected parts of the same workflow, the generator could be designed around valid relationships
+instead of isolated random records. This foundation gave Sprint 2 the specification needed to
+build the standalone generation engine and produce SQL scripts that respect Longview's loading
+constraints.
