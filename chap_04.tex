@@ -1,5 +1,11 @@
 \chapter{Sprint 2 -- Core Generation Engine and Standalone Mode}
 
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
+
 
 % ─────────────────────────────────────────────
 \section*{Introduction}
@@ -7,15 +13,14 @@
 % ─────────────────────────────────────────────
 
 
-\paragraph{}This chapter presents Sprint 2 of the project, which spanned two weeks and delivered the
-core generation engine and the first fully operational mode of the test data generator: the
-standalone mode. Building directly on the data model specification established in Sprint 1, this
-sprint translated the DTO contracts and population order into a working NestJS backend capable
-of generating syntactically and semantically valid SQL INSERT scripts for all twenty pre-BCP buffer
-tables, without requiring any connection to a live Longview database. The chapter covers the sprint
-backlog, the architectural design of the generation engine, a description of each generation service
-and the SQL script builder, and the implementation results with a demonstration of the produced
-output.
+\paragraph{}After the discovery work carried out during Sprint 1, Sprint 2 transformed the mapped
+Longview entities, relationships, and loading order into the first operational version of the
+application. The objective was to implement a standalone mode capable of generating a coherent SQL
+loading script without requiring any connection to a Longview database.
+
+\paragraph{}This chapter presents the design and implementation of this standalone generation engine. It
+describes the sprint backlog, the standalone use case, the main design views, the backend generation
+pipeline, the frontend workflow, and the validation activities carried out at the end of the sprint.
 
 
 % ─────────────────────────────────────────────
@@ -23,12 +28,12 @@ output.
 % ─────────────────────────────────────────────
 
 
-\paragraph{}Sprint 2 targeted user stories \textbf{US-2} and \textbf{US-3} from the product backlog: the
-implementation of the core data generation logic and the construction of the SQL script output
-pipeline. The sprint backlog is presented in Table~\ref{tab:sprint2-backlog}.
+\paragraph{}Sprint 2 covered the first standalone generation increment. It addressed several product
+backlog stories related to account, model, security, price, position, order, execution generation,
+and SQL script assembly. Table~\ref{tab:sprint2-backlog} presents the sprint backlog.
 
 
-\renewcommand{\arraystretch}{1.35}
+\renewcommand{\arraystretch}{1.2}
 \begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
 \caption{Sprint 2 backlog}
 \label{tab:sprint2-backlog} \\
@@ -46,261 +51,454 @@ pipeline. The sprint backlog is presented in Table~\ref{tab:sprint2-backlog}.
 \endfoot
 \hline
 \endlastfoot
-T2-1 & Implement entity generation services & Create one NestJS injectable service per entity domain (AccountGroup, Account, Hierarchy, Model, Security, Price, Order, Execution, Position), each responsible for producing an array of valid DTO instances from input parameters. & 4 days \\
+T2-1 & Implement entity generation services & Create one NestJS injectable service per entity domain (AccountGroup, Account, Hierarchy, Model, Security, Price, Order, Execution, Position), each responsible for producing an array of valid DTO instances from input parameters. & 7 days \\
 \hline
-T2-2 & Implement the constraints configuration & Centralise all field-level business rules (valid currency codes, country codes, security type codes, side mnemonics, enumerated lists) in a dedicated \texttt{constraints.ts} configuration file consumed by all generation services. & 1 day \\
+T2-2 & Implement the constraints configuration & Centralise all field-level business rules (valid currency codes, country codes, security type codes, side mnemonics, enumerated lists) in a dedicated \texttt{constraints.ts} configuration file consumed by all generation services. & 2 days \\
 \hline
-T2-3 & Implement the SQL script generator service & Build the \texttt{SqlScriptGeneratorService} that converts populated DTO arrays into correctly formatted SQL INSERT statements, handles NULL fields, escapes string values, and assembles the final script in the correct population order. & 2 days \\
+T2-3 & Implement the SQL script generator service & Build the \texttt{SqlScriptGeneratorService} that converts populated DTO arrays into correctly formatted SQL INSERT statements, handles NULL fields, escapes string values, and assembles the final script in the correct population order. & 3 days \\
 \hline
-T2-4 & Implement the orchestrator service & Build the \texttt{GeneratorService} that accepts the user's generation parameters, invokes all entity services in the correct dependency order, passes shared identifiers between services, and returns the assembled SQL script. & 1 day \\
+T2-4 & Implement the orchestrator service & Build the \texttt{GeneratorService} that accepts the user's generation parameters, invokes all entity services in the correct dependency order, passes shared identifiers between services, and returns the assembled SQL script. & 2 days \\
 \hline
-T2-5 & Implement the validator service & Build the \texttt{ValidatorService} that checks the coherence of the generated dataset before script assembly: referential integrity, quantity consistency between orders and executions, and position quantity derivation. & 1 day \\
+T2-5 & Implement the validator service & Build the \texttt{ValidatorService} that checks the coherence of the generated dataset before script assembly: referential integrity, quantity consistency between orders and executions, and position quantity derivation. & 2 days \\
 \hline
-T2-6 & Implement the three-step frontend workflow & Build the \texttt{StandaloneMode} page with URL-based step routing across configuration, preview, and generation tabs, and wire it to the backend generation endpoint. & 1 day \\
+T2-6 & Implement the three-step frontend workflow & Build the \texttt{StandaloneMode} page with URL-based step routing across configuration, preview, and generation tabs, and wire it to the backend generation endpoint. & 4 days \\
+\hline
+\end{longtable}
+
+\paragraph{}The backlog can be read as three connected implementation layers. Tasks T2-1 and T2-2 cover
+entity generation and shared constraints. Tasks T2-3 to T2-5 cover orchestration, validation, and
+SQL script assembly. Task T2-6 exposes this backend engine through the standalone user interface.
+The following section specifies the main use case before the chapter moves to design and
+implementation.
+
+
+% ─────────────────────────────────────────────
+\section{Sprint Specification}
+\paragraph{}This sprint is centered on the standalone SQL generation use case. The QA engineer configures
+the dataset from the web interface, reviews the expected output, then triggers generation without
+connecting to a Longview database.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the standalone SQL generation use case}
+\label{tab:standalone-usecase-description} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Generate a standalone SQL loading script. \\
+\hline
+Actor & QA Engineer. \\
+\hline
+Preconditions & The QA engineer has opened standalone mode and entered the desired generation parameters. \\
+\hline
+Postconditions & A coherent \texttt{load\_test\_data.sql} file is generated and downloaded. \\
+\hline
+Nominal scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The QA engineer configures accounts, securities, models, positions, orders, and executions.
+    \item The system displays a preview of the expected generated records.
+    \item The QA engineer starts generation.
+    \item The backend generates and validates the dataset.
+    \item The backend assembles the SQL script and returns it for download.
+\end{enumerate} \\
+\hline
+Exception scenario &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If parameters are invalid, generation is stopped and an error is displayed.
+    \item If validation fails, no SQL file is downloaded.
+\end{itemize} \\
 \hline
 \end{longtable}
 
 
-% ─────────────────────────────────────────────
 \section{Sprint Design}
 % ─────────────────────────────────────────────
 
 
-\subsection{Standalone Mode Use Case Diagram}
+\paragraph{}The design of the standalone mode connects three views of the same feature: what the QA
+engineer does, how the generation engine is organized, and how the frontend request reaches the
+backend. These views are presented before the implementation details.
 
-\paragraph{}Figure~\ref{fig:usecase-standalone} details the standalone mode use cases implemented during
-this sprint. The QA team configures the generation parameters, reviews the preview, and generates
-the final SQL file without requiring any database connection. The diagram also shows the optional
-interaction with the LLM API, used only when AI-assisted enrichment is enabled.
+\subsection{Use Case View}
 
-\begin{figure}[H]
+\paragraph{}Figure~\ref{fig:usecase-standalone} shows the standalone use cases: configure generation
+parameters, review the preview, and generate the SQL file without a database connection.
+
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=1\textwidth]{img/usecase-standalone-mode.jpg}
+\includegraphics[width=0.95\textwidth]{img/usecase-standalone-mode-clean.jpg}
 \caption{Standalone mode use case diagram}
 \label{fig:usecase-standalone}
 \end{figure}
 
 
 % ─────────────────────────────────────────────
-\subsection{Architecture of the Generation Engine}
+\subsection{Backend Architecture View}
 % ─────────────────────────────────────────────
 
 
-\paragraph{}The generation engine follows a layered, service-oriented architecture consistent with the NestJS
-module system. All generation logic is encapsulated in the \texttt{GeneratorModule}, which declares
-one injectable service per entity domain plus three cross-cutting services: the orchestrator
-(\texttt{GeneratorService}), the SQL script builder (\texttt{SqlScriptGeneratorService}), and the
-validator (\texttt{ValidatorService}). A separate \texttt{ConfigLibraryModule} provides the shared
-constraints configuration to all generation services through NestJS dependency injection.
+\paragraph{}The generation engine is implemented in the NestJS \texttt{GeneratorModule}. It contains one
+service per entity domain and three shared services: \texttt{GeneratorService},
+\texttt{SqlScriptGeneratorService}, and \texttt{ValidatorService}.
 
-\paragraph{}The strict population order established in Sprint 1 is enforced at the script assembly level by
-the orchestrator and SQL generator services. During generation, the orchestrator first prepares the
-data pools needed by dependent services, then writes the resulting \texttt{.DAT} files and SQL
-statements in the Longview loading order. This design ensures that dependent records such as
-prices, orders, executions, and positions are built from valid upstream identifiers while the final
-script remains aligned with the pre-BCP loading sequence.
+\paragraph{}The orchestrator calls the services in dependency order. The SQL generator then emits the
+validated DTO arrays according to the Longview pre-BCP loading sequence.
 
 
 
 % ─────────────────────────────────────────────
-\subsection{Generation Request and Response Contract}
-% ─────────────────────────────────────────────
+\paragraph{}Figure~\ref{fig:ch4-backend-sql-workflow} summarizes the backend workflow followed by the
+standalone SQL generation endpoint.
 
-
-\paragraph{}The frontend communicates with the backend through a single \texttt{POST /generate} endpoint.
-The request body carries a \texttt{GenerateDto} object that specifies the quantities of each
-entity type to generate (number of accounts, securities per subtype, orders, executions, and
-positions) and optional configuration flags such as whether to include derivatives or fixed income
-schedules. The response carries a \texttt{GenerationResultDto} containing the assembled SQL script
-as a string and a statistics object summarising the number of INSERT statements produced per
-entity domain.
-
-\paragraph{}Figure~\ref{fig:sequence-diagram} presents the sequence diagram of the complete standalone
-generation workflow. The diagram starts with local configuration and preview, then details the
-generation request sent to the backend through \texttt{POST /generate-and-download}. In the success
-scenario, the backend validates the request, invokes the core generation services, creates the
-dataset, delegates SQL assembly to the script service, and returns \texttt{load\_test\_data.sql} to
-the browser for download.
-
-\paragraph{}The diagram also documents the failure paths handled by the interface. If dataset generation or
-SQL creation fails, the backend returns an error response that is shown to the user. If the request
-does not reach the server because of a network or server availability problem, the frontend reports
-the failure without changing the locally stored configuration.
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.98\textwidth]{img/sequence-standalone-mode.pdf}
+\includegraphics[width=0.95\textwidth,height=0.78\textheight,keepaspectratio]{img/ch4-backend-sql-workflow.pdf}
+\caption{Backend standalone SQL generation workflow}
+\label{fig:ch4-backend-sql-workflow}
+\end{figure}
+
+\subsection{Request and Response Contract}
+% ─────────────────────────────────────────────
+
+
+\paragraph{}The standalone frontend calls \texttt{POST /generate-and-download}. The request contains the
+selected \texttt{GenerationParams}; the response is the generated \texttt{load\_test\_data.sql}
+file. A log endpoint is used to display generation progress.
+
+\paragraph{}If an error occurs during generation or validation, the backend returns a structured error
+response instead of a downloadable file. This prevents invalid SQL output and allows the frontend to
+display the failure state through the generation logs.
+
+\paragraph{}Figure~\ref{fig:sequence-diagram} shows the request flow, success response, and handled
+failure cases.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/sequence-standalone-mode.pdf}
 \caption{Standalone mode SQL generation sequence}
 \label{fig:sequence-diagram}
 \end{figure}
 
-\paragraph{}The frontend implements the standalone workflow as a three-step navigation flow using
-React Router, with URL-based step routing across
-\texttt{/standalone/configuration}, \texttt{/standalone/preview}, and
-\texttt{/standalone/generation}. This structure separates parameter input,
-pre-generation review, and result delivery into distinct views, each sharing
-the same underlying \texttt{StandaloneMode} page component.
-
-
-% ─────────────────────────────────────────────
 \section{Implementation}
+
+\subsection{Configuration Inputs}
+
+\paragraph{}After the design view, the next step is to describe the information provided by the QA
+engineer before generation. The configuration tab is divided by entity domain. Each section maps to
+\texttt{GenerationParams} and directly affects generated entity fields. Table~\ref{tab:standalone-config-model}
+summarises this mapping.
+
+\paragraph{}Although standalone mode lets the QA engineer choose which data domains to generate, the
+configuration is constrained by dependency rules. Base data such as accounts and securities can be
+selected from the configuration interface, but dependent data such as models, positions, proposed
+orders, final orders, and executions requires both accounts and securities to be available. In
+addition, executions can only be enabled when final orders are generated, because each execution
+must be linked to an existing order. These rules prevent incoherent configurations before the
+generation request is sent to the backend.
+
+\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|P{0.18\linewidth}|P{0.34\linewidth}|P{0.38\linewidth}|}
+\caption{Standalone configuration mapping}
+\label{tab:standalone-config-model} \\
+\hline
+\textbf{Section} & \textbf{Frontend configuration fields} & \textbf{Generated fields affected} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Section} & \textbf{Frontend configuration fields} & \textbf{Generated fields affected} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Accounts &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate
+    \item Number of Accounts
+    \item Base / Reporting Currency
+    \item Short Name Pattern
+    \item Long Name Pattern
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables account row generation
+    \item Number of \texttt{client\_account\_id} rows
+    \item \texttt{client\_currency\_code}
+    \item \texttt{short\_name} and \texttt{client\_account\_id}
+    \item \texttt{name\_1}
+\end{itemize} \\
+\hline
+Securities &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate
+    \item Equity quantity
+    \item Fixed Income quantity
+    \item Futures quantity
+    \item Options quantity
+    \item FX Forwards quantity
+    \item Generic quantity
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables security row generation
+    \item Equity rows and \texttt{client\_security\_id}
+    \item Fixed-income rows and bond-specific fields
+    \item Future rows and contract fields
+    \item Option rows and underlying references
+    \item FX forward rows, currencies, and settlement dates
+    \item Generic security rows and type fields
+\end{itemize} \\
+\hline
+Fixed-income schedules &
+\begin{itemize}[leftmargin=*,nosep]
+    \item CALL rows
+    \item PUT rows
+    \item COUP rows
+    \item CONVERT rows
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item \texttt{call\_date} and \texttt{call\_price}
+    \item \texttt{put\_date} and \texttt{put\_price}
+    \item \texttt{coup\_date} and \texttt{coup\_price}
+    \item \texttt{conversion\_date} and \texttt{conversion\_factor}
+\end{itemize} \\
+\hline
+Models &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate
+    \item Models per Account
+    \item Allocation Mode
+    \item Minimum Allocation \%
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables model row generation
+    \item Number of \texttt{client\_model\_name} values
+    \item \texttt{target\_percent} distribution
+    \item Filtered \texttt{client\_level\_code} allocations
+\end{itemize} \\
+\hline
+Positions &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate
+    \item Positions per Account
+    \item Long/Short Ratio
+    \item Split positions into tax lots
+    \item Tax Lots per Position
+    \item Quantity Min/Max
+    \item Value Min/Max
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables position row generation
+    \item Number of account-security holding rows
+    \item \texttt{trade\_date\_qty} sign and \texttt{position\_type}
+    \item Tax-lot row expansion
+    \item \texttt{client\_tax\_lot\_id} and \texttt{taxlot\_load\_id}
+    \item \texttt{trade\_date\_qty}
+    \item \texttt{cost}
+\end{itemize} \\
+\hline
+Proposed and final orders &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate proposed orders
+    \item Generate orders
+    \item Proposed Orders per Account
+    \item Orders per Account
+    \item Quantity Min/Max
+    \item Buy/Sell Ratio
+    \item Reference Date
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables proposed order rows
+    \item Enables or disables final order rows
+    \item Number of proposed order rows per \texttt{client\_account\_id}
+    \item Number of final order rows per \texttt{client\_account\_id}
+    \item \texttt{proposed\_value}
+    \item \texttt{side\_mnemonic}
+    \item Trade and \texttt{settlement\_date} values
+\end{itemize} \\
+\hline
+Executions &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Generate
+    \item Executions per Order
+    \item Partial Fills \%
+    \item Commission Rate Type
+    \item Commission Rate
+\end{itemize} &
+\begin{itemize}[leftmargin=*,nosep]
+    \item Enables or disables execution row generation
+    \item Number of execution fills per eligible order
+    \item Split \texttt{quantity} values across fills
+    \item \texttt{client\_comm\_rate\_type\_code}
+    \item \texttt{commission\_rate}
+\end{itemize} \\
+\hline
+\end{longtable}
+
+
+% ─────────────────────────────────────────────
+\subsection{Backend Processing}
+\paragraph{}This section explains what happens after the frontend sends the configuration to the
+backend. The processing starts with shared constraints, continues with entity generation and
+orchestration, then ends with validation and SQL script assembly.
 % ─────────────────────────────────────────────
 
 
 % ─────────────────────────────────────────────
-\subsection{Constraints Configuration}
+\subsubsection{Constraints Configuration}
 % ─────────────────────────────────────────────
 
 
-\paragraph{}All enumerated domain values and valid code lists used across the generation services are
-centralised in \texttt{constraints.ts}. This file exports typed constant arrays for ISO 4217
-currency codes, ISO country codes, security type codes, order side mnemonics, settlement
-currency codes, broker identifiers, and other categorical fields. By referencing this single source
-of truth, every generation service picks values from the same validated set, guaranteeing that the
-generated records satisfy the enumeration constraints enforced by the Longview loading procedures.
+\paragraph{}\texttt{constraints.ts} centralises the valid domain values used by the generator: currency
+codes, country codes, security types, order sides, settlement currencies, brokers, and other
+enumerations. All services reuse these lists to avoid invalid categorical values.
 
 
 % ─────────────────────────────────────────────
-\subsection{Entity Generation Services}
+\subsubsection{Internal Generation Algorithms}
+
+\paragraph{}Standalone data is produced by backend algorithms, not by external input files. The services
+use templates, sequences, constrained values, pseudo-random variation, and shared identifiers.
+
+\paragraph{}The user configuration controls record counts, names, allocation modes, quantity ranges,
+buy/sell ratios, and long/short ratios. Dependent records reuse generated identifiers: prices,
+positions, and orders reference securities; account groups and orders reference accounts; options
+reference underlyings; executions reference final orders.
+
+
+% ---------------------------------------------------------
+\subsubsection{Entity Generation Services}
 % ─────────────────────────────────────────────
 
 
-\paragraph{}Each entity generation service is an injectable NestJS class that exposes a \texttt{generate()}
-method. The method accepts the user's generation parameters and any upstream identifiers produced
-by previously invoked services, and returns an array of populated DTO instances. The following
-describes the key generation logic of each service.
+\paragraph{}Each entity service is a NestJS injectable class responsible for one Longview domain. Services
+receive \texttt{GenerationParams} and required upstream DTO arrays, then return typed DTO arrays for
+validation and SQL generation.
 
-\paragraph{}\textbf{AccountGroupService} generates the requested number of account group records. Each group
-receives a unique \texttt{client\_account\_group\_name} composed of a realistic asset-class prefix
-(e.g., \texttt{EQUITIES}, \texttt{FIXED\_INCOME}) concatenated with a zero-padded sequence number, a
-randomly sampled \texttt{client\_principal\_currency\_code} drawn from the constraints list, and
-optional aggregate valuation figures computed as random decimal values within a realistic range.
+\paragraph{}The implemented services are:
 
-\paragraph{}\textbf{AccountService} generates one or more account records per account group, ensuring that
-the \texttt{client\_account\_id} values produced are unique and that each account's
-\texttt{client\_currency\_code} is consistent with its parent group's principal currency. The service
-also populates optional manager codes, inception dates, and pre-loaded equity and fixed income
-market values.
-
-\paragraph{}\textbf{HierarchyService} produces the account hierarchy records that link each account to its
-parent account group. Because this service depends on the outputs of both the account group and
-account services, it receives both arrays as inputs and produces one hierarchy record per
-account-group pairing.
-
-\paragraph{}\textbf{ModelService} generates model records and their associated model objective records as a
-single unit. Each model receives a unique name and contains one or more allocation rows based on
-sector or portfolio level codes. The service supports equal, weighted, and random allocation modes,
-then normalises the resulting target weights so that each model remains balanced and usable by the
-Longview portfolio layer.
-
-\paragraph{}\textbf{SecurityService} generates security records across all six supported subtypes in
-dependency order: equities and generic securities first (no dependencies), followed by fixed income
-securities and their optional child schedule records, and finally derivatives (options and futures,
-which require an underlying security reference) and FX forwards. The service draws
-\texttt{security\_type\_code}, currency, and country values from the constraints configuration and
-computes realistic \texttt{pricing\_factor} and \texttt{income\_factor} values per asset class.
-
-\paragraph{}\textbf{PriceService} generates one or more price records per security. Each price record carries
-a \texttt{client\_security\_id} reference, a pricing date set to the generation date, and a closing
-price derived from the security's asset class (equities receive prices in the 10--500 range; fixed
-income securities receive prices near par value, i.e., in the 95--105 range; derivatives receive
-prices scaled to their contract size).
-
-\paragraph{}\textbf{OrderService} generates both group order records (\texttt{OrderDto}) and proposed order
-records (\texttt{ProposedOrderDto}) in the correct dependency order. Group orders are generated
-first and assigned a unique reference; proposed orders are then generated referencing valid account
-and security identifiers from the upstream pools and linked to their parent group order.
-
-\paragraph{}\textbf{ExecutionService} generates execution records for a subset of the proposed orders,
-simulating a realistic partial-fill scenario in which some orders remain open. Each execution's
-\texttt{quantity} is constrained to not exceed the parent order's \texttt{proposed\_value}, and the
-\texttt{average\_price} is set to a value within a realistic spread of the security's last generated
-price.
-
-\paragraph{}\textbf{PositionService} derives position (tax lot) records from the net execution quantities
-for each account-security pair. For each unique combination of \texttt{client\_account\_id} and
-\texttt{client\_security\_id} appearing in the execution records, the service sums the filled
-quantities and creates a position record whose \texttt{trade\_date\_qty} equals that net sum,
-ensuring consistency between the execution layer and the position layer of the generated dataset.
+\begin{itemize}[nosep]
+    \item \textbf{SecurityService}: generates equities, fixed income instruments, FX forwards, generic securities, futures, options, and optional fixed-income schedules.
+    \item \textbf{ModelService}: generates model allocations, model properties, and model-of-model links.
+    \item \textbf{AccountService}: generates account master records from the configured count, currency, and naming pattern.
+    \item \textbf{AccountGroupService}: derives account groups from generated accounts.
+    \item \textbf{HierarchyService}: classifies generated securities using hierarchy and GICS values.
+    \item \textbf{PriceService}: generates one price record per generated security.
+    \item \textbf{PositionService}: generates holdings using accounts, securities, long/short ratios, quantity ranges, and optional tax-lot splitting.
+    \item \textbf{OrderService}: generates proposed and final orders using accounts, securities, positions, side ratios, date ranges, and settlement rules.
+    \item \textbf{ExecutionService}: generates execution rows from eligible final equity orders, including partial fills and settlement dates.
+\end{itemize}
 
 
 % ─────────────────────────────────────────────
-\subsection{SQL Script Generator Service}
+\subsubsection{Generation Orchestrator Service}
+% â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+\paragraph{}\texttt{GeneratorService} orchestrates the standalone pipeline. It applies defaults,
+normalises the reference date, records progress logs, calls entity services in dependency order,
+then runs validation.
+
+\paragraph{}The orchestrator preserves shared identifiers between domains. It coordinates generation only;
+\texttt{SqlScriptGeneratorService} performs the DTO-to-SQL conversion.
+
+
+% â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+\subsubsection{Validator Service}
+% â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+\paragraph{}\texttt{ValidatorService} checks required fields, lengths, numeric values, flags, dates, and
+identifier consistency before SQL assembly.
+
+\paragraph{}It also checks references between domains: accounts, securities, model names, orders, and
+executions must point to generated records. In addition, it verifies practical coherence rules, such as
+matching execution quantities with their parent orders and keeping position quantities within the
+configured ranges. Invalid data stops generation before download.
+
+
+% â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+\subsubsection{SQL Script Generator Service}
 % ─────────────────────────────────────────────
 
 
-\paragraph{}The \texttt{SqlScriptGeneratorService} is responsible for converting the arrays of populated DTO
-instances produced by the entity services into a single executable SQL script. For each DTO array,
-the service iterates over the records in the established population order, constructs a
-\texttt{INSERT INTO <buffer\_table> (\ldots) VALUES (\ldots)} statement for each record, handles
-\texttt{NULL} for optional fields that were not populated, escapes single-quote characters in string
-values, and formats numeric values without quotation marks. The assembled statements are grouped
-by entity domain with section header comments to facilitate readability and manual inspection of
-the generated script.
+\paragraph{}\texttt{SqlScriptGeneratorService} converts validated DTO arrays into one executable SQL
+script. It writes \texttt{INSERT} statements in population order, handles \texttt{NULL} values,
+escapes strings, formats numeric fields, and groups statements by entity domain.
 
 
 % ─────────────────────────────────────────────
-\subsection{Generation Results}
+\subsection{Frontend Workflow}
+
+\paragraph{}The backend engine is exposed through a three-step frontend flow. The frontend uses React Router
+with three routes:
+\texttt{/standalone/configuration}, \texttt{/standalone/preview}, and
+\texttt{/standalone/generation}. All routes are handled by the \texttt{StandaloneMode} component.
+
+\paragraph{}The \texttt{StandaloneMode} page stores the configuration, maps it to the backend contract,
+starts generation, polls progress logs, and displays the final download state.
 % ─────────────────────────────────────────────
 
 
-\paragraph{}The standalone mode is structured as a three-step guided workflow accessible from the
-application's mode selection screen. Figure~\ref{fig:mode-selection} shows the mode selection
-screen from which the user enters either the standalone or the connected workflow.
+\paragraph{}Figure~\ref{fig:mode-selection} shows the entry point for standalone and connected modes.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{img/ch4-mode-selection.png}
+\includegraphics[width=0.88\textwidth]{img/ch4-mode-selection.png}
 \caption{Mode selection screen}
 \label{fig:mode-selection}
 \end{figure}
 
-\paragraph{}Figure~\ref{fig:step-config} shows the first step of the workflow: the configuration tab,
-where the user specifies the desired quantities for each entity domain and sets optional
-generation flags such as whether to include derivative securities or fixed income schedules.
+\paragraph{}Figure~\ref{fig:step-config} shows the entity-specific configuration tab.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{img/ch4-step1-config.png}
+\includegraphics[width=0.88\textwidth]{img/ch4-step1-config.png}
 \caption{Step 1 -- Configuration tab}
 \label{fig:step-config}
 \end{figure}
 
-\paragraph{}Figure~\ref{fig:step-preview} shows the second step: the preview tab, which displays an
-estimated row count per entity domain computed from the configured quantities before generation
-is triggered, allowing the user to review the expected output size before committing to the run.
+\paragraph{}Figure~\ref{fig:step-preview} shows the preview tab and estimated record counts.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{img/ch4-step2-preview.png}
+\includegraphics[width=0.88\textwidth]{img/ch4-step2-preview.png}
 \caption{Step 2 -- Preview tab showing estimated record counts per entity domain}
 \label{fig:step-preview}
 \end{figure}
 
-\paragraph{}Figure~\ref{fig:step-result} shows the third and final step: the generation result tab
-displayed after a successful run, presenting the INSERT statement statistics per entity domain
-and the download button for the assembled SQL script file.
+\paragraph{}Figure~\ref{fig:step-result} shows generation statistics and the SQL download action.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{img/ch4-step3-result.png}
+\includegraphics[width=0.88\textwidth]{img/ch4-step3-result.png}
 \caption{Step 3 -- Generation result tab after a successful run}
 \label{fig:step-result}
 \end{figure}
 
 
 % ─────────────────────────────────────────────
-\subsection{Sprint Review and Validation}
+\section{Sprint Review and Validation}
 % ─────────────────────────────────────────────
 
 
-\paragraph{}At the end of Sprint 2, the delivered increment was reviewed against the two user stories
-selected for the sprint. The backend was able to generate \texttt{.DAT} files for the supported
-entity domains, validate them using the \texttt{ValidatorService}, assemble them into a SQL loading
-script, and return the script to the frontend for download. The frontend workflow was also checked
-from configuration through preview to generation.
+\paragraph{}Sprint 2 was validated against the standalone generation scope defined in the sprint backlog.
+The checks covered backend generation, data coherence, SQL assembly, error handling, and the
+three-step frontend workflow.
 
-\renewcommand{\arraystretch}{1.3}
+\renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|P{0.22\linewidth}|P{0.42\linewidth}|P{0.26\linewidth}|}
 \caption{Sprint 2 validation summary}
 \label{tab:sprint2-validation} \\
@@ -318,35 +516,25 @@ from configuration through preview to generation.
 \endfoot
 \hline
 \endlastfoot
-Generation parameters & Submitted a standalone configuration containing accounts, securities, models, orders, executions, and prices. & Parameters were accepted and propagated to the backend services. \\
+Generation parameters & Submitted a standalone configuration containing accounts, securities, models, positions, orders, executions, and prices. & Parameters were accepted and propagated to the backend services. \\
 \hline
-Data coherence & Ran validator checks on generated \texttt{.DAT} files before SQL assembly. & Required fields, lengths, numeric fields, flags, and date formats were checked before writing output. \\
+Data coherence & Ran validator checks on generated accounts, securities, positions, orders, and executions. & Required fields, lengths, numeric fields, flags, dates, and references were checked before writing output. \\
 \hline
-SQL assembly & Generated the final \texttt{load\_test\_data.sql} script from the produced \texttt{.DAT} files. & SQL statements were grouped by loading section and ordered according to the pre-BCP process. \\
+Order and execution consistency & Generated order scenarios with execution rows linked to final orders. & Executions referenced existing orders and preserved coherent quantity distribution. \\
 \hline
-Frontend workflow & Navigated through configuration, preview, and generation tabs. & The three-step standalone workflow produced a downloadable SQL script. \\
+SQL assembly & Generated the final \texttt{load\_test\_data.sql} script from the validated dataset. & SQL statements were grouped by loading section and ordered according to the pre-BCP process. \\
+\hline
+Error handling & Submitted invalid or incomplete generation parameters during testing. & The backend stopped generation and returned an error instead of downloading an invalid script. \\
+\hline
+Frontend workflow & Navigated through configuration, preview, and generation tabs. & The three-step standalone workflow displayed progress logs and produced a downloadable SQL script. \\
 \hline
 \end{longtable}
 
-\paragraph{}The following excerpt illustrates the structure of the generated SQL script. The actual script
-contains one section per generated file and keeps \texttt{NULL} values, strings, and numeric values
-formatted according to the target buffer table columns.
+\paragraph{}Figure~\ref{fig:ch4-generated-sql-evidence} shows an excerpt of the generated SQL script.
 
-\begin{verbatim}
--- ACCOUNT.DAT
-INSERT INTO pre_bcp_account_buffer
-(client_account_id, short_name, name_1, client_currency_code)
-VALUES ('ACC001', 'ACC001', 'Test Account 001', 'USD');
-
--- PRICE.DAT
-INSERT INTO pre_bcp_price_buffer
-(client_security_id, price_date, close_price)
-VALUES ('EQ000001', '20260505', 125.40);
-\end{verbatim}
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{img/ch4-generated-sql-evidence.png}
+\includegraphics[width=0.9\textwidth]{img/ch4-generated-sql-evidence.png}
 \caption{Generated SQL script excerpt}
 \label{fig:ch4-generated-sql-evidence}
 \end{figure}
@@ -358,15 +546,7 @@ VALUES ('EQ000001', '20260505', 125.40);
 % ─────────────────────────────────────────────
 
 
-\paragraph{}This chapter presented Sprint 2, which delivered the complete standalone mode of the test
-data generator. The core generation engine was implemented as a set of NestJS injectable services,
-one per entity domain, orchestrated by a central \texttt{GeneratorService} that enforces the
-twenty-step population order established in Sprint 1. A centralised constraints configuration
-guarantees that all generated field values satisfy the enumeration and domain rules of the Longview
-loading pipeline. The \texttt{SqlScriptGeneratorService} assembles the populated DTO arrays into
-a single executable SQL script ready for direct use by the QA team. The three-step frontend
-workflow guides the user from parameter configuration through pre-generation preview to result
-download, providing a complete and self-contained generation experience. The standalone mode
-requires no database connection, making it immediately deployable in any environment. The
-following chapter presents Sprint 3, which extends the system with SQL Server database
-connectivity and the connected mode of the generator.
+\paragraph{}Sprint 2 delivered the standalone mode. The backend generates coherent DTO arrays using
+entity services, validates them, and converts them into a SQL Server loading script. The frontend
+provides configuration, preview, generation progress, and download. The next chapter presents
+Sprint 3 and the connected mode.

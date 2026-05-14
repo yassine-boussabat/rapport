@@ -1,11 +1,11 @@
-\chapter{Sprint 1 -- Discovery and Data Model Mapping}
+﻿\chapter{Sprint 1 -- Discovery and Data Model Mapping}
 
 % ---------------------------------------------------------
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
 % ---------------------------------------------------------
 
-\paragraph{}This chapter presents the first sprint of the project. Its purpose was not to
+\paragraph{}This chapter presents the first sprint of the project, which spanned two weeks. Its purpose was not to
 implement the generator yet, but to build the financial and technical understanding needed before
 implementation. Since the application produces data for Longview, I first had to move from a
 computer science view of the problem to a finance-aware view: what is an account, what is a
@@ -198,12 +198,12 @@ business sequence used earlier in the chapter.
 \caption{Pre-BCP buffer table population order}
 \label{tab:population-order} \\
 \hline
-\textbf{Step} & \textbf{Buffer Table / Entity} & \textbf{Dependency} \\
+\textbf{Step} & \textbf{Entity} & \textbf{Dependency} \\
 \hline
 \endfirsthead
 \multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
 \hline
-\textbf{Step} & \textbf{Buffer Table / Entity} & \textbf{Dependency} \\
+\textbf{Step} & \textbf{Entity} & \textbf{Dependency} \\
 \hline
 \endhead
 \hline
@@ -211,33 +211,32 @@ business sequence used earlier in the chapter.
 \endfoot
 \hline
 \endlastfoot
-1 & Security masters: \texttt{EQUITY.DAT}, \texttt{FIXINC.DAT}, \texttt{FUTURE.DAT}, \texttt{GENERIC.DAT}, \texttt{FXFORWARD.DAT} & Base security universe. \\
+1 & Security masters: Equity, Fixed Income, Future, Generic and FX Forward & Base security universe. \\
 \hline
-2 & Option security (\texttt{OPTION.DAT}) & Generated after equities and futures because options need an underlying security. \\
+2 & Option security & Generated after equities and futures because options need an underlying security. \\
 \hline
-3 & Fixed-income schedules: \texttt{CALL.DAT}, \texttt{PUT.DAT}, \texttt{COUP.DAT}, \texttt{CONVERT.DAT} & Fixed income parent security. \\
+3 & Fixed-income schedules: CALL,PUT,COUP,CONVERT & Fixed income parent security. \\
 \hline
-4 & Hierarchy (\texttt{HIERARCH.DAT}) & Generated securities and classification definitions. \\
+4 & Hierarchy & Generated securities and classification definitions. \\
 \hline
-5 & Price (\texttt{PRICE.DAT}) & Security identifiers, including synthetic FX forward identifiers. \\
+5 & Price & Security identifiers, including synthetic FX forward identifiers. \\
 \hline
-6 & Model properties (\texttt{MODEL\_PROP.DAT}) & Generated model names and model settings. \\
+
+7 & Model allocations  & Model names from \texttt{MODEL\_PROP.DAT}. \\
 \hline
-7 & Model allocations (\texttt{MODEL.DAT}) & Model names from \texttt{MODEL\_PROP.DAT}. \\
+8 & Model of Models & Existing parent and submodel identifiers. \\
 \hline
-8 & Model of Models (\texttt{MOMODEL.DAT}) & Existing parent and submodel identifiers. \\
+9 & Account & No mandatory generated dependency; optional references must already exist when populated. \\
 \hline
-9 & Account (\texttt{AccountDto}) & No mandatory generated dependency; optional references must already exist when populated. \\
+10 & Account Group & Account membership through \textbf{client\_account\_id}. \\
 \hline
-10 & Account Group (\texttt{AccountGroupDto}) & Account membership through \textbf{client\_account\_id}. \\
+11 & Position & Account and security. Generated before orders to support coherent sell scenarios. \\
 \hline
-11 & Position / Tax Lot (\texttt{PositionDto}) & Account and security. Generated before orders to support coherent sell scenarios. \\
+12 & Proposed Order & Account, security, and current position context. \\
 \hline
-12 & Proposed Order (\texttt{ProposedOrderDto}) & Account, security, and current position context. \\
+13 & Order & Same row shape as proposed orders, loaded with the appropriate Longview procedure mode. \\
 \hline
-13 & Order (\texttt{ProposedOrderDto} written as \texttt{ORDER.DAT}) & Same row shape as proposed orders, loaded with the appropriate Longview procedure mode. \\
-\hline
-14 & Execution (\texttt{ExecutionDto}) & Generated from equity orders only; references security and account when supplied. \\
+14 & Execution  & Generated from equity orders only; references security and account when supplied. \\
 \hline
 \end{longtable}
 

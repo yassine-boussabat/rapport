@@ -7,7 +7,7 @@
 % ─────────────────────────────────────────────
 
 
-\paragraph{}This chapter presents Sprint 3, which extended the generator from a standalone synthetic tool
+\paragraph{}This chapter presents Sprint 3, which spanned four weeks and extended the generator from a standalone synthetic tool
 into a connected assistant capable of working with an existing Longview SQL Server environment.
 The objective of this sprint was to allow QA engineers to connect to a database, browse selected
 reference entities, choose the subset of data to reuse, and generate additional pre-BCP records
@@ -20,6 +20,11 @@ grabbing, and connected generation. The implementation introduced a dedicated
 \texttt{DatabaseModule}, a \texttt{ConnectedController}, a \texttt{DatabaseService} for SQL Server
 connectivity, and a \texttt{ConnectedGeneratorService} that reuses the entity generation services
 implemented in Sprint 2 while adapting them to grabbed database records.
+
+\paragraph{}The chapter follows the same sprint structure as the previous implementation chapter:
+sprint backlog, sprint specification, sprint design, implementation, sprint review and validation,
+then conclusion. To avoid repetition, it focuses only on what connected mode adds to the
+standalone generation engine.
 
 
 % ─────────────────────────────────────────────
@@ -65,6 +70,57 @@ T3-6 & Add safeguards and validation & Restrict raw table fetching to approved t
 
 
 % ─────────────────────────────────────────────
+\section{Sprint Specification}
+\paragraph{}Connected mode extends the standalone generation use case by adding a database preparation
+phase. Before generation, the QA engineer connects to SQL Server and selects existing accounts or
+securities that will serve as anchors for the generated scenario.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the connected generation use case}
+\label{tab:connected-usecase-description} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Generate a SQL loading script anchored to existing Longview data. \\
+\hline
+Actor & QA Engineer. \\
+\hline
+Preconditions & A SQL Server instance is reachable and the QA engineer has valid read-only connection information. \\
+\hline
+Postconditions & Existing records are reused as anchors and a coherent \texttt{load\_test\_data.sql} file is generated. \\
+\hline
+Nominal scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The QA engineer enters SQL Server connection information.
+    \item The system tests and opens the connection.
+    \item The QA engineer grabs existing accounts, account groups, or securities.
+    \item The system infers the connected generation case from the selected data.
+    \item The QA engineer configures only the missing or dependent records.
+    \item The system previews the result, then generates the final SQL script.
+\end{enumerate} \\
+\hline
+Exception scenario &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If connection fails, the workflow stops before data grabbing.
+    \item If no compatible data is selected, preview and generation are rejected.
+    \item If a selected table is not allowed, the backend refuses the request.
+\end{itemize} \\
+\hline
+\end{longtable}
+
+
 \section{Sprint Design}
 % ─────────────────────────────────────────────
 
@@ -90,9 +146,9 @@ operations.
 generator. The backend introduces the \texttt{DatabaseModule}, which groups the
 \texttt{ConnectedController}, the \texttt{DatabaseService}, and the
 \texttt{ConnectedGeneratorService}. The \texttt{DatabaseService} owns the SQL Server connection pool,
-while the connected generator receives grabbed data, prepares the artifacts to generate, validates
-them, writes the \texttt{.DAT} files, and delegates SQL script assembly to the same
-\texttt{SqlScriptGeneratorService} used by standalone mode.
+while the connected generator receives grabbed data, prepares the connected dataset, validates it,
+and delegates SQL script assembly to the same \texttt{SqlScriptGeneratorService} used by standalone
+mode.
 
 \paragraph{}This architecture avoids duplication: connected mode reuses the account, account group,
 hierarchy, security, price, model, position, order, execution, validator, and SQL script services
@@ -142,7 +198,7 @@ Configuration & \texttt{/connected/configuration} & Configure generated compleme
 \hline
 Preview & \texttt{/connected/preview} & Run the backend generation rules without writing files and display estimated rows, summaries, warnings, and samples. \\
 \hline
-Generation & \texttt{/connected/generation} & Generate the final \texttt{.DAT} files, assemble the SQL script, and download \texttt{load\_test\_data.sql}. \\
+Generation & \texttt{/connected/generation} & Generate the connected dataset, assemble the SQL script, and download \texttt{load\_test\_data.sql}. \\
 \hline
 \end{longtable}
 
@@ -200,6 +256,10 @@ and is sent to the backend as part of the connected generation request.
 
 % ─────────────────────────────────────────────
 \section{Implementation}
+\paragraph{}This section presents only the implementation elements added by connected mode. The core
+generation services, validation rules, and SQL assembly mechanism were already introduced in
+Sprint 2; here, the focus is on SQL Server access, controlled data grabbing, connected orchestration,
+and connected preview/generation endpoints.
 % ─────────────────────────────────────────────
 
 
@@ -316,11 +376,10 @@ Instead, it returns a structured response containing estimated rows, counts per 
 rows for manual inspection, and warnings collected during safe queries. This gives the user a final
 checkpoint before downloading the SQL script.
 
-\paragraph{}The generation endpoint calls the same connected preparation logic, validates each non-empty
-\texttt{.DAT} dataset through the \texttt{ValidatorService}, writes the files to the configured output
-directory, creates the load summary, and finally delegates to the \texttt{SqlScriptGeneratorService}
-to build \texttt{load\_test\_data.sql}. The generated script is returned as a file download from the
-browser.
+\paragraph{}The generation endpoint calls the same connected preparation logic, validates the connected
+dataset through the \texttt{ValidatorService}, then delegates to the
+\texttt{SqlScriptGeneratorService} to build \texttt{load\_test\_data.sql}. The generated script is
+returned as a file download from the browser.
 
 \begin{figure}[htbp]
 \centering
@@ -371,7 +430,7 @@ Grab mode coherence & Submitted requests for accounts-only, securities-only, and
 \hline
 Preview behavior & Used \texttt{/connected/preview} before generation. & The response returns estimated rows, summary counts, sample rows, and warnings without writing files. \\
 \hline
-Output generation & Generated the final SQL script from connected artifacts. & Non-empty datasets are validated, written as \texttt{.DAT} files, and assembled into \texttt{load\_test\_data.sql}. \\
+Output generation & Generated the final SQL script from connected artifacts. & The connected dataset was validated and assembled into \texttt{load\_test\_data.sql}. \\
 \hline
 \end{longtable}
 
