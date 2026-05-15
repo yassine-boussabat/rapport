@@ -1,37 +1,31 @@
 \chapter{Sprint 5 -- Configuration Library and Finalization}
 
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
 
-% ─────────────────────────────────────────────
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
-% ─────────────────────────────────────────────
 
+\paragraph{}Sprint 5 is the final sprint of the project. After standalone generation, connected generation,
+and enrichment were implemented, the remaining need was scenario reuse. QA engineers often repeat
+similar generation setups during regression testing, so the application must allow them to save,
+load, search, rename, and delete reusable configurations.
 
-\paragraph{}This chapter presents Sprint 5, the final two-week sprint of the project. After the standalone mode,
-connected mode, and LLM enrichment were operational, the remaining objective was to improve
-reusability and finalize the application experience. In practice, QA engineers often reuse the same
-generation scenarios across regression cycles. Re-entering the same quantities, filters, and
-generation options at every session would reduce the practical value of the tool. Sprint 5 therefore
-introduced a configuration library that allows users to save, load, rename, search, filter, and
-delete generation configurations.
+\paragraph{}This sprint also finalizes navigation and state safeguards across the application. The chapter
+keeps the same sprint structure as the reference report: backlog, specification, design,
+realization, and conclusion.
 
-\paragraph{}The sprint also covered final integration work: routing between modes, compatibility checks for
-connected configurations, local frontend persistence, shared UI components, and final validation of
-the end-to-end workflows. This chapter describes the sprint backlog, the design of the configuration
-library, the backend and frontend implementation, and the validation performed before project
-closure.
-
-
-% ─────────────────────────────────────────────
 \section{Sprint Backlog}
-% ─────────────────────────────────────────────
 
+\paragraph{}The backlog of Sprint 5 covers the configuration library, connected compatibility checks,
+navigation safeguards, and final validation.
 
-\paragraph{}Sprint 5 targeted the configuration library and finalization user stories from the product
-backlog. The sprint backlog is presented in Table~\ref{tab:sprint5-backlog}.
-
-\renewcommand{\arraystretch}{1.35}
-\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|Q{0.07\linewidth}|P{0.29\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
 \caption{Sprint 5 backlog}
 \label{tab:sprint5-backlog} \\
 \hline
@@ -48,102 +42,208 @@ backlog. The sprint backlog is presented in Table~\ref{tab:sprint5-backlog}.
 \endfoot
 \hline
 \endlastfoot
-T5-1 & Implement configuration persistence & Add a local SQLite database managed by TypeORM and define the \texttt{SavedConfig} entity. & 1 day \\
+T5-1 & Define saved configuration entity & Store name, description, mode, connected grab mode, JSON payload, creation date, and update date. & 1 day \\
 \hline
-T5-2 & Implement configuration library API & Build CRUD endpoints for listing, loading, saving, renaming, deleting, and filtering compatible configurations. & 2 days \\
+T5-2 & Implement library API & Provide create, list, find, update, delete, and compatible connected lookup endpoints. & 2 days \\
 \hline
-T5-3 & Implement standalone save/load support & Allow standalone configurations to be saved to the library and loaded back into the standalone workflow. & 1 day \\
+T5-3 & Add standalone save and load & Save a standalone configuration and restore it into the standalone workflow. & 1 day \\
 \hline
-T5-4 & Implement connected save/load support & Save connected configurations with their grab mode and prevent incompatible configurations from being loaded into the wrong connected context. & 2 days \\
+T5-4 & Add connected save and load & Save connected scenarios with their grab mode and load only compatible configurations. & 2 days \\
 \hline
-T5-5 & Build library frontend page & Implement search, mode filtering, pagination, rename, delete confirmation, and contextual loading from both workflows. & 2 days \\
+T5-5 & Build library page & Add browsing, search, mode filtering, loading, renaming, deletion, empty state, and error state. & 3 days \\
 \hline
-T5-6 & Finalize routing and UX safeguards & Add route integration, local storage hooks, disconnect confirmation, error states, and final workflow polish. & 1 day \\
+T5-6 & Finalize navigation safeguards & Preserve local state and confirm disconnection when leaving an active connected session. & 1 day \\
 \hline
-T5-7 & Perform final validation & Check the complete standalone, connected, LLM, and library workflows before project closure. & 1 day \\
+T5-7 & Validate the full workflow & Check standalone, connected, enrichment, library, and SQL export flows end to end. & 1 day \\
 \hline
 \end{longtable}
+\normalsize
+\renewcommand{\arraystretch}{1}
 
+\section{Sprint Specification}
 
-% ─────────────────────────────────────────────
-\section{Sprint Design}
-% ─────────────────────────────────────────────
+\paragraph{}The main use case of Sprint 5 is managing reusable generation configurations. The feature
+supports both standalone and connected modes, but connected configurations require additional
+compatibility checks because they depend on the grabbed-data context.
 
+\subsection{Use Case Refinement}
 
-\subsection{Configuration Library Use Case Diagram}
+\paragraph{}Figure~\ref{fig:usecase-library} presents the refined use case diagram of the configuration
+library. The library can be opened directly or from a generation workflow.
 
-\paragraph{}Figure~\ref{fig:usecase-library} details the configuration library use cases implemented in
-this final sprint. The QA team can save a generation configuration with a required name and an
-optional description, search and filter saved configurations, load compatible configurations,
-rename them, and delete obsolete entries.
-
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=1\textwidth]{img/usecase-config-library.jpg}
-\caption{Configuration library use case diagram}
+\includegraphics[width=0.95\textwidth]{img/usecase-config-library.jpg}
+\caption{Refined use case diagram of the configuration library}
 \label{fig:usecase-library}
 \end{figure}
 
-\subsection{Configuration Library Architecture}
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.27\linewidth}|P{0.23\linewidth}|P{0.40\linewidth}|}
+\caption{Refined use cases of Sprint 5}
+\label{tab:sprint5-refined-usecases} \\
+\hline
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Save configuration & QA Engineer & Store the current standalone or connected generation scenario. \\
+\hline
+Browse configurations & QA Engineer & View saved scenarios with their mode, description, and dates. \\
+\hline
+Search and filter & QA Engineer & Find configurations by name or mode. \\
+\hline
+Load configuration & QA Engineer & Restore a compatible saved scenario into the appropriate workflow. \\
+\hline
+Rename configuration & QA Engineer & Update the name or description of a saved scenario. \\
+\hline
+Delete configuration & QA Engineer & Remove an obsolete scenario after confirmation. \\
+\hline
+Check compatibility & System & Disable connected loading when the saved grab mode does not match the current context. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
 
-\paragraph{}The configuration library is implemented as a local persistence layer inside the NestJS backend.
-The \texttt{AppModule} configures TypeORM with the \texttt{better-sqlite3} driver and stores data in a
-local \texttt{config-library.db} file. This choice keeps the feature lightweight: no external database
-server is required, and the library can be created automatically when the backend starts.
+\subsection{Textual Use Case Description}
 
-\paragraph{}The library is grouped inside the \texttt{ConfigLibraryModule}, which contains:
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the configuration library use case}
+\label{tab:library-usecase-description} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Manage reusable standalone and connected generation configurations. \\
+\hline
+Actor & QA Engineer. \\
+\hline
+Preconditions & The application is available and the user has a configuration to save or an existing entry to load. \\
+\hline
+Postconditions & The configuration is saved, loaded, renamed, deleted, filtered, or rejected when incompatible. \\
+\hline
+Nominal scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The QA engineer saves a generation configuration with a name and optional description.
+    \item The backend validates the name, mode, connected grab mode, and JSON payload.
+    \item The QA engineer opens the library and searches or filters the saved scenarios.
+    \item The QA engineer loads, renames, or deletes a configuration.
+    \item The system applies the action and updates the library page.
+\end{enumerate} \\
+\hline
+Exception scenario &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If the name is empty or already used, saving or renaming is rejected.
+    \item If a connected configuration is incompatible, the load action is disabled.
+    \item If the library API is unreachable, the interface displays an error state.
+\end{itemize} \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
 
-\begin{itemize}
-    \item \textbf{\texttt{SavedConfig}:} the TypeORM entity representing one saved configuration.
-    \item \textbf{\texttt{ConfigLibraryService}:} the business service that validates payloads, prevents
-    duplicate names, and performs CRUD operations.
-    \item \textbf{\texttt{ConfigLibraryController}:} the REST controller that exposes the library API to
-    the frontend.
-\end{itemize}
+\section{Sprint Design}
 
-\begin{figure}[htbp]
+\paragraph{}The design of Sprint 5 stores configuration payloads in a local SQLite database through
+TypeORM. The backend owns validation and persistence, while the frontend owns search, filtering,
+loading, and compatibility feedback.
+
+\subsection{Sequence Diagrams}
+
+\paragraph{}Figure~\ref{fig:sequence-library} presents the main sequence of the configuration library. It
+covers saving from a workflow, listing library entries, loading a compatible scenario, updating
+metadata, and deleting obsolete configurations.
+
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-library-architecture.pdf}
-\caption{Architecture of the configuration library}
-\label{fig:ch7-library-architecture}
-\end{figure}
-
-\paragraph{}Figure~\ref{fig:ch7-library-sequence} shows the main sequence interactions of the configuration
-library. Saving a configuration starts from the generator interface, which builds a request and
-sends it to \texttt{POST /config-library}. The backend validates the name, mode, grab mode, and JSON
-payload before persisting the record in SQLite and returning the saved result to the frontend.
-
-\paragraph{}The same diagram also covers browsing, loading, renaming, and deletion. Browsing retrieves the
-saved records through \texttt{GET /config-library}, while search and mode filtering are performed
-locally on the frontend. Loading applies compatibility checks before opening the corresponding
-generation screen, and update or delete actions use the same API layer to keep the displayed
-library synchronized with the SQLite state.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.98\textwidth]{img/sequence-configuration-library.pdf}
+\includegraphics[width=0.95\textwidth]{img/sequence-configuration-library.pdf}
 \caption{Configuration library sequence}
-\label{fig:ch7-library-sequence}
+\label{fig:sequence-library}
 \end{figure}
 
-\subsection{Persistence Model}
+\subsection{Class Diagram of Sprint 5}
 
-\paragraph{}A saved configuration is stored as a named JSON payload. The JSON format was chosen because
-standalone and connected configurations do not have exactly the same shape. Instead of creating many
-relational tables for every section of the form, the system persists the full configuration object
-as text and validates that it is syntactically valid JSON before saving it.
+\paragraph{}Figure~\ref{fig:sprint5-class-diagram} shows the classes used by the library. The controller
+exposes the API, the service enforces validation, and the \texttt{SavedConfig} entity persists each
+scenario.
 
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.26\linewidth}|Q{0.18\linewidth}|P{0.46\linewidth}|}
-\caption{Saved configuration entity}
-\label{tab:saved-config-entity} \\
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+    class/.style={draw, rounded corners, align=left, minimum width=4.5cm, inner sep=5pt},
+    arrow/.style={->, thick}
+]
+\node[class] (frontend) {\textbf{ConfigLibrary Page}\\
+\texttt{search}\\
+\texttt{filter}\\
+\texttt{load}\\
+\texttt{rename/delete}};
+\node[class, right=1.1cm of frontend] (controller) {\textbf{ConfigLibraryController}\\
+\texttt{findAll()}\\
+\texttt{findCompatible()}\\
+\texttt{create()}\\
+\texttt{update()}\\
+\texttt{remove()}};
+\node[class, below=0.9cm of controller] (service) {\textbf{ConfigLibraryService}\\
+\texttt{normalizeCreateDto()}\\
+\texttt{assertNameAvailable()}\\
+\texttt{findCompatible()}};
+\node[class, right=1.1cm of service] (entity) {\textbf{SavedConfig}\\
+\texttt{id}\\
+\texttt{name}\\
+\texttt{mode}\\
+\texttt{grabMode}\\
+\texttt{configJson}};
+\draw[arrow] (frontend) -- (controller);
+\draw[arrow] (controller) -- (service);
+\draw[arrow] (service) -- (entity);
+\end{tikzpicture}
+\caption{Class diagram of Sprint 5}
+\label{fig:sprint5-class-diagram}
+\end{figure}
+
+\section{Realization}
+
+\paragraph{}The backend realization is implemented in \texttt{modules/config-library}. The
+\texttt{SavedConfig} entity stores a UUID, name, optional description, mode, optional connected
+\texttt{grabMode}, serialized configuration JSON, creation date, and update date. The service checks
+that names are not empty, that names are unique, that the mode is either \texttt{standalone} or
+\texttt{connected}, and that connected configurations contain a valid grab mode.
+
+\paragraph{}The frontend realization is implemented through \texttt{ConfigLibrary.tsx},
+\texttt{SaveConfigDialog.tsx}, and helper functions in the configuration-library feature folder.
+Standalone configurations can be restored directly into standalone mode. Connected configurations
+are loaded only when the saved \texttt{grabMode} is compatible with the current grabbed-data context.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.34\linewidth}|P{0.32\linewidth}|}
+\caption{Configuration library API realization}
+\label{tab:library-api-realization} \\
 \hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
+\textbf{Endpoint} & \textbf{Backend method} & \textbf{Purpose} \\
 \hline
 \endfirsthead
 \multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
 \hline
-\textbf{Field} & \textbf{Type} & \textbf{Description} \\
+\textbf{Endpoint} & \textbf{Backend method} & \textbf{Purpose} \\
 \hline
 \endhead
 \hline
@@ -151,237 +251,52 @@ as text and validates that it is syntactically valid JSON before saving it.
 \endfoot
 \hline
 \endlastfoot
-\texttt{id} & UUID & Primary key generated automatically by TypeORM. \\
+\texttt{GET /config-library} & \texttt{findAll()} & List saved configurations ordered by creation date. \\
 \hline
-\texttt{name} & String & User-defined configuration name. Names are checked for uniqueness case-insensitively. \\
+\texttt{GET /config-library/:id} & \texttt{findOne()} & Load one saved configuration by identifier. \\
 \hline
-\texttt{description} & Text & Optional description used to explain the scenario. \\
+\shortstack[l]{\texttt{GET /config-library/}\\\texttt{compatible/:grabMode}} & \texttt{findCompatible()} & List connected configurations compatible with the current grab mode. \\
 \hline
-\texttt{mode} & String & Either \texttt{standalone} or \texttt{connected}. \\
+\texttt{POST /config-library} & \texttt{create()} & Save a new standalone or connected configuration. \\
 \hline
-\texttt{grabMode} & Text & Connected-only mode: \texttt{accounts}, \texttt{securities}, or \texttt{accounts\_and\_securities}. \\
+\texttt{PATCH /config-library/:id} & \texttt{update()} & Rename or update the description of an existing configuration. \\
 \hline
-\texttt{configJson} & Text & Serialized generation configuration. \\
-\hline
-\texttt{createdAt} & Date & Creation timestamp. \\
-\hline
-\texttt{updatedAt} & Date & Last update timestamp. \\
+\texttt{DELETE /config-library/:id} & \texttt{remove()} & Delete an obsolete configuration. \\
 \hline
 \end{longtable}
+\renewcommand{\arraystretch}{1}
 
-\begin{figure}[htbp]
+\paragraph{}The final sprint also adds navigation safeguards. Local storage hooks preserve standalone
+configuration, connected configuration, connection state, and grabbed data between steps. When an
+active connected session exists, leaving the connected workflow triggers a confirmation dialog so
+the user does not accidentally keep stale database context.
+
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-saved-config-model.pdf}
-\caption{Saved configuration persistence model}
-\label{fig:ch7-saved-config-model}
-\end{figure}
-
-\subsection{Compatibility Rules}
-
-\paragraph{}Standalone configurations can be loaded directly into standalone mode because they do not
-depend on external database state. Connected configurations require stronger checks. A connected
-configuration saved for an accounts-only workflow is not necessarily valid in a securities-only
-workflow, and a configuration that generates securities should not be loaded when securities are
-already grabbed from the database. For this reason, connected configurations are saved with their
-\texttt{grabMode}, and the frontend applies compatibility rules before enabling the load action.
-
-\paragraph{}The compatibility rules prevent the user from creating incoherent scenarios such as enabling
-executions without orders, generating accounts when explicit accounts were already grabbed, or
-generating dependent trading records without both accounts and securities being available.
-
-
-% ─────────────────────────────────────────────
-\section{Implementation}
-% ─────────────────────────────────────────────
-
-
-\subsection{Backend Configuration Library API}
-
-\paragraph{}The \texttt{ConfigLibraryController} exposes the API shown in
-Table~\ref{tab:config-library-api}. These endpoints are consumed by the configuration library page
-and by the save/load dialogs inside the generation workflows.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.30\linewidth}|Q{0.16\linewidth}|P{0.44\linewidth}|}
-\caption{Configuration library backend endpoints}
-\label{tab:config-library-api} \\
-\hline
-\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-\texttt{/config-library} & GET & Return all saved configurations ordered by creation date. \\
-\hline
-\shortstack[l]{\texttt{/config-library/}\\\texttt{compatible/:grabMode}} & GET & Return connected configurations saved for a specific grab mode. \\
-\hline
-\texttt{/config-library/:id} & GET & Return one saved configuration by identifier. \\
-\hline
-\texttt{/config-library} & POST & Create a new saved configuration. \\
-\hline
-\texttt{/config-library/:id} & PATCH & Rename or update the description of a saved configuration. \\
-\hline
-\texttt{/config-library/:id} & DELETE & Delete a saved configuration. \\
-\hline
-\end{longtable}
-
-\paragraph{}The \texttt{ConfigLibraryService} validates every create request. A configuration must have a
-non-empty name, a valid mode, valid JSON content, and a valid connected grab mode when the mode is
-\texttt{connected}. Standalone configurations are rejected if they include a connected grab mode. The
-service also rejects duplicate names using a case-insensitive lookup.
-
-\subsection{Frontend Library Page}
-
-\paragraph{}The frontend implements a dedicated \texttt{ConfigLibrary} page available at \texttt{/library} and
-also contextually from the standalone and connected workflows. The page displays saved
-configurations with their mode badge, name, optional description, and creation date. Users can
-search by name or mode, filter by \texttt{All}, \texttt{Standalone}, or \texttt{Connected}, and navigate
-large libraries through pagination.
-
-\paragraph{}The page also supports inline renaming and guarded deletion. Renaming checks for duplicate names
-on the frontend before calling the backend, while deletion uses a confirmation dialog to prevent
-accidental removal. When the backend is unavailable, the page displays an error state with a retry
-action.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-library-page.pdf}
+\IfFileExists{img/ch7-library-page.pdf}{%
+    \includegraphics[width=0.95\textwidth]{img/ch7-library-page.pdf}%
+}{%
+    \fbox{\parbox[c][0.24\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: configuration library page}}%
+}
 \caption{Configuration library page}
 \label{fig:ch7-library-page}
 \end{figure}
 
-\subsection{Standalone Library Integration}
-
-\paragraph{}Standalone configurations are saved from the standalone generation workflow and loaded back into
-the standalone configuration page. The frontend merges saved JSON with current default values before
-loading it. This protects the application from older saved configurations that may not contain newer
-fields added later in development.
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-standalone-save-load.pdf}
-\caption{Saving and loading standalone configurations}
-\label{fig:ch7-standalone-save-load}
-\end{figure}
-
-\subsection{Connected Library Integration}
-
-\paragraph{}Connected configurations are more context-sensitive. The connected workflow can save a
-configuration only after a grab mode has been detected. The saved payload contains the reference
-date and generation sections for accounts, securities, prices, positions, proposed orders, group
-orders, models, and executions, along with the detected \texttt{grabMode}.
-
-\paragraph{}When loading a connected configuration, the frontend first checks whether the current grabbed
-data is compatible with the saved configuration. If the configuration cannot be used in the current
-context, the load button is disabled and an explanation is shown. This avoids silent misconfiguration
-and guides the user back toward a coherent generation scenario.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-connected-compatible-load.pdf}
-\caption{Loading compatible connected configurations}
-\label{fig:ch7-connected-compatible-load}
-\end{figure}
-
-\subsection{Local Frontend Persistence and Routing}
-
-\paragraph{}The application also uses local storage hooks to preserve in-progress form state during a
-browser session. Separate hooks manage standalone configuration, connected configuration, connection
-state, and grabbed data. Grabbed data is keyed by the current server and database name so that
-changing the connection resets stale selections.
-
-\paragraph{}Routing was finalized in \texttt{App.tsx}. The application now contains a mode selection page,
-standalone routes, connected routes, and a shared library route. Connected mode also includes
-disconnect confirmation when the user attempts to leave an active database session, preventing the
-frontend from keeping a misleading connected state after navigation.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch7-final-workflow.pdf}
-\caption{Final workflow of the Longview Test Data Generator}
+\IfFileExists{img/ch7-final-workflow.pdf}{%
+    \includegraphics[width=0.95\textwidth]{img/ch7-final-workflow.pdf}%
+}{%
+    \fbox{\parbox[c][0.24\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: final application workflow}}%
+}
+\caption{Final application workflow}
 \label{fig:ch7-final-workflow}
 \end{figure}
 
-
-% ─────────────────────────────────────────────
-\section{Final Validation}
-% ─────────────────────────────────────────────
-
-
-\paragraph{}The final validation focused on end-to-end behavior across the full application rather than on
-one isolated module. Table~\ref{tab:final-validation} summarizes the main validation scenarios.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
-\caption{Final validation scenarios}
-\label{tab:final-validation} \\
-\hline
-\textbf{Scenario} & \textbf{Verification performed} & \textbf{Expected result} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Scenario} & \textbf{Verification performed} & \textbf{Expected result} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-Standalone generation & Configure standalone data, preview row estimates, generate, and download the SQL script. & A coherent \texttt{load\_test\_data.sql} file is produced. \\
-\hline
-Connected generation & Connect to SQL Server, grab data, configure complements, preview, and generate. & The output script is anchored to grabbed accounts or securities. \\
-\hline
-LLM disabled & Run generation without enabling LLM configuration. & Generation remains operational with algorithmic values. \\
-\hline
-Library save/load & Save a standalone and connected configuration, reload them from the library, rename one, and delete one. & Configurations persist in SQLite and can be managed through the UI. \\
-\hline
-Connected compatibility & Attempt to load a connected configuration in an incompatible grabbed-data context. & The UI disables the load action and explains the incompatibility. \\
-\hline
-Validation before output & Generate datasets that pass through \texttt{ValidatorService}. & Invalid required fields, field lengths, date formats, and numeric values are blocked before SQL assembly. \\
-\hline
-\end{longtable}
-
-\paragraph{}This validation confirmed that the final application covers the project objectives defined at
-the beginning of the report: standalone generation, connected generation, SQL script assembly,
-optional AI enrichment, validation, and reusable configuration management.
-
-
-% ─────────────────────────────────────────────
-\section{Sprint Review}
-% ─────────────────────────────────────────────
-
-
-\paragraph{}At the end of Sprint 5, the application had evolved from a technical generator into a complete
-tool usable by QA engineers. The configuration library improved reproducibility by allowing common
-scenarios to be saved and reused. The connected compatibility logic reduced the risk of invalid
-generation requests, while final routing and state management made the user workflow more stable.
-
-\paragraph{}The main limitation that remains is that connected mode depends on the availability and structure
-of a Longview SQL Server environment. The implementation includes flexible mapping and safe
-fallbacks for optional fields, but deeper validation against all possible client-specific schema
-customizations would require broader testing across several Longview environments.
-
-
-% ─────────────────────────────────────────────
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
-% ─────────────────────────────────────────────
 
-
-\paragraph{}This chapter presented Sprint 5, which finalized the Longview Test Data Generator by adding a
-SQLite-backed configuration library and completing the application workflows. The backend now
-persists named standalone and connected configurations through TypeORM, while the frontend provides
-a searchable and filterable library page with load, rename, and delete actions. Connected
-configuration loading is protected by compatibility rules that account for the currently grabbed
-database data. With this sprint, the system became a complete full-stack tool covering data
-generation, database anchoring, AI enrichment, validation, SQL export, and scenario reuse.
+\paragraph{}Sprint 5 finalized the Longview Test Data Generator with reusable configuration management and
+workflow safeguards. The application now covers standalone generation, connected generation,
+optional enrichment, SQL export, saved scenario reuse, connected compatibility checks, and final
+navigation protection.

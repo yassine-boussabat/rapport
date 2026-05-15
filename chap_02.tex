@@ -124,12 +124,14 @@ fall into three categories:
     values, but it operates at the field level, not the dataset level.
 
     \item \textbf{Redgate SQL Data Generator} \cite{redgate}: This tool is
-    closer to the target use case, it generates SQL \texttt{INSERT}
+    closer to the target use case because it generates SQL \texttt{INSERT}
     statements for relational schemas and can respect foreign key
     relationships. However, it operates on a generic schema inference basis.
     It has no knowledge of financial domain rules, no concept of Longview's
-    pre-BCP buffer mechanism, and no way to produce the specific Unicode
-    casting and type conventions the platform requires.
+    pre-BCP buffer mechanism (the intermediate loading layer where records
+    are staged before Longview stored procedures apply them), and no way to
+    produce the specific Unicode casting and type conventions the platform
+    requires.
 \end{itemize}
 
 
@@ -406,8 +408,8 @@ systems used by the application.
     accessed only in connected mode and only for read operations.
     \item The \textbf{Gemini API} is an external cloud service used for LLM
     enrichment when it is enabled.
-    \item The \textbf{output directory} stores the generated DAT files and the
-    final SQL loading script.
+    \item The \textbf{output directory} stores the final generated SQL loading
+    script.
 \end{itemize}
 
 \begin{figure}[H]

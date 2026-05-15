@@ -7,7 +7,7 @@
 
 \paragraph{}This chapter presents the first sprint of the project, which spanned two weeks. Its purpose was not to
 implement the generator yet, but to build the financial and technical understanding needed before
-implementation. Since the application produces data for Longview, I first had to move from a
+implementation. Since the application produces data for Longview, the analysis first moved from a
 computer science view of the problem to a finance-aware view: what is an account, what is a
 security, why orders and executions are different, and how positions represent what an account
 already owns.
@@ -63,9 +63,9 @@ T1-5 & Produce entity diagrams & Consolidate the discovered entities, attributes
 
 \paragraph{}Longview provides many extract files, and at the beginning of the sprint it was not
 realistic or useful to generate all of them. The first discovery work was therefore to understand
-which extracts were actually important for QA scenarios. To do this, I analyzed the existing
+which extracts were actually important for QA scenarios. To do this, the existing
 extract files, the SQL scripts that were generated manually by the team, and the recurring data
-needs expressed during discussions with QA engineers.
+needs expressed during discussions with QA engineers were analyzed.
 
 \paragraph{}This analysis showed that the generator had to focus on the entities that form the
 core portfolio and trading workflow. These entities were selected because they are frequently
@@ -221,8 +221,9 @@ business sequence used earlier in the chapter.
 \hline
 5 & Price & Security identifiers, including synthetic FX forward identifiers. \\
 \hline
-
-7 & Model allocations  & Model names from \texttt{MODEL\_PROP.DAT}. \\
+6 & Model properties & Generated model names used by model allocations and optional account references. \\
+\hline
+7 & Model allocations  & Model names from the generated model property records. \\
 \hline
 8 & Model of Models & Existing parent and submodel identifiers. \\
 \hline

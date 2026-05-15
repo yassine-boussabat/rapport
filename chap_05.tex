@@ -1,43 +1,34 @@
 \chapter{Sprint 3 -- Connected Mode and SQL Server Integration}
 
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
 
-% ─────────────────────────────────────────────
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
-% ─────────────────────────────────────────────
 
+\paragraph{}Once the standalone mode was operational, Sprint 3 addressed a second QA use case: many
+test scenarios do not start from an empty dataset. In practice, testers may need to reuse accounts
+or securities that already exist in a Longview SQL Server environment, then generate only the
+additional records required to complete a scenario.
 
-\paragraph{}This chapter presents Sprint 3, which spanned four weeks and extended the generator from a standalone synthetic tool
-into a connected assistant capable of working with an existing Longview SQL Server environment.
-The objective of this sprint was to allow QA engineers to connect to a database, browse selected
-reference entities, choose the subset of data to reuse, and generate additional pre-BCP records
-anchored to that database state. This mode preserves the same output objective as standalone mode:
-a coherent SQL loading script, but it builds part of the dataset from existing accounts or securities
-instead of generating everything from scratch.
+\paragraph{}Sprint 3 addresses this need through the connected mode. This mode keeps the same generation objective as standalone mode,
+but adds a controlled database preparation step before generation. The QA engineer can connect to
+SQL Server, select existing Longview records, and use them as anchors for the generated SQL Server
+loading script, while the application keeps database access read-only.
 
-\paragraph{}The sprint therefore focused on three major concerns: secure database access, selective data
-grabbing, and connected generation. The implementation introduced a dedicated
-\texttt{DatabaseModule}, a \texttt{ConnectedController}, a \texttt{DatabaseService} for SQL Server
-connectivity, and a \texttt{ConnectedGeneratorService} that reuses the entity generation services
-implemented in Sprint 2 while adapting them to grabbed database records.
-
-\paragraph{}The chapter follows the same sprint structure as the previous implementation chapter:
-sprint backlog, sprint specification, sprint design, implementation, sprint review and validation,
-then conclusion. To avoid repetition, it focuses only on what connected mode adds to the
-standalone generation engine.
-
-
-% ─────────────────────────────────────────────
 \section{Sprint Backlog}
-% ─────────────────────────────────────────────
 
+\paragraph{}The backlog of Sprint 3 was defined around one objective: allow the QA engineer to reuse
+existing Longview reference data while keeping the generation workflow controlled, previewable, and
+downloadable as a SQL Server loading script. Table~\ref{tab:sprint3-backlog} presents the tasks
+selected for this sprint.
 
-\paragraph{}Sprint 3 targeted the connected-mode user story from the product backlog: connecting to a
-Longview SQL Server instance in read-only mode and generating coherent records from existing
-reference data. The sprint backlog is presented in Table~\ref{tab:sprint3-backlog}.
-
-\renewcommand{\arraystretch}{1.35}
-\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|Q{0.07\linewidth}|P{0.29\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
 \caption{Sprint 3 backlog}
 \label{tab:sprint3-backlog} \\
 \hline
@@ -54,31 +45,88 @@ reference data. The sprint backlog is presented in Table~\ref{tab:sprint3-backlo
 \endfoot
 \hline
 \endlastfoot
-T3-1 & Implement SQL Server connection service & Create a service able to test, open, reuse, and close SQL Server connections using either Windows authentication or SQL authentication. & 2 days \\
+T3-1 & Implement SQL Server connection & Support connection testing, session opening, disconnection, Windows authentication, SQL authentication, and timeout handling. & 3 days \\
 \hline
-T3-2 & Implement connected backend API & Add endpoints for testing the connection, connecting, disconnecting, fetching allowed tables, grabbing account groups, grabbing accounts, previewing generation, and generating the final SQL script. & 2 days \\
+T3-2 & Implement data grabber & Retrieve selectable account groups, accounts, and security records from controlled database tables. & 3 days \\
 \hline
-T3-3 & Implement data grabbing logic & Allow users to select existing account groups, accounts, and securities, then transform database rows into DTO-compatible records for the generation pipeline. & 2 days \\
+T3-3 & Detect connected generation cases & Identify accounts-only, securities-only, and accounts-and-securities contexts from grabbed data. & 2 days \\
 \hline
-T3-4 & Implement connected generation service & Build a connected orchestrator that combines grabbed records with newly generated dependent records such as prices, positions, orders, models, and executions. & 2 days \\
+T3-4 & Adapt configuration rules & Enable only the generation sections that make sense for the grabbed context and block incoherent selections. & 2 days \\
 \hline
-T3-5 & Implement connected frontend workflow & Build the connection, data grabber, configuration, preview, and generation steps under the \texttt{/connected} route. & 2 days \\
+T3-5 & Implement connected preview & Run backend preparation rules without final download and return estimated rows, summary counts, samples, and warnings. & 3 days \\
 \hline
-T3-6 & Add safeguards and validation & Restrict raw table fetching to approved tables, require a live connection before connected actions, and validate generated output before writing files. & 1 day \\
+T3-6 & Implement connected SQL generation & Combine grabbed records with generated complements, validate the result, assemble the SQL Server loading script, and return it for download. & 4 days \\
+\hline
+T3-7 & Secure database access & Restrict read access to approved tables and require an active connection before grabbing, preview, or generation. & 2 days \\
 \hline
 \end{longtable}
+\normalsize
+\renewcommand{\arraystretch}{1}
 
-
-% ─────────────────────────────────────────────
 \section{Sprint Specification}
-\paragraph{}Connected mode extends the standalone generation use case by adding a database preparation
-phase. Before generation, the QA engineer connects to SQL Server and selects existing accounts or
-securities that will serve as anchors for the generated scenario.
+
+\paragraph{}The connected mode is organized around five workflow steps: connection, data grabbing,
+configuration, preview, and generation. The last three steps reuse the standalone pipeline; the new
+work of this sprint is to prepare a database-backed context before that pipeline is launched.
+
+\subsection{Use Case Refinement}
+
+\paragraph{}Figure~\ref{fig:usecase-connected} presents the refined connected use case diagram, while
+Table~\ref{tab:sprint3-refined-usecases} summarizes the goal of each refined action.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/usecase-connected-mode.jpg}
+\caption{Refined use case diagram of connected mode}
+\label{fig:usecase-connected}
+\end{figure}
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.27\linewidth}|P{0.23\linewidth}|P{0.40\linewidth}|}
+\caption{Refined use cases of Sprint 3}
+\label{tab:sprint3-refined-usecases} \\
+\hline
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Configure database connection & QA Engineer & Enter SQL Server, database, authentication mode, driver, and timeout settings. \\
+\hline
+Test database connection & QA Engineer & Verify that the database can be reached before opening the connected workflow. \\
+\hline
+Open connected session & QA Engineer & Establish the active SQL Server session used by the grabber and backend preview. \\
+\hline
+Grab existing Longview data & QA Engineer & Select existing account groups, accounts, or securities to reuse in generation. \\
+\hline
+Configure connected context & QA Engineer & Define only what must be generated in addition to the grabbed records. \\
+\hline
+View connected preview & QA Engineer & Review backend estimates, sample rows, and warnings based on the grabbed context. \\
+\hline
+Generate and download SQL script & QA Engineer & Reuse the standalone SQL generation pipeline with grabbed records as input context. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\subsection{Textual Use Case Description}
+
+\subsubsection{Configure and Open Database Connection}
+
+\paragraph{}Table~\ref{tab:connected-connection-usecase} details the connection use case that prepares
+the SQL Server session used by the following steps.
 
 \renewcommand{\arraystretch}{1.15}
 \begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
-\caption{Textual description of the connected generation use case}
-\label{tab:connected-usecase-description} \\
+\caption{Textual description of the database connection use case}
+\label{tab:connected-connection-usecase} \\
 \hline
 \textbf{Element} & \textbf{Description} \\
 \hline
@@ -93,365 +141,252 @@ securities that will serve as anchors for the generated scenario.
 \endfoot
 \hline
 \endlastfoot
-Use case & Generate a SQL loading script anchored to existing Longview data. \\
+Use case & Configure and open database connection. \\
 \hline
 Actor & QA Engineer. \\
 \hline
-Preconditions & A SQL Server instance is reachable and the QA engineer has valid read-only connection information. \\
+Preconditions & The QA engineer selected connected mode. \\
 \hline
-Postconditions & Existing records are reused as anchors and a coherent \texttt{load\_test\_data.sql} file is generated. \\
+Postconditions & An active SQL Server session is available for data grabbing. \\
 \hline
-Nominal scenario &
+Main scenario &
 \begin{enumerate}[leftmargin=*,nosep]
-    \item The QA engineer enters SQL Server connection information.
-    \item The system tests and opens the connection.
-    \item The QA engineer grabs existing accounts, account groups, or securities.
-    \item The system infers the connected generation case from the selected data.
-    \item The QA engineer configures only the missing or dependent records.
-    \item The system previews the result, then generates the final SQL script.
+    \item The QA engineer enters the server name, database name, authentication mode, driver, and timeout.
+    \item The QA engineer launches a connection test.
+    \item The backend creates a temporary SQL Server connection and returns success or failure logs.
+    \item The QA engineer opens the connection.
+    \item The backend stores the active connection pool for the connected session.
 \end{enumerate} \\
 \hline
 Exception scenario &
 \begin{itemize}[leftmargin=*,nosep]
-    \item If connection fails, the workflow stops before data grabbing.
-    \item If no compatible data is selected, preview and generation are rejected.
-    \item If a selected table is not allowed, the backend refuses the request.
+    \item If the connection test fails, the error log is displayed.
+    \item If connection opening fails, the workflow remains on the connection step.
+    \item If the user disconnects or changes the target database, grabbed data is reset.
 \end{itemize} \\
 \hline
 \end{longtable}
+\renewcommand{\arraystretch}{1}
 
+\subsubsection{Grab Existing Longview Data}
+
+\paragraph{}Table~\ref{tab:connected-grabber-usecase} describes how the QA engineer selects the
+existing records that anchor connected generation.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the data grabber use case}
+\label{tab:connected-grabber-usecase} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Grab existing Longview data. \\
+\hline
+Actor & QA Engineer. \\
+\hline
+Preconditions & The SQL Server session is active. \\
+\hline
+Postconditions & The selected accounts, account groups, or securities are stored in the connected workflow state. \\
+\hline
+Main scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The QA engineer opens the data grabber step.
+    \item The frontend requests available account groups, accounts, or security identifiers.
+    \item The backend reads only approved database tables.
+    \item The QA engineer filters and selects the desired records.
+    \item The frontend stores the selected records for the connected configuration step.
+\end{enumerate} \\
+\hline
+Backend protection & The backend uses an allowed-table list. If the frontend requests a table outside this list, the request is rejected, which keeps connected mode limited to the data needed by the generator. \\
+\hline
+Exception scenario &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If the database session is inactive, the backend refuses the request.
+    \item If a table is not approved for connected mode, the backend rejects the fetch.
+    \item If no records are selected, configuration and preview remain blocked.
+\end{itemize} \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\subsubsection{Configure Connected Generation}
+
+\paragraph{}Table~\ref{tab:connected-configuration-usecase} describes how the grabbed context changes
+the available generation options.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the connected configuration use case}
+\label{tab:connected-configuration-usecase} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Configure connected context. \\
+\hline
+Actor & QA Engineer. \\
+\hline
+Preconditions & At least one account source or one security source was grabbed. \\
+\hline
+Postconditions & A connected context is ready to be passed to the standalone generation pipeline. \\
+\hline
+Main scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The system analyzes the records selected during data grabbing.
+    \item The QA engineer chooses the reference date.
+    \item The screen hides sections already satisfied by grabbed records.
+    \item The screen exposes only the complementary sections still needed by the connected case.
+    \item The frontend validates the connected context and enables preview only when it can be passed to the generation pipeline.
+\end{enumerate} \\
+\hline
+Connected configuration rules &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If existing accounts are grabbed, account generation is hidden because the account context already exists.
+    \item If only account groups are grabbed, account generation is required to create concrete accounts under those groups.
+    \item If existing securities are grabbed, security generation is hidden because the instrument context already exists.
+    \item If only accounts are grabbed, security generation remains available as the missing complement.
+    \item If only securities are grabbed, account generation remains available as the missing complement.
+    \item If both accounts and securities are grabbed, base-data generation is skipped and only dependent data is configured.
+\end{itemize} \\
+\hline
+Configuration guards &
+\begin{itemize}[leftmargin=*,nosep]
+    \item No grabbed records means connected configuration is blocked.
+    \item The same generation limits and row-budget rules defined in Chapter 4 remain active.
+    \item Invalid complementary values block preview before the backend is called.
+\end{itemize} \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\paragraph{}The preview and final generation steps keep the behavior already described in Chapter 4.
+In connected mode, the additional rule is that the backend must still have an active SQL Server
+session and must prepare the generation context from the grabbed records before reusing the common
+pipeline.
 
 \section{Sprint Design}
-% ─────────────────────────────────────────────
 
+\paragraph{}The design of Sprint 3 adds a database access layer before the standalone generation engine.
+The frontend owns the five-step connected workflow and the connected-context guards. The backend
+owns SQL Server access, controlled data retrieval, connected artifact preparation, and delegation to
+the existing validation and SQL assembly pipeline.
 
-\subsection{Connected Mode Use Case Diagram}
+\subsection{Sequence Diagrams}
 
-\paragraph{}Figure~\ref{fig:usecase-connected} presents the connected mode use cases implemented in this
-sprint. This mode adds database-specific actions such as testing the connection, connecting with
-Windows authentication or SQL Server authentication, grabbing account and security reference data,
-and disconnecting from SQL Server. The SQL Server actor is involved only through read-only
-operations.
+\paragraph{}Figure~\ref{fig:sequence-connected} presents the connected workflow sequence. It begins with
+connection testing and controlled data grabbing, then joins the same preview and generation route
+used by the standalone pipeline.
 
-\begin{figure}[H]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=1\textwidth]{img/usecase-connected-mode.jpg}
-\caption{Connected mode use case diagram}
-\label{fig:usecase-connected}
+\includegraphics[width=0.95\textwidth]{img/sequence-connected-mode.pdf}
+\caption{Connected mode SQL generation sequence}
+\label{fig:sequence-connected}
 \end{figure}
 
-\subsection{Connected Mode Architecture}
+\subsection{Backend Workflow Diagram}
 
-\paragraph{}Connected mode is built as an extension of the generation engine rather than as a separate
-generator. The backend introduces the \texttt{DatabaseModule}, which groups the
-\texttt{ConnectedController}, the \texttt{DatabaseService}, and the
-\texttt{ConnectedGeneratorService}. The \texttt{DatabaseService} owns the SQL Server connection pool,
-while the connected generator receives grabbed data, prepares the connected dataset, validates it,
-and delegates SQL script assembly to the same \texttt{SqlScriptGeneratorService} used by standalone
-mode.
+\paragraph{}Figure~\ref{fig:ch5-backend-connected-workflow} presents only the connected addition placed
+before the generation engine. The diagram intentionally stops at the handoff to the existing
+pipeline because validation and SQL assembly were already detailed in Chapter 4.
 
-\paragraph{}This architecture avoids duplication: connected mode reuses the account, account group,
-hierarchy, security, price, model, position, order, execution, validator, and SQL script services
-implemented during Sprint 2. The connected-specific layer is responsible only for selecting the
-source data, mapping database rows to generator DTOs, and deciding which dependent records must be
-generated according to the selected grab mode.
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=1\textwidth]{img/ch5-connected-architecture.pdf}
-\caption{Architecture of the connected mode}
-\label{fig:ch5-connected-architecture}
+\includegraphics[width=0.95\textwidth]{img/ch5-backend-connected-workflow.pdf}
+\caption{Backend connected SQL generation workflow}
+\label{fig:ch5-backend-connected-workflow}
 \end{figure}
 
-\subsection{Connected Workflow}
+\section{Realization}
 
-\paragraph{}The frontend implements connected mode as a five-step workflow:
-\texttt{/connected/connection}, \texttt{/connected/data-grabber},
-\texttt{/connected/configuration}, \texttt{/connected/preview}, and
-\texttt{/connected/generation}. This sequence reflects the additional constraints introduced by
-database usage: the user must connect first, then grab reference data, then configure only the
-records that still need to be generated.
+\paragraph{}Connected mode was implemented as an extension of the standalone generation engine.
+The same core generation, validation, loading order, and SQL script assembly are reused after the
+connected context is prepared. The difference is that the generation is guided by the grabbed data:
+existing accounts, account groups, or securities become the base of the output, and only the missing
+complementary records are generated around them.
 
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.18\linewidth}|P{0.28\linewidth}|P{0.44\linewidth}|}
-\caption{Connected mode workflow}
-\label{tab:connected-workflow} \\
-\hline
-\textbf{Step} & \textbf{Route} & \textbf{Purpose} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Step} & \textbf{Route} & \textbf{Purpose} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-Connection & \texttt{/connected/connection} & Enter SQL Server details, choose authentication mode, test the connection, and open the active backend connection. \\
-\hline
-Data grabber & \texttt{/connected/data-grabber} & Browse available account groups, accounts, and security buffer tables, then select the records that will anchor generation. \\
-\hline
-Configuration & \texttt{/connected/configuration} & Configure generated complements such as accounts, securities, prices, models, positions, orders, and executions. \\
-\hline
-Preview & \texttt{/connected/preview} & Run the backend generation rules without writing files and display estimated rows, summaries, warnings, and samples. \\
-\hline
-Generation & \texttt{/connected/generation} & Generate the connected dataset, assemble the SQL script, and download \texttt{load\_test\_data.sql}. \\
-\hline
-\end{longtable}
+\subsection{Backend Reuse and Additions}
 
-\begin{figure}[htbp]
+\paragraph{}The added backend work is limited to the connected layer. \texttt{DatabaseService} manages
+SQL Server connection testing, session state, and controlled data reading. \texttt{ConnectedGeneratorService}
+then receives the grabbed accounts, account groups, or securities, decides which complementary data
+must still be generated according to that selection, and sends the prepared context to the shared
+generation pipeline. The
+connected database is used only as a read source; the final result remains a downloadable SQL script.
+
+\subsection{User Workflow}
+
+\paragraph{}The connected-specific interface work is concentrated in three screens: connection, data
+grabber, and configuration. Preview and generation reuse the behavior explained in Chapter 4 after
+the connected context has been prepared.
+
+\paragraph{}Figure~\ref{fig:ch5-connected-connection-page} shows the connection screen where the QA
+engineer enters and tests SQL Server settings.
+
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=1\textwidth]{img/sequence-connected-mode.pdf}
-\caption{Connected mode workflow sequence}
-\label{fig:ch5-connected-sequence}
+\IfFileExists{img/ch5-connected-connection-page.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch5-connected-connection-page.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: connected mode connection page}}%
+}
+\caption{Connected mode connection page}
+\label{fig:ch5-connected-connection-page}
 \end{figure}
 
-\paragraph{}Figure~\ref{fig:ch5-connected-sequence} details the additional exchanges introduced by
-connected mode. Compared with standalone generation, the workflow begins with a SQL Server
-connection request, continues with read-only data grabbing, and only then reaches preview and SQL
-generation. The connected API delegates database access to \texttt{DatabaseService}, while
-\texttt{ConnectedGeneratorService} prepares the selected account and security context before reusing
-the core generation services.
+\paragraph{}Figure~\ref{fig:ch5-connected-grabber-page} shows the data grabber screen used to fetch,
+filter, and select existing Longview records.
 
-\paragraph{}The alternate branches in the sequence diagram show how the application handles connection
-errors, failed data grabs, preview errors, and generation failures. These paths are important
-because connected mode depends on external database availability; every backend failure is returned
-as a structured frontend message instead of leaving the user in an ambiguous state.
-
-\subsection{Grab Modes}
-
-\paragraph{}Connected generation supports three cases, referred to in the implementation as
-\texttt{grabMode}. The grab mode is inferred automatically on the frontend from the selected data
-and is sent to the backend as part of the connected generation request.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.24\linewidth}|P{0.32\linewidth}|P{0.34\linewidth}|}
-\caption{Connected generation grab modes}
-\label{tab:grab-modes} \\
-\hline
-\textbf{Grab mode} & \textbf{Grabbed data} & \textbf{Generated complement} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Grab mode} & \textbf{Grabbed data} & \textbf{Generated complement} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-\texttt{accounts} & Existing accounts or account groups & Securities can be generated, then prices and dependent portfolio/trading records can be generated from the grabbed account universe. \\
-\hline
-\texttt{securities} & Existing securities & Accounts can be generated, then prices and dependent records can be generated from the grabbed security universe. \\
-\hline
-\shortstack[l]{\texttt{accounts\_and\_}\\\texttt{securities}} & Existing accounts and securities & Only dependent records are generated, such as prices, models, positions, orders, and executions. \\
-\hline
-\end{longtable}
-
-
-% ─────────────────────────────────────────────
-\section{Implementation}
-\paragraph{}This section presents only the implementation elements added by connected mode. The core
-generation services, validation rules, and SQL assembly mechanism were already introduced in
-Sprint 2; here, the focus is on SQL Server access, controlled data grabbing, connected orchestration,
-and connected preview/generation endpoints.
-% ─────────────────────────────────────────────
-
-
-\subsection{SQL Server Connection Service}
-
-\paragraph{}The \texttt{DatabaseService} supports two authentication modes. For Windows authentication, it
-uses the \texttt{mssql/msnodesqlv8} driver and builds an ODBC connection string containing the
-server name, database name, selected ODBC driver, and trusted connection option. For SQL
-authentication, it uses the standard \texttt{mssql} driver with an explicit username and password.
-Both modes apply a configurable connection timeout and set \texttt{TrustServerCertificate} to allow
-connections to internal development databases.
-
-\paragraph{}The service exposes three core operations. The \texttt{testConnection()} method opens a temporary
-connection, reports success or failure, and closes the pool immediately. The \texttt{connect()} method
-opens and stores the active pool used by later grabber and generation requests. The
-\texttt{disconnect()} method closes the active pool and clears the connection state. This separation
-allows the user to test credentials before committing to a connected session.
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=0.95\textwidth]{img/ch5-connection-step.pdf}
-\caption{Connected mode -- SQL Server connection step}
-\label{fig:ch5-connection-step}
+\IfFileExists{img/ch5-connected-grabber-page.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch5-connected-grabber-page.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: connected mode data grabber page}}%
+}
+\caption{Connected mode data grabber page}
+\label{fig:ch5-connected-grabber-page}
 \end{figure}
 
-\subsection{Connected Backend API}
+\paragraph{}Figure~\ref{fig:ch5-connected-configuration-page} shows the configuration screen adapted to
+the grabbed connected context.
 
-\paragraph{}The \texttt{ConnectedController} exposes the connected API under the \texttt{/connected} prefix.
-Table~\ref{tab:connected-api} summarizes the main endpoints implemented during this sprint.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.28\linewidth}|Q{0.18\linewidth}|P{0.44\linewidth}|}
-\caption{Connected mode backend endpoints}
-\label{tab:connected-api} \\
-\hline
-\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Endpoint} & \textbf{Method} & \textbf{Role} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-\texttt{/connected/test} & POST & Test SQL Server credentials and return connection logs. \\
-\hline
-\texttt{/connected/connect} & POST & Open the active SQL Server connection pool. \\
-\hline
-\texttt{/connected/disconnect} & POST & Close the active SQL Server connection. \\
-\hline
-\shortstack[l]{\texttt{/connected/grab/}\\\texttt{account-groups}} & GET & Return available account group names from the account hierarchy. \\
-\hline
-\shortstack[l]{\texttt{/connected/grab/}\\\texttt{accounts}} & POST & Return accounts linked to selected account groups. \\
-\hline
-\texttt{/connected/fetch/:table} & GET & Fetch rows from an approved table for the security grabber. \\
-\hline
-\texttt{/connected/preview} & POST & Prepare connected artifacts and return row estimates and sample rows without writing files. \\
-\hline
-\texttt{/connected/generate} & POST & Generate the connected dataset and download the final SQL script. \\
-\hline
-\end{longtable}
-
-\subsection{Data Grabber}
-
-\paragraph{}The data grabber provides a controlled read-only browsing layer on top of the SQL Server
-connection. Account groups are retrieved from \texttt{account\_hierarchy\_map} by joining parent and
-child accounts, while selected account groups can be expanded into their child accounts. Securities
-are retrieved from approved pre-BCP tables such as \texttt{pre\_bcp\_eqty\_invest\_buffer},
-\texttt{pre\_bcp\_fixinc\_mnymkt\_buffer}, \texttt{pre\_bcp\_futures\_buffer},
-\texttt{pre\_bcp\_option\_buffer}, \texttt{pre\_bcp\_fx\_forward\_buffer}, and
-\texttt{pre\_bcp\_generic\_buffer}.
-
-\paragraph{}The backend deliberately restricts raw fetching through an \texttt{ALLOWED\_TABLES} list. This
-prevents arbitrary table access through the \texttt{/connected/fetch/:table} endpoint and keeps the
-feature aligned with its purpose: browsing only the Longview reference and pre-BCP tables needed
-for test data generation.
-
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
 \centering
-%\includegraphics[width=0.95\textwidth]{img/ch5-data-grabber-step.pdf}
-\caption{Connected mode -- Data grabber step}
-\label{fig:ch5-data-grabber-step}
+\IfFileExists{img/ch5-connected-configuration-page.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch5-connected-configuration-page.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: connected mode configuration page}}%
+}
+\caption{Connected mode configuration page}
+\label{fig:ch5-connected-configuration-page}
 \end{figure}
 
-\subsection{Connected Generator Service}
-
-\paragraph{}The \texttt{ConnectedGeneratorService} is the orchestrator for connected mode. It first validates
-the request, requiring a reference date and ensuring that the grabbed data matches the selected
-\texttt{grabMode}. It then prepares a set of connected artifacts containing accounts, account groups,
-hierarchies, models, securities, prices, positions, proposed orders, group orders, executions, and
-warnings.
-
-\paragraph{}When existing account rows are used, the service maps them into \texttt{AccountDto} records. It
-normalises dates into the expected \texttt{YYYYMMDD} format, extracts account identifiers and short
-names from several possible column names, and fills missing optional values with safe defaults such
-as \texttt{CONNECTED\_DB} as source system. When securities are grabbed, each selected security subtype
-is filtered by \texttt{client\_security\_id}; fixed income child schedules are also fetched when fixed
-income securities are selected.
-
-\paragraph{}After the grabbed data is prepared, the service generates only the necessary complements. For
-example, if accounts are grabbed but securities are not, the security service generates the selected
-security quantities. If securities are grabbed but accounts are not, the account service generates
-the requested account set. If both are grabbed, the service skips master-data generation and only
-generates dependent records such as prices, positions, models, orders, and executions.
-
-\subsection{Preview and Generation}
-
-\paragraph{}The preview endpoint runs the same preparation logic as generation but does not write files.
-Instead, it returns a structured response containing estimated rows, counts per entity type, sample
-rows for manual inspection, and warnings collected during safe queries. This gives the user a final
-checkpoint before downloading the SQL script.
-
-\paragraph{}The generation endpoint calls the same connected preparation logic, validates the connected
-dataset through the \texttt{ValidatorService}, then delegates to the
-\texttt{SqlScriptGeneratorService} to build \texttt{load\_test\_data.sql}. The generated script is
-returned as a file download from the browser.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch5-connected-preview.pdf}
-\caption{Connected mode -- Preview step}
-\label{fig:ch5-connected-preview}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch5-connected-result.pdf}
-\caption{Connected mode -- Generation result}
-\label{fig:ch5-connected-result}
-\end{figure}
-
-
-% ─────────────────────────────────────────────
-\section{Sprint Review and Validation}
-% ─────────────────────────────────────────────
-
-
-\paragraph{}Sprint 3 produced the complete connected workflow from connection to SQL script download.
-The main validation activities are summarized in Table~\ref{tab:sprint3-validation}.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
-\caption{Sprint 3 validation summary}
-\label{tab:sprint3-validation} \\
-\hline
-\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
-\hline
-\endfirsthead
-\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
-\hline
-\endhead
-\hline
-\multicolumn{3}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-Connection handling & Tested the separate connection test, connect, and disconnect API paths. & The backend can open a temporary pool for testing and a persistent pool for connected sessions. \\
-\hline
-Read-only data access & Checked that the controller only exposes \texttt{SELECT} queries and restricts raw table fetching to \texttt{ALLOWED\_TABLES}. & Connected mode does not expose write, update, or delete operations against SQL Server. \\
-\hline
-Grab mode coherence & Submitted requests for accounts-only, securities-only, and accounts-and-securities cases. & The backend requires the corresponding grabbed data and rejects incoherent requests. \\
-\hline
-Preview behavior & Used \texttt{/connected/preview} before generation. & The response returns estimated rows, summary counts, sample rows, and warnings without writing files. \\
-\hline
-Output generation & Generated the final SQL script from connected artifacts. & The connected dataset was validated and assembled into \texttt{load\_test\_data.sql}. \\
-\hline
-\end{longtable}
-
-\paragraph{}The major technical difficulty of this sprint was reconciling existing database records with the
-strict DTO contracts from Sprint 1. Database column names can differ depending on whether the data
-comes from live tables or pre-BCP buffer tables, so the connected generator includes mapping helpers
-that accept several candidate column names and fall back to safe default values when optional fields
-are missing.
-
-
-% ─────────────────────────────────────────────
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
-% ─────────────────────────────────────────────
 
-
-\paragraph{}This chapter presented Sprint 3, which delivered the connected mode of the Longview Test Data
-Generator. The sprint introduced SQL Server connectivity, controlled data grabbing, connected
-preview, and connected SQL generation. The implementation reused the core services from Sprint 2
-while adding a new orchestration layer able to combine existing Longview records with newly
-generated dependent data. The connected mode therefore gives QA engineers a more realistic testing
-workflow: they can anchor generated scenarios to an existing database state while still receiving a
-ready-to-load SQL script. The following chapter presents Sprint 4, which adds optional Large
-Language Model enrichment to improve the realism of generated financial labels and descriptions.
+\paragraph{}Sprint 3 delivered the connected-mode extension of the standalone generator. The application
+can now connect to SQL Server, grab existing Longview records, prepare the connected input context,
+and reuse the existing generation pipeline to download an ordered SQL Server loading script. This
+mode adds realism without duplicating the generation logic already implemented in standalone mode.

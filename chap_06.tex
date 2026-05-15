@@ -1,37 +1,30 @@
 \chapter{Sprint 4 -- LLM Integration and Realistic Data Enrichment}
 
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{0pt}
 
-% ─────────────────────────────────────────────
 \section*{Introduction}
 \addcontentsline{toc}{section}{Introduction}
-% ─────────────────────────────────────────────
 
+\paragraph{}Sprint 4 adds an optional Large Language Model enrichment layer to the generator. The previous
+sprints produced coherent financial data, but several descriptive fields remained deterministic.
+This sprint improves names, symbols, descriptions, account labels, account group labels, and model
+labels while keeping identifiers, quantities, dates, and relationships under deterministic control.
 
-\paragraph{}This chapter presents Sprint 4, which spanned four weeks and was dedicated to the integration of a Large Language Model
-enrichment layer into the test data generator. The generator implemented in the previous sprints
-already produced structurally valid records, but many descriptive fields were still algorithmic:
-security names, account names, model labels, issuer descriptions, and symbols followed deterministic
-patterns. Sprint 4 aimed to improve the realism of these values while preserving the most important
-constraint of the project: generation must remain reliable even when the external AI service is
-unavailable.
+\paragraph{}The enrichment feature is not a separate generation mode. It is inserted into standalone and
+connected generation after base records are created and before final validation and SQL assembly.
 
-\paragraph{}The implemented solution integrates the Google Gemini API through a dedicated
-\texttt{LlmModule}. The LLM layer is optional, controlled through environment variables, and designed
-as an enrichment step on top of already valid DTO objects. This means that the algorithmic generator
-remains the source of truth for identifiers, relationships, quantities, dates, and business rules,
-while the LLM improves only selected textual and descriptive fields.
-
-
-% ─────────────────────────────────────────────
 \section{Sprint Backlog}
-% ─────────────────────────────────────────────
 
+\paragraph{}The backlog of Sprint 4 focuses on controlled enrichment. The main challenge is to improve
+realism without allowing an external AI response to break the generated dataset.
 
-\paragraph{}Sprint 4 targeted the LLM enrichment user story from the product backlog. The sprint backlog is
-presented in Table~\ref{tab:sprint4-backlog}.
-
-\renewcommand{\arraystretch}{1.35}
-\begin{longtable}{|Q{0.06\linewidth}|P{0.30\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
+\small
+\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{|Q{0.07\linewidth}|P{0.29\linewidth}|P{0.42\linewidth}|Q{0.12\linewidth}|}
 \caption{Sprint 4 backlog}
 \label{tab:sprint4-backlog} \\
 \hline
@@ -48,232 +41,45 @@ presented in Table~\ref{tab:sprint4-backlog}.
 \endfoot
 \hline
 \endlastfoot
-T4-1 & Implement LLM client service & Build a Gemini client wrapper that supports multiple API keys, model fallback, queueing, concurrency limits, and rate-limit cooldowns. & 2 days \\
+T4-1 & Add LLM module & Integrate the LLM client, service layer, prompt files, and enrichers into the NestJS backend. & 2 days \\
 \hline
-T4-2 & Design structured prompts & Create prompts for account groups, accounts, models, and each security subtype, requiring JSON responses constrained by Longview field rules. & 2 days \\
+T4-2 & Define enrichable fields & Identify which fields may be modified for securities, accounts, account groups, and models. & 1 day \\
 \hline
-T4-3 & Implement enrichment services & Add enrichers that call the LLM, parse responses, validate expected fields, truncate values to DTO limits, and preserve algorithmic fallback values when needed. & 2 days \\
+T4-3 & Write controlled prompts & Build prompts that request structured values and avoid changing relationships or numeric data. & 2 days \\
 \hline
-T4-4 & Integrate enrichment in generation flow & Insert the LLM enrichment layer into \texttt{GeneratorService} without changing the core generation contract. & 1 day \\
+T4-4 & Implement enrichment services & Apply enrichers for securities, accounts, account groups, and models after base generation. & 3 days \\
 \hline
-T4-5 & Add resilience and fallback behavior & Ensure the generator remains fully operational when the LLM is disabled, rate-limited, returns invalid JSON, or fails entirely. & 1 day \\
+T4-5 & Add fallback behavior & Preserve deterministic values when enrichment is disabled, unavailable, malformed, or incomplete. & 2 days \\
 \hline
-T4-6 & Validate generated output after enrichment & Run the existing validator after enrichment to ensure LLM-provided values still respect required formats and field lengths. & 1 day \\
-\hline
-\end{longtable}
-
-
-% ─────────────────────────────────────────────
-\section{Sprint Design}
-% ─────────────────────────────────────────────
-
-
-\subsection{LLM Enrichment Architecture}
-
-\paragraph{}The LLM integration follows a defensive enrichment architecture. The base generation services
-first create complete and valid DTO arrays. These arrays are then passed to \texttt{LlmService}, which
-decides whether enrichment is enabled and delegates the work to specialised enrichers. If the LLM
-layer is disabled or fails, the original DTO arrays are returned unchanged.
-
-\paragraph{}The main components of the integration are:
-
-\begin{itemize}
-    \item \textbf{\texttt{LlmClientService}:} low-level Gemini client wrapper responsible for API keys,
-    model selection, queueing, rate-limit handling, and request execution.
-    \item \textbf{\texttt{LlmService}:} facade used by the generator. It exposes methods such as
-    \texttt{enrichSecurities()}, \texttt{enrichAccounts()}, \texttt{enrichModels()}, and
-    \texttt{enrichAccountGroups()}.
-    \item \textbf{Prompt builders:} functions that create structured prompts for each entity type and
-    require JSON output.
-    \item \textbf{Enrichers:} services that parse LLM output, apply field constraints, and merge safe
-    enriched values back into the generated DTOs.
-\end{itemize}
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch6-llm-architecture.pdf}
-\caption{Architecture of the LLM enrichment layer}
-\label{fig:ch6-llm-architecture}
-\end{figure}
-
-\paragraph{}Figure~\ref{fig:ch6-llm-sequence} presents the runtime sequence of the enrichment step. The
-core generation services first produce a complete algorithmic dataset, then request enrichment from
-\texttt{LlmService}. If LLM integration is disabled, the service immediately returns the original
-dataset. If it is enabled, the corresponding entity enricher builds a structured prompt, calls the
-LLM client, and waits for a JSON response from the external API.
-
-\paragraph{}The sequence makes the fallback behavior explicit. A fully valid response is merged into all
-items, a partial response enriches only the valid records while preserving the original values for
-the rest, and an invalid or failed request is discarded. In all cases, the generation process
-continues with a valid dataset, which protects SQL generation from external AI failures.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.98\textwidth]{img/sequence-llm-enrichment.pdf}
-\caption{LLM data enrichment sequence}
-\label{fig:ch6-llm-sequence}
-\end{figure}
-
-\subsection{Configuration Strategy}
-
-\paragraph{}The LLM layer is controlled entirely by environment variables. This allows the same application
-to run in environments with or without AI access. Table~\ref{tab:llm-config} summarizes the main
-configuration values used by the implementation.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.32\linewidth}|P{0.58\linewidth}|}
-\caption{LLM configuration variables}
-\label{tab:llm-config} \\
-\hline
-\textbf{Variable} & \textbf{Purpose} \\
-\hline
-\endfirsthead
-\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
-\hline
-\textbf{Variable} & \textbf{Purpose} \\
-\hline
-\endhead
-\hline
-\multicolumn{2}{r}{\textit{continued on next page}} \\
-\endfoot
-\hline
-\endlastfoot
-\texttt{LLM\_ENABLED} & Enables or disables the LLM enrichment layer. When it is not set to \texttt{true}, the generator uses only algorithmic values. \\
-\hline
-\texttt{GEMINI\_API\_KEY}, \texttt{GEMINI\_API\_KEY\_2}, \texttt{GEMINI\_API\_KEY\_3} & Provide one or more Gemini API keys used by the client service. \\
-\hline
-\texttt{LLM\_MAX\_CONCURRENCY} & Controls how many LLM requests can be processed in parallel. \\
-\hline
-\texttt{LLM\_RATE\_LIMIT\_COOLDOWN\_MS} & Defines the cooldown period applied after rate-limit errors. \\
-\hline
-\texttt{LLM\_MAX\_REQUEST\_WAIT\_MS} & Limits how long one enrichment request can wait before falling back. \\
-\hline
-\texttt{LLM\_ENABLE\_PRO\_FALLBACK} & Enables the last-resort Gemini Pro model path when configured. \\
-\hline
-\texttt{LLM\_SECURITY\_BATCH\_SIZE} & Controls how many security records are sent in one batch enrichment prompt. \\
+T4-6 & Validate enriched output & Run the same generator validation after enrichment and before SQL script assembly. & 1 day \\
 \hline
 \end{longtable}
+\normalsize
+\renewcommand{\arraystretch}{1}
 
-\subsection{Fallback Strategy}
+\section{Sprint Specification}
 
-\paragraph{}The LLM is treated as an optional quality improvement, not as a required dependency. The
-fallback strategy has three levels. First, if \texttt{LLM\_ENABLED} is false or no API key is
-configured, enrichment is skipped. Second, if a model or key fails, the client attempts another
-configured route. Third, if all LLM attempts fail or return unusable data, the enricher returns the
-algorithmically generated objects without modification.
+\paragraph{}The main use case of Sprint 4 is enriching generated financial data with realistic text. The QA
+engineer still uses standalone or connected generation, while the system optionally improves selected
+descriptive fields during the generation pipeline.
 
-\paragraph{}This approach protects the generation pipeline from external service instability. A QA engineer
-can therefore continue generating valid SQL scripts even during API outages, quota exhaustion, or
-invalid LLM responses.
+\subsection{Use Case Refinement}
 
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch6-llm-fallback-flow.pdf}
-\caption{Fallback strategy for LLM enrichment}
-\label{fig:ch6-llm-fallback-flow}
-\end{figure}
+\paragraph{}The enrichment use case is refined into the actions shown in
+Table~\ref{tab:sprint4-refined-usecases}. The system is the main actor for enrichment because the
+operation is applied automatically during generation.
 
-
-% ─────────────────────────────────────────────
-\section{Implementation}
-% ─────────────────────────────────────────────
-
-
-\subsection{LLM Client Service}
-
-\paragraph{}The \texttt{LlmClientService} wraps the \texttt{@google/generative-ai} SDK. At startup, it reads the
-available API keys and creates one client per key. It then builds a model chain containing Gemini
-2.5 Flash as the primary model, Gemini 2.5 Flash Lite as the overflow model, and optionally Gemini
-2.5 Pro as a last-resort model when enabled by configuration.
-
-\paragraph{}The service also implements a small request scheduler. Incoming prompts are placed in an
-internal queue and processed according to \texttt{LLM\_MAX\_CONCURRENCY}. Each key tracks its own
-in-flight requests and cooldown state per model. When a request fails because of a rate limit, the
-corresponding key/model pair is put on cooldown, and the service tries another available route.
-Denied-access errors disable the affected key for the rest of the run.
-
-\subsection{Security Batch Enrichment}
-
-\paragraph{}Security enrichment is implemented as a batch process because securities are the most numerous
-records in the generated dataset. The \texttt{SecurityBatchEnricher} creates work items for equities,
-fixed income securities, FX forwards, generics, futures, and options. These work items are split
-into chunks according to \texttt{LLM\_SECURITY\_BATCH\_SIZE}, and each chunk is sent to the model with
-a prompt requiring a JSON array response.
-
-\paragraph{}After receiving the response, the enricher parses the JSON, verifies that every returned item has
-the expected identifier and security kind, and applies only the fields that are safe for that
-security subtype. For example, equities may receive improved \texttt{client\_security\_id},
-\texttt{symbol}, and \texttt{security\_name\_1} values, while fixed income securities may receive a
-better \texttt{security\_description}. Each accepted string is truncated using the field length
-constraints so that it remains compatible with the target \texttt{.DAT} file.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch6-llm-prompt-response.pdf}
-\caption{Example of security batch enrichment}
-\label{fig:ch6-security-batch-example}
-\end{figure}
-
-\subsection{Account, Account Group, and Model Enrichment}
-
-\paragraph{}Additional enrichers target account groups, accounts, and models. These services follow the
-same defensive pattern: build a structured prompt, call the LLM client, parse JSON output, merge
-only known fields, and report whether a fallback was used. The enrichers improve descriptive fields
-such as account names, account group names, and model labels without changing numeric quantities,
-foreign keys, or the generated dependency structure.
-
-\subsection{Integration in the Generator}
-
-\paragraph{}The \texttt{GeneratorService} integrates the enrichment layer after base generation and before
-validation and file writing. Securities are generated first, then passed through
-\texttt{llmService.enrichSecurities()}. Models, accounts, and account groups are enriched in the same
-way. The validator still runs after enrichment, which means that LLM-provided values are subject to
-the same checks as algorithmic values.
-
-\paragraph{}This placement was chosen deliberately. If enrichment occurred before DTO creation, the LLM
-would influence structural logic and could create invalid relationships. By enriching complete DTOs,
-the system allows the LLM to improve realism while keeping referential integrity under the control
-of deterministic code.
-
-\subsection{Prompt and Response Constraints}
-
-\paragraph{}Prompts are designed to request concise JSON responses rather than free-form text. The expected
-response shape is different for each entity type, but all prompts share the same principle: each
-returned item must be traceable to the original generated item through an identifier. The enrichers
-reject responses with missing identifiers, wrong kinds, invalid arrays, or unexpected lengths.
-
-\paragraph{}This strict parsing is important because LLMs can produce extra text, malformed JSON, or values
-that do not match the requested schema. The implementation treats such output as unusable and falls
-back to the original generated data instead of attempting unsafe corrections.
-
-\begin{figure}[htbp]
-\centering
-%\includegraphics[width=0.95\textwidth]{img/ch6-enrichment-comparison.pdf}
-\caption{Comparison between algorithmic and LLM-enriched generated data}
-\label{fig:ch6-enrichment-comparison}
-\end{figure}
-
-
-% ─────────────────────────────────────────────
-\section{Sprint Review and Validation}
-% ─────────────────────────────────────────────
-
-
-\paragraph{}Sprint 4 was validated by checking that LLM enrichment improves realism without weakening the
-core guarantees of the generator. Table~\ref{tab:sprint4-validation} summarizes the validation
-points.
-
-\renewcommand{\arraystretch}{1.3}
-\begin{longtable}{|P{0.24\linewidth}|P{0.40\linewidth}|P{0.26\linewidth}|}
-\caption{Sprint 4 validation summary}
-\label{tab:sprint4-validation} \\
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.27\linewidth}|P{0.23\linewidth}|P{0.40\linewidth}|}
+\caption{Refined use cases of Sprint 4}
+\label{tab:sprint4-refined-usecases} \\
 \hline
-\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
 \hline
 \endfirsthead
 \multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
 \hline
-\textbf{Validated element} & \textbf{Verification performed} & \textbf{Result} \\
+\textbf{Refined use case} & \textbf{Actor} & \textbf{Goal} \\
 \hline
 \endhead
 \hline
@@ -281,35 +87,181 @@ points.
 \endfoot
 \hline
 \endlastfoot
-Disabled LLM mode & Started generation without enabling the LLM configuration. & Generation completed using algorithmic values only. \\
+Activate enrichment & System & Detect whether the enrichment provider is configured and available. \\
 \hline
-Fallback behavior & Checked error paths in the client and enrichers. & Failed or invalid LLM responses return the original DTO arrays. \\
+Enrich securities & System & Improve security names, symbols, issuer descriptions, and textual descriptions. \\
 \hline
-Schema protection & Parsed LLM responses as JSON arrays and matched returned identifiers to requested work items. & Unexpected response shapes are rejected. \\
+Enrich accounts & System & Improve account names and display labels without changing account identifiers. \\
 \hline
-Field constraints & Applied maximum-length checks before merging enriched text into DTOs. & Enriched strings remain compatible with \texttt{.DAT} constraints. \\
+Enrich account groups & System & Improve group labels while preserving hierarchy links. \\
 \hline
-Post-enrichment validation & Ran the existing \texttt{ValidatorService} after enrichment and before file writing. & Invalid generated records are blocked before SQL assembly. \\
+Enrich models & System & Improve model labels while preserving allocations and references. \\
+\hline
+Apply fallback & System & Keep deterministic values when enrichment cannot be safely used. \\
 \hline
 \end{longtable}
+\renewcommand{\arraystretch}{1}
 
-\paragraph{}The main difficulty of this sprint was balancing realism and reliability. The solution avoids
-making the LLM responsible for business rules, quantities, or relationships. Instead, it uses the
-LLM only as a controlled text-enrichment layer. This decision keeps the generator predictable while
-still improving the readability and plausibility of generated financial records.
+\subsection{Textual Use Case Description}
 
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.66\linewidth}|}
+\caption{Textual description of the LLM enrichment use case}
+\label{tab:llm-usecase-description} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endfirsthead
+\multicolumn{2}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Element} & \textbf{Description} \\
+\hline
+\endhead
+\hline
+\multicolumn{2}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Use case & Enrich generated financial data with realistic descriptive values. \\
+\hline
+Actor & System, triggered during a generation request launched by the QA engineer. \\
+\hline
+Preconditions & A standalone or connected generation request is valid. The enrichment provider may be available. \\
+\hline
+Postconditions & Valid enriched values are merged into allowed fields; otherwise deterministic values remain unchanged. \\
+\hline
+Nominal scenario &
+\begin{enumerate}[leftmargin=*,nosep]
+    \item The generation service creates a deterministic dataset.
+    \item The LLM service checks whether enrichment is enabled and available.
+    \item The appropriate enrichers prepare structured prompts for securities, accounts, account groups, or models.
+    \item The LLM response is parsed, checked, and merged only into allowed fields.
+    \item The final dataset is validated before SQL output.
+\end{enumerate} \\
+\hline
+Exception scenario &
+\begin{itemize}[leftmargin=*,nosep]
+    \item If the provider is disabled or unreachable, enrichment is skipped.
+    \item If the response is malformed, incomplete, or unsafe, deterministic values are kept.
+    \item If a merged value violates validation rules, generation stops before SQL assembly.
+\end{itemize} \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
 
-% ─────────────────────────────────────────────
+\section{Sprint Design}
+
+\paragraph{}The design of Sprint 4 isolates the LLM behind dedicated client and enricher classes. The
+generation services do not ask the AI provider to create records. They create a valid base dataset
+first, then ask the enrichment layer to improve only authorized text fields.
+
+\subsection{Sequence Diagrams}
+
+\paragraph{}Figure~\ref{fig:sequence-llm} shows the enrichment sequence. It highlights the two important
+branches of the design: valid enrichment values are merged, while invalid or unavailable responses
+fall back to deterministic values.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{img/sequence-llm-enrichment.pdf}
+\caption{LLM enrichment sequence}
+\label{fig:sequence-llm}
+\end{figure}
+
+\subsection{Class Diagram of Sprint 4}
+
+\paragraph{}Figure~\ref{fig:sprint4-class-diagram} presents the main enrichment classes. The
+\texttt{LlmService} coordinates specialized enrichers, and the \texttt{LlmClientService} isolates
+provider calls and fallback handling.
+
+\begin{figure}[!htbp]
+\centering
+\begin{tikzpicture}[
+    class/.style={draw, rounded corners, align=left, minimum width=4.4cm, inner sep=5pt},
+    arrow/.style={->, thick}
+]
+\node[class] (generator) {\textbf{GeneratorService}\\
+\texttt{generateAll()}};
+\node[class, right=1.1cm of generator] (llm) {\textbf{LlmService}\\
+\texttt{enrichSecurities()}\\
+\texttt{enrichAccounts()}\\
+\texttt{enrichModels()}};
+\node[class, right=1.1cm of llm] (client) {\textbf{LlmClientService}\\
+\texttt{generateJson()}\\
+\texttt{isAvailable()}};
+\node[class, below=0.9cm of llm] (enrichers) {\textbf{Enrichers}\\
+\texttt{SecurityBatchEnricher}\\
+\texttt{AccountEnricher}\\
+\texttt{AccountGroupEnricher}\\
+\texttt{ModelEnricher}};
+\node[class, below=0.9cm of client] (prompts) {\textbf{Prompt Files}\\
+\texttt{security-batch.prompt.ts}\\
+\texttt{account.prompt.ts}\\
+\texttt{model.prompt.ts}};
+\draw[arrow] (generator) -- (llm);
+\draw[arrow] (llm) -- (client);
+\draw[arrow] (llm) -- (enrichers);
+\draw[arrow] (enrichers) -- (prompts);
+\draw[arrow] (enrichers) -- (client);
+\end{tikzpicture}
+\caption{Class diagram of Sprint 4}
+\label{fig:sprint4-class-diagram}
+\end{figure}
+
+\section{Realization}
+
+\paragraph{}The realization of Sprint 4 is implemented in the backend module \texttt{modules/llm}. The
+module contains prompt builders, specialized enrichers, the service facade, and the provider client.
+\texttt{GeneratorService} and \texttt{ConnectedGeneratorService} both call \texttt{LlmService} after
+base generation. This gives standalone and connected modes the same enrichment behavior.
+
+\paragraph{}The fields that may be modified are deliberately limited. For securities, enrichment can
+improve names, symbols, identifiers used for display, issuer names, and descriptions. For accounts,
+groups, and models, enrichment improves readable labels. The system preserves structural fields such
+as generated links, account identifiers, security relationships, dates, quantities, prices,
+allocations, and order references.
+
+\renewcommand{\arraystretch}{1.15}
+\begin{longtable}{|P{0.24\linewidth}|P{0.34\linewidth}|P{0.32\linewidth}|}
+\caption{LLM enrichment realization}
+\label{tab:llm-realization} \\
+\hline
+\textbf{Realized element} & \textbf{Project source} & \textbf{Role} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Realized element} & \textbf{Project source} & \textbf{Role} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+LLM facade & \texttt{llm.service.ts} & Coordinates enrichment for securities, accounts, groups, and models. \\
+\hline
+Provider client & \texttt{llm-client.service.ts} & Calls the AI provider and handles availability or parsing failures. \\
+\hline
+Security enrichment & \texttt{security-batch.enricher.ts} & Enriches multiple security subtypes with controlled textual values. \\
+\hline
+Account and group enrichment & \texttt{account.enricher.ts}, \texttt{account-group.enricher.ts} & Improves account labels while preserving account structure. \\
+\hline
+Model enrichment & \texttt{model.enricher.ts} & Improves model labels without changing allocation relationships. \\
+\hline
+Fallback behavior & \texttt{fallback-reason.util.ts} & Explains why deterministic values were kept when enrichment is unsafe. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\paragraph{}This realization keeps the LLM as a controlled assistant to the generator rather than a
+source of business rules. The generated dataset remains deterministic at the structural level, and
+the validator remains the final authority before output.
+
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
-% ─────────────────────────────────────────────
 
-
-\paragraph{}This chapter presented Sprint 4, which integrated optional LLM enrichment into the Longview Test
-Data Generator. A dedicated client service manages Gemini API calls, fallback models, multiple API
-keys, queueing, concurrency, and rate-limit cooldowns. Entity-specific enrichers improve textual
-and descriptive fields while preserving deterministic generation as the source of truth for data
-structure and business consistency. The resulting system can generate more realistic datasets when
-the LLM is available, but it remains fully operational when the LLM is disabled or unavailable. The
-following chapter presents Sprint 5, which finalizes the application with the configuration library
-and global report-level validation.
+\paragraph{}Sprint 4 delivered optional LLM enrichment for generated financial data. The feature improves
+realism when the provider is available and safely falls back to deterministic values otherwise. The
+next sprint finalizes the application by adding reusable configuration management and global
+workflow safeguards.
