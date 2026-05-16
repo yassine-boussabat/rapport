@@ -6,17 +6,11 @@
 % ---------------------------------------------------------
 
 \paragraph{}This chapter presents the first sprint of the project, which spanned two weeks. Its purpose was not to
-implement the generator yet, but to build the financial and technical understanding needed before
-implementation. Since the application produces data for Longview, the analysis first moved from a
-computer science view of the problem to a finance-aware view: what is an account, what is a
-security, why orders and executions are different, and how positions represent what an account
-already owns.
+implement the generator yet, but to clarify the financial and technical rules needed before
+implementation. Since the application produces data for Longview, the sprint identified the meaning
+of the main entities to generate, their dependencies, and the constraints that must be respected by
+the later SQL generation pipeline.
 
-\paragraph{}The chapter is therefore written as a progressive discovery story. It begins with the
-sprint backlog, then explains how the analysis of Longview extracts, manually prepared SQL files,
-and QA team feedback led to the selection of the most important entities to generate. After that,
-the chapter presents the discovered relationships, the Longview pre-BCP loading mechanism, the
-technical population order, and finally the class diagrams used as the reference for implementation.
 
 % ---------------------------------------------------------
 \section{Sprint Backlog}
@@ -54,47 +48,29 @@ T1-3 & Map stored procedures and load order & Identify the loading procedures an
 T1-4 & Extract business rules & Collect the main financial constraints, code lists, and referential rules used to validate the generated records. & 2 days \\
 \hline
 T1-5 & Produce entity diagrams & Consolidate the discovered entities, attributes, and relationships into UML class diagrams. & 1 day \\
-\hline
 \end{longtable}
 
 % ---------------------------------------------------------
-\section{From Extract Analysis to Target Entities}
+\section{Sprint Specification}
 % ---------------------------------------------------------
 
-\paragraph{}Longview provides many extract files, and at the beginning of the sprint it was not
-realistic or useful to generate all of them. The first discovery work was therefore to understand
-which extracts were actually important for QA scenarios. To do this, the existing
-extract files, the SQL scripts that were generated manually by the team, and the recurring data
-needs expressed during discussions with QA engineers were analyzed.
+\paragraph{}The specification work of Sprint 1 transformed existing Longview material into a clear
+generation scope. The sprint identified which business entities had to be generated, how they depend
+on each other, and which rules must be preserved by the later generation engine.
 
-\paragraph{}This analysis showed that the generator had to focus on the entities that form the
-core portfolio and trading workflow. These entities were selected because they are frequently
-needed in tests, because they are connected by strong dependencies, and because generating them
-manually is time-consuming and error-prone. The selected scope covers accounts and account
-groups, models, securities, prices, hierarchy rows, positions, proposed orders, orders, and
-executions.
+\subsection{Target Entity Scope}
 
-\paragraph{}For a reader coming from computer science, these extracts become easier to
-understand when they are read as a business workflow rather than as isolated files. Longview
-manages client portfolios. Each portfolio belongs to an account structure, holds financial
-instruments, receives market prices, and can generate trading activity. The generator had to
-reproduce this story with valid test data.
+\paragraph{}Since Longview contains many extract files, Sprint 1 first reduced the scope to the data
+most useful for QA scenarios. Existing extract files, manually written SQL scripts, and QA feedback
+were analyzed to identify the entities that are frequently needed, strongly dependent on each other,
+and difficult to create manually. The selected scope covers accounts and account groups, models,
+securities, prices, hierarchy rows, positions, proposed orders, orders, and executions.
 
-\paragraph{}At a simplified level, the workflow is the following:
+\subsection{Financial Concept Mapping}
 
-\begin{enumerate}
-    \item \textbf{Portfolio structure:} accounts and account groups define where holdings and trades belong.
-    \item \textbf{Investment definition:} models describe target allocations that may guide how an account should be invested.
-    \item \textbf{Market universe:} securities define the instruments that can be priced, classified, held, or traded.
-    \item \textbf{Current holdings:} positions describe what each account already owns.
-    \item \textbf{Trading activity:} proposed orders, orders, and executions describe the intention to trade, the trading instruction, and the market fill.
-\end{enumerate}
-
-\paragraph{}This business sequence became the first mental model for the application. It helped
-identify which objects had to be generated first and which identifiers had to be shared between
-services. For example, an order cannot be meaningful without an existing account and security.
-Similarly, a sell order is safer when the application knows the account's current position, because
-the generated scenario should not sell an impossible quantity.
+\paragraph{}The selected extracts were mapped to the main financial concepts needed by QA
+scenarios. This mapping, summarized in Table~\ref{tab:finance-map}, helped separate the business
+meaning of each entity from its role in the generator.
 
 \Needspace{10\baselineskip}
 \renewcommand{\arraystretch}{1.3}
@@ -134,53 +110,35 @@ Execution & A market fill confirming that a trade was executed. & Completes the 
 \end{longtable}
 
 % ---------------------------------------------------------
-\section{Discovered Entities and Relationships}
+\subsection{Entity Relationships}
 % ---------------------------------------------------------
 
-\paragraph{}After selecting the target extracts, the next step was to describe the relationships
-between their entities. The goal was to keep only the relationships that influence valid data
-generation: mandatory references, optional references that must be valid when supplied, and
-implementation rules used by the application.
-
-\paragraph{}The most important discovery was that the generated values are not independent. A
-price is only valid if it refers to an existing security. A position is only valid if it connects an
-existing account to an existing security. Proposed orders and orders also depend on valid
-account-security pairs, and sell-side scenarios must be coherent with the positions already held by
-the account.
-
-\paragraph{}Some relationships are direct extract constraints, while others are generation rules
-added to keep the scenario realistic. For example, an option must reference an underlying security,
-and an execution generated by the application is produced from an equity order even when the
-extract itself mainly validates the security and account references. These links explain why the
-generator had to share identifiers between services instead of producing each file separately.
-
-\paragraph{}This relationship mapping became the basis for the DTO design and for the later
-generation pipeline. Each service had to know which upstream identifiers were already available,
-which optional references could be left empty, and which references had to be preserved to make
-the final dataset load correctly in Longview.
+\paragraph{}After selecting the target extracts, Sprint 1 mapped the relationships required for valid
+generation. Prices must reference securities, positions must connect accounts with securities, and
+orders must reuse valid account-security pairs. Additional generation rules were also identified, such
+as linking options to an underlying security and producing executions from equity orders. This mapping
+became the basis for the DTO design and for the later generation pipeline, where services share
+generated identifiers instead of producing each output independently.
 
 % ---------------------------------------------------------
-\section{Longview Pre-BCP Loading Mechanism}
+\section{Sprint Design}
 % ---------------------------------------------------------
 
-\paragraph{}Once the target entities and their relationships were clear, the next question was how
-Longview expects this data to be loaded. Longview does not insert the generated records directly
-into its live business tables. Instead, data is first inserted into pre-BCP buffer tables. These
-staging tables receive the raw records, then Longview stored procedures validate them, apply
-business rules, and transfer the accepted data into the live schema.
+\paragraph{}After the sprint specification defined the target entities and their relationships, the
+design work focused on how these entities must be loaded by Longview. This design step produced
+the pre-BCP loading model, the technical population order, and the UML diagrams used as reference
+models for the following sprints.
 
-\paragraph{}This mechanism shaped the generator in two important ways. First, the generated SQL
-had to target the buffer tables, not the final Longview tables. Second, the output script had to
-respect a strict population order. If a row references an account, a security, a model, or a
-classification level, that referenced data must already exist in Longview or be loaded earlier in
-the same generated scenario.
+\subsection{Longview Pre-BCP Loading Mechanism}
 
-\paragraph{}For this reason, Sprint 1 linked each selected business entity to its extract file, its
-DTO representation, its buffer table, and the stored procedure order used during loading. This is
-the point where the finance workflow becomes a technical dependency graph.
+\paragraph{}Sprint 1 also clarified the Longview loading mechanism. Generated records are first
+inserted into pre-BCP buffer tables, then Longview stored procedures validate them, apply business
+rules, and transfer the accepted data into the live schema. Therefore, the generated SQL must target
+the buffer tables and respect the required population order, so each referenced account, security,
+model, or classification level exists before it is used.
 
 % ---------------------------------------------------------
-\section{Table Population Order}
+\subsection{Table Population Order}
 % ---------------------------------------------------------
 
 \paragraph{}After understanding the pre-BCP mechanism, the next step was to determine the order
@@ -189,8 +147,7 @@ generator when it emits \texttt{INSERT} statements, identity-column handling blo
 procedure calls.
 
 \paragraph{}Table~\ref{tab:population-order} summarizes the selected pre-BCP loading order used
-by the application. It is ordered by the technical dependency sequence, not by the explanatory
-business sequence used earlier in the chapter.
+by the application. It follows the technical dependency sequence required by Longview.
 
 \Needspace{14\baselineskip}
 \renewcommand{\arraystretch}{1.3}
@@ -241,20 +198,17 @@ business sequence used earlier in the chapter.
 \hline
 \end{longtable}
 
-\paragraph{}The distinction between business order and technical load order is important. From a
-finance point of view, positions, orders, and executions describe a trade story. From a loading
-point of view, the script must satisfy Longview dependencies. The generator therefore combines
-both views: it creates a coherent business scenario while emitting SQL in the order accepted by
-the pre-BCP pipeline.
+\paragraph{}This order differs from the explanatory business sequence because the SQL script must
+satisfy Longview dependencies. The generator therefore creates a coherent business scenario while
+emitting SQL in the order accepted by the pre-BCP pipeline.
 
 % ---------------------------------------------------------
-\section{Entity Class Diagram}
+\subsection{Entity Class Diagrams}
 % ---------------------------------------------------------
 
 \paragraph{}Figure~\ref{fig:class-diagram} presents the UML class diagram produced at the end of
-Sprint 1. It shows the main Longview entities targeted by the generator, their key attributes, and
-the relationships between them. This diagram served as the reference for the DTO classes and for
-the generation services implemented in the following sprint.
+Sprint 1. It served as the reference for the DTO classes and for the generation services implemented
+in the following sprint.
 
 \begin{figure}[H]
 \centering
@@ -266,10 +220,8 @@ the generation services implemented in the following sprint.
 \end{figure}
 
 \paragraph{}Because securities are the most specialized part of the model, Figure~\ref{fig:security-class-diagram}
-isolates the security DTO hierarchy. It shows how the general security concept is divided into
-equities, fixed income securities, options, futures, generic securities, and FX forwards. This
-separation was necessary because each subtype has different fields and different validation rules,
-even though all of them can later be priced, classified, held, or traded depending on the scenario.
+isolates the security DTO hierarchy. This separation was needed because each subtype has its own
+fields and validation rules.
 
 \begin{figure}[H]
 \centering
@@ -281,16 +233,71 @@ even though all of them can later be priced, classified, held, or traded dependi
 \end{figure}
 
 % ---------------------------------------------------------
+\section{Realization}
+% ---------------------------------------------------------
+
+\paragraph{}The realization of Sprint 1 produced the reference material used before implementation:
+the selected entity scope, the relationship rules, the pre-BCP population order, and the UML class
+diagrams. The main practical outcome was the separation between the business scenario to generate
+and the technical order required by Longview.
+
+\paragraph{}Table~\ref{tab:sprint1-deliverables} summarizes the concrete deliverables produced at
+the end of the sprint and explains how each one was reused during the following implementation
+sprints.
+
+\Needspace{12\baselineskip}
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|P{0.28\textwidth}|P{0.31\textwidth}|P{0.31\textwidth}|}
+\caption{Sprint 1 realization deliverables}
+\label{tab:sprint1-deliverables} \\
+\hline
+\textbf{Deliverable} & \textbf{Produced result} & \textbf{Use in the project} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Deliverable} & \textbf{Produced result} & \textbf{Use in the project} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Selected extracts & Accounts, account groups, models, securities, prices, positions, proposed orders, orders, and executions were selected as the initial generation scope. & Defined the functional perimeter of the standalone generator. \\
+\hline
+Entity mapping & Each selected business concept was linked to its corresponding DTO, extract file, and pre-BCP buffer table. & Guided the backend DTO structure and generation services. \\
+\hline
+Relationship rules & Mandatory and optional references between accounts, securities, prices, positions, orders, executions, and models were identified. & Used later by the relationship validation layer. \\
+\hline
+Population order & The technical loading sequence of the pre-BCP files was established. & Used by the SQL script generation step to emit loadable data in the correct order. \\
+\hline
+Class diagrams & Entity and security DTO diagrams were produced. & Served as the modeling reference for the implementation of the generation engine. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\paragraph{}A screenshot of the analyzed extract folder or an annotated mapping sheet can be added
+later in Figure~\ref{fig:sprint1-extract-analysis-proof} to visually document the discovery work
+performed during this sprint.
+
+\begin{figure}[H]
+\centering
+\IfFileExists{img/ch3-extract-analysis-proof.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch3-extract-analysis-proof.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: selected extracts, mapping sheet, or analyzed SQL files}}%
+}
+\caption{Sprint 1 extract analysis and mapping evidence}
+\label{fig:sprint1-extract-analysis-proof}
+\end{figure}
+
+% ---------------------------------------------------------
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
 % ---------------------------------------------------------
 
-\paragraph{}This chapter presented Sprint 1 as the discovery phase that allowed the project to
-enter the Longview finance domain before implementing the application. The main result was a
-clear mapping between financial concepts, DTOs, pre-BCP buffer tables, and dependency rules.
-
-\paragraph{}By understanding accounts, securities, prices, positions, orders, and executions as
-connected parts of the same workflow, the generator could be designed around valid relationships
-instead of isolated random records. This foundation gave Sprint 2 the specification needed to
-build the standalone generation engine and produce SQL scripts that respect Longview's loading
-constraints.
+\paragraph{}This chapter presented Sprint 1 as the discovery phase that defined the entities,
+relationships, loading order, and UML reference models needed before implementation. This
+foundation gave Sprint 2 the specification required to build the standalone generation engine and
+produce SQL scripts that respect Longview's loading constraints.

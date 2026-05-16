@@ -463,6 +463,59 @@ the execution status and access to the generated SQL script.
 \label{fig:ch4-step-result}
 \end{figure}
 
+\subsection{Generated Output Evidence}
+
+\paragraph{}After the QA engineer launches generation, the backend produces the configured
+\texttt{.DAT} files, validates their field formats and relationships, and converts the validated output
+into a SQL Server loading script. Table~\ref{tab:standalone-realization-proof} summarizes the main
+realization evidence of this sprint.
+
+\Needspace{12\baselineskip}
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|P{0.25\linewidth}|P{0.35\linewidth}|P{0.30\linewidth}|}
+\caption{Standalone generation realization evidence}
+\label{tab:standalone-realization-proof} \\
+\hline
+\textbf{Evidence} & \textbf{Implemented result} & \textbf{Purpose} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Evidence} & \textbf{Implemented result} & \textbf{Purpose} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Generated files & The backend writes files such as \texttt{ACCOUNT.DAT}, \texttt{EQUITY.DAT}, \texttt{PRICE.DAT}, \texttt{POSITION.DAT}, \texttt{ORDER.DAT}, and \texttt{EXECUTION.DAT}. & Proves that the configuration is transformed into concrete Longview loading artifacts. \\
+\hline
+Field validation & Each generated file is checked against required fields, numeric fields, date formats, lengths, and flag values. & Prevents malformed rows from being exported. \\
+\hline
+Relationship validation & Accounts, securities, prices, positions, orders, executions, and models are checked before writing the final output. & Ensures that generated records reference existing generated entities. \\
+\hline
+SQL script generation & The validated \texttt{.DAT} files are converted into \texttt{load\_test\_data.sql}. & Provides a single SQL Server script that can be downloaded and executed by the QA engineer. \\
+\hline
+Generation feedback & The interface displays progress, warning, success, and error messages during the run. & Gives the user visibility over the generation process and its result. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\paragraph{}Figure~\ref{fig:ch4-generation-proof} can be completed later with a screenshot of the
+generation log, the produced \texttt{.DAT} files, or a short excerpt from the generated SQL script.
+
+\begin{figure}[!htbp]
+\centering
+\IfFileExists{img/ch4-generation-proof.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch4-generation-proof.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: standalone generation log, generated DAT files, or SQL script excerpt}}%
+}
+\caption{Standalone generation output and validation evidence}
+\label{fig:ch4-generation-proof}
+\end{figure}
+
 \section*{Conclusion}
 \addcontentsline{toc}{section}{Conclusion}
 

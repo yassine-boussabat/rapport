@@ -335,6 +335,60 @@ must still be generated according to that selection, and sends the prepared cont
 generation pipeline. The
 connected database is used only as a read source; the final result remains a downloadable SQL script.
 
+\subsection{Connected Mode Realization Evidence}
+
+\paragraph{}The realization of connected mode was verified through the main workflow steps: testing
+the SQL Server connection, retrieving existing Longview data, preparing a connected preview, and
+generating the final SQL loading script. Table~\ref{tab:connected-realization-proof} summarizes the
+evidence produced by this sprint.
+
+\Needspace{13\baselineskip}
+\renewcommand{\arraystretch}{1.3}
+\begin{longtable}{|P{0.24\linewidth}|P{0.34\linewidth}|P{0.32\linewidth}|}
+\caption{Connected mode realization evidence}
+\label{tab:connected-realization-proof} \\
+\hline
+\textbf{Evidence} & \textbf{Implemented result} & \textbf{Purpose} \\
+\hline
+\endfirsthead
+\multicolumn{3}{r}{\tablename\ \thetable{} -- \textit{continued from previous page}} \\
+\hline
+\textbf{Evidence} & \textbf{Implemented result} & \textbf{Purpose} \\
+\hline
+\endhead
+\hline
+\multicolumn{3}{r}{\textit{continued on next page}} \\
+\endfoot
+\hline
+\endlastfoot
+Connection test & The backend tests SQL Server access using either Windows authentication or SQL authentication and returns success or error logs. & Confirms that the user can verify connection settings before opening a session. \\
+\hline
+Read-only connection & Connected mode retrieves data using controlled \texttt{SELECT} queries and does not write directly to the Longview database. & Protects the existing environment while still allowing realistic context reuse. \\
+\hline
+Data grabbing & The user can retrieve account groups, accounts, and selected security categories from allowed tables. & Provides existing Longview records that can anchor the generated scenario. \\
+\hline
+Connected preview & The system prepares estimated output rows and sample records before final generation. & Lets the QA engineer review the connected context before exporting a SQL script. \\
+\hline
+Connected generation & The grabbed context is combined with generated complementary records, validated, written as \texttt{.DAT} files, and converted into \texttt{load\_test\_data.sql}. & Proves that connected mode reuses the standalone pipeline instead of duplicating generation logic. \\
+\hline
+\end{longtable}
+\renewcommand{\arraystretch}{1}
+
+\paragraph{}Figure~\ref{fig:ch5-connected-proof} can later be replaced by a screenshot of the
+connection test result, the grabbed data table, the connected preview, or the generated SQL download
+confirmation.
+
+\begin{figure}[!htbp]
+\centering
+\IfFileExists{img/ch5-connected-proof.png}{%
+    \includegraphics[width=0.88\textwidth]{img/ch5-connected-proof.png}%
+}{%
+    \fbox{\parbox[c][0.22\textheight][c]{0.86\textwidth}{\centering Screenshot to be added: connection test, grabbed data, connected preview, or generation result}}%
+}
+\caption{Connected mode execution and generation evidence}
+\label{fig:ch5-connected-proof}
+\end{figure}
+
 \subsection{User Workflow}
 
 \paragraph{}The connected-specific interface work is concentrated in three screens: connection, data
